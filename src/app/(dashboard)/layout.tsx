@@ -1,0 +1,100 @@
+import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
+import { AppSidebar } from "@/components/shared/app-sidebar"
+import { Providers } from "@/components/shared/providers"
+import type { Organization, SubAccount, Membership, SubAccountMembership } from "@/types/database"
+
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  // Fetch user's org membership
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("*")
+    .eq("user_id", user.id)
+    .limit(1)
+
+  const membership = memberships?.[0] as Membership | undefined
+
+  if (!membership) {
+    redirect("/signup")
+  }
+
+  // Fetch the org
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("id", membership.org_id)
+    .single()
+
+  if (!org) {
+    redirect("/signup")
+  }
+
+  // Fetch sub-accounts for this org
+  const { data: subAccounts } = await supabase
+    .from("sub_accounts")
+    .select("*")
+    .eq("org_id", membership.org_id)
+    .order("name")
+
+  const typedSubAccounts = (subAccounts ?? []) as SubAccount[]
+
+  // Determine current sub-account from cookie
+  const cookieStore = await cookies()
+  const subAccountCookie = cookieStore.get("flowcrm_sub_account_id")
+  let currentSubAccountId = subAccountCookie?.value ?? null
+
+  // Validate the cookie value belongs to this org's sub-accounts
+  if (
+    currentSubAccountId &&
+    !typedSubAccounts.some((sa) => sa.id === currentSubAccountId)
+  ) {
+    currentSubAccountId = null
+  }
+
+  // Fallback to first sub-account
+  if (!currentSubAccountId && typedSubAccounts.length > 0) {
+    currentSubAccountId = typedSubAccounts[0].id
+  }
+
+  return (
+    <Providers>
+      <SidebarProvider>
+        <AppSidebar
+          org={org as Organization}
+          subAccounts={typedSubAccounts}
+          currentSubAccountId={currentSubAccountId}
+          userEmail={user.email ?? ""}
+        />
+        <SidebarInset>
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <span className="text-sm font-medium text-muted-foreground">
+              {(org as Organization).name}
+            </span>
+          </header>
+          <div className="flex flex-1 flex-col overflow-auto p-4 md:p-6">
+            {children}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </Providers>
+  )
+}
