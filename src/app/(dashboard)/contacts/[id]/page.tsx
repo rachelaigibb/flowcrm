@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { cookies } from "next/headers"
+import { getSubAccountId } from "@/lib/supabase/get-sub-account"
 import { redirect, notFound } from "next/navigation"
 import { ContactDetailPage } from "@/features/contacts/components/contact-detail-page"
 import type { ContactWithRelations } from "@/features/contacts/types"
@@ -11,7 +11,6 @@ export default async function ContactDetailRoute({
 }) {
   const { id } = await params
   const supabase = await createClient()
-  const cookieStore = await cookies()
 
   const {
     data: { user },
@@ -21,7 +20,7 @@ export default async function ContactDetailRoute({
     redirect("/login")
   }
 
-  const subAccountId = cookieStore.get("flowcrm_sub_account_id")?.value
+  const subAccountId = await getSubAccountId()
   if (!subAccountId) {
     redirect("/settings")
   }

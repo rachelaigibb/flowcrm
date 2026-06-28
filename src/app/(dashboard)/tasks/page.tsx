@@ -1,6 +1,6 @@
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { getSubAccountId } from "@/lib/supabase/get-sub-account"
 import { TasksPage } from "@/features/tasks/components/tasks-page"
 
 export const metadata = {
@@ -9,7 +9,6 @@ export const metadata = {
 
 export default async function TasksRoute() {
   const supabase = await createClient()
-  const cookieStore = await cookies()
 
   const {
     data: { user },
@@ -17,10 +16,9 @@ export default async function TasksRoute() {
 
   if (!user) redirect("/login")
 
-  const subAccountId = cookieStore.get("flowcrm_sub_account_id")?.value
+  const subAccountId = await getSubAccountId()
   if (!subAccountId) redirect("/settings")
 
-  // Fetch tasks with contact and deal joins
   const { data: tasks, error } = await supabase
     .from("tasks")
     .select(
@@ -43,14 +41,12 @@ export default async function TasksRoute() {
     )
   }
 
-  // Fetch contacts for the dialog combobox
   const { data: contacts } = await supabase
     .from("contacts")
     .select("id, first_name, last_name")
     .eq("sub_account_id", subAccountId)
     .order("first_name")
 
-  // Fetch deals for the dialog combobox
   const { data: deals } = await supabase
     .from("deals")
     .select("id, title")

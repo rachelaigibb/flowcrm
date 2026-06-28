@@ -71,13 +71,9 @@ export default async function DashboardLayout({
     currentSubAccountId = null
   }
 
-  // Fallback to first sub-account and persist the cookie
+  // Fallback to first sub-account
   if (!currentSubAccountId && typedSubAccounts.length > 0) {
     currentSubAccountId = typedSubAccounts[0].id
-    cookieStore.set("flowcrm_sub_account_id", currentSubAccountId, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-    })
   }
 
   return (

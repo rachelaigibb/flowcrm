@@ -1,5 +1,5 @@
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
+import { getSubAccountId } from "@/lib/supabase/get-sub-account"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils/currency"
@@ -14,9 +14,8 @@ import type { Activity, PipelineStage } from "@/types/database"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const cookieStore = await cookies()
 
-  const subAccountId = cookieStore.get("flowcrm_sub_account_id")?.value
+  const subAccountId = await getSubAccountId()
 
   if (!subAccountId) {
     return (
