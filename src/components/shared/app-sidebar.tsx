@@ -92,12 +92,13 @@ export function AppSidebar({
 
                 return (
                   <SidebarMenuItem key={item.href}>
-                    <Link href={item.href}>
-                      <SidebarMenuButton isActive={isActive}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </Link>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      render={<a href={item.href} />}
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
               })}
