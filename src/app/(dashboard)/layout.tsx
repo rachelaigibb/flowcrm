@@ -32,7 +32,9 @@ export default async function DashboardLayout({
   const membership = memberships?.[0] as Membership | undefined
 
   if (!membership) {
-    redirect("/signup")
+    // User is authenticated but has no org — sign them out to break the loop
+    await supabase.auth.signOut()
+    redirect("/login")
   }
 
   // Fetch the org
@@ -43,7 +45,8 @@ export default async function DashboardLayout({
     .single()
 
   if (!org) {
-    redirect("/signup")
+    await supabase.auth.signOut()
+    redirect("/login")
   }
 
   // Fetch sub-accounts for this org
