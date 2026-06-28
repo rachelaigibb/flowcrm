@@ -56,8 +56,8 @@ export async function signup(formData: FormData) {
 
   // Create the org with defaults via RPC
   const { error: orgError } = await supabase.rpc("create_org_with_defaults", {
-    owner_id: data.user.id,
-    org_name: email.split("@")[0] + "'s Org",
+    p_user_id: data.user.id,
+    p_org_name: email.split("@")[0] + "'s Org",
   })
 
   if (orgError) {
