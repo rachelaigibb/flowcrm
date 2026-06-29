@@ -181,7 +181,9 @@ export function CreateDealDialog({
               <Label>Stage</Label>
               <Select value={stageId} onValueChange={(v) => setStageId(v ?? "")}>
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {stages.find((s) => s.id === stageId)?.name ?? "Select stage"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {stages.map((stage) => (

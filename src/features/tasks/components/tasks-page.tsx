@@ -259,12 +259,12 @@ export function TasksPage({ tasks, contacts, deals }: TasksPageProps) {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant={groupMode === "none" ? "ghost" : "secondary"}
-            size="icon-sm"
+            variant={groupMode === "none" ? "outline" : "secondary"}
+            size="sm"
             onClick={() => setGroupMode(groupMode === "none" ? "date" : "none")}
-            title="Group by date"
           >
             <CalendarDaysIcon className="size-4" />
+            {groupMode === "none" ? "Group by date" : "Ungroup"}
           </Button>
           <CreateTaskDialog contacts={contacts} deals={deals} />
         </div>

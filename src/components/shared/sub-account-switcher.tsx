@@ -38,26 +38,24 @@ export function SubAccountSwitcher({
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger
-        render={
-          <SidebarMenuButton
-            size="lg"
-            className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
-          />
-        }
-      >
-        <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <Building2Icon className="size-4" />
-        </div>
-        <div className="grid flex-1 text-left text-sm leading-tight">
-          <span className="truncate font-semibold">
-            {currentSubAccount?.name ?? "Select account"}
-          </span>
-          <span className="truncate text-xs text-muted-foreground">
-            {currentSubAccount?.currency ?? ""}
-          </span>
-        </div>
-        <ChevronsUpDown className="ml-auto" />
+      <DropdownMenuTrigger>
+        <SidebarMenuButton
+          size="lg"
+          className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
+        >
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <Building2Icon className="size-4" />
+          </div>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-semibold">
+              {currentSubAccount?.name ?? "Select account"}
+            </span>
+            <span className="truncate text-xs text-muted-foreground">
+              {currentSubAccount?.currency ?? ""}
+            </span>
+          </div>
+          <ChevronsUpDown className="ml-auto" />
+        </SidebarMenuButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="w-[--anchor-width] min-w-56"

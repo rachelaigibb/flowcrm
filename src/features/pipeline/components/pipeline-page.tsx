@@ -184,7 +184,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
           <p className="text-sm text-muted-foreground">
@@ -199,7 +199,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 border-b px-6 pb-3">
+      <div className="flex flex-wrap items-center gap-2 border-b pb-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input

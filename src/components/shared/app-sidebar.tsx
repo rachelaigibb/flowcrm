@@ -107,24 +107,22 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <SidebarMenuButton
-                    size="lg"
-                    className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
-                  />
-                }
-              >
-                <Avatar size="sm">
-                  <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{org.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {userEmail}
-                  </span>
-                </div>
-                <ChevronsUpDown className="ml-auto size-4" />
+              <DropdownMenuTrigger>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
+                >
+                  <Avatar className="size-8">
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">{org.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {userEmail}
+                    </span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto size-4" />
+                </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 side="top"
