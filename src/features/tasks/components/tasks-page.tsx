@@ -24,8 +24,10 @@ import {
   UserIcon,
   BriefcaseIcon,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { toggleTaskStatus, deleteTask } from "../actions"
 import { CreateTaskDialog } from "./create-task-dialog"
+import { TaskDetailSheet } from "./task-detail-sheet"
 import type { TaskWithRelations } from "../types"
 
 
@@ -100,10 +102,12 @@ function TaskItem({
   task,
   onToggle,
   onDelete,
+  onClick,
 }: {
   task: TaskWithRelations
   onToggle: (id: string) => void
   onDelete: (id: string) => void
+  onClick: (task: TaskWithRelations) => void
 }) {
   const contactName = task.contact
     ? [task.contact.first_name, task.contact.last_name].filter(Boolean).join(" ") || "(Unnamed)"
@@ -123,7 +127,10 @@ function TaskItem({
         />
       </div>
 
-      <div className="flex flex-1 min-w-0 flex-col gap-1">
+      <div
+        className="flex flex-1 min-w-0 flex-col gap-1 cursor-pointer"
+        onClick={() => onClick(task)}
+      >
         <div className="flex items-center gap-2">
           <span
             className={cn(
@@ -201,8 +208,21 @@ function TaskItem({
 }
 
 export function TasksPage({ tasks, contacts, deals }: TasksPageProps) {
+  const router = useRouter()
   const [filter, setFilter] = React.useState<FilterTab>("all")
   const [groupMode, setGroupMode] = React.useState<GroupMode>("none")
+  const [selectedTask, setSelectedTask] = React.useState<TaskWithRelations | null>(null)
+  const [detailSheetOpen, setDetailSheetOpen] = React.useState(false)
+
+  function handleTaskClick(task: TaskWithRelations) {
+    setSelectedTask(task)
+    setDetailSheetOpen(true)
+  }
+
+  function handleTaskUpdated() {
+    router.refresh()
+    setDetailSheetOpen(false)
+  }
 
   const filteredTasks = React.useMemo(() => {
     switch (filter) {
@@ -316,6 +336,7 @@ export function TasksPage({ tasks, contacts, deals }: TasksPageProps) {
                           task={task}
                           onToggle={handleToggle}
                           onDelete={handleDelete}
+                          onClick={handleTaskClick}
                         />
                       ))}
                     </div>
@@ -330,12 +351,22 @@ export function TasksPage({ tasks, contacts, deals }: TasksPageProps) {
                   task={task}
                   onToggle={handleToggle}
                   onDelete={handleDelete}
+                  onClick={handleTaskClick}
                 />
               ))}
             </div>
           )}
         </TabsContent>
       </Tabs>
+
+      <TaskDetailSheet
+        task={selectedTask}
+        contacts={contacts}
+        deals={deals}
+        open={detailSheetOpen}
+        onOpenChange={setDetailSheetOpen}
+        onTaskUpdated={handleTaskUpdated}
+      />
     </div>
   )
 }
