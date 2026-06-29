@@ -251,7 +251,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex h-full gap-4 p-4">
+          <div className="flex h-full gap-4 pb-4">
             {stagesWithDeals.map((stage) => (
               <StageColumn
                 key={stage.id}

@@ -338,7 +338,9 @@ export function DealDetailSheet({
                       }
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue>
+                          {stages.find((s) => s.id === editData.stage_id)?.name ?? "Select stage"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {stages.map((stage) => (

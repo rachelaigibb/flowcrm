@@ -38,10 +38,10 @@ export function SubAccountSwitcher({
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger>
+      <DropdownMenuTrigger render={<div role="button" tabIndex={0} className="w-full" />}>
         <SidebarMenuButton
           size="lg"
-          className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
+          className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground pointer-events-none"
         >
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
             <Building2Icon className="size-4" />

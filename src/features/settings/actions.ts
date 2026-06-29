@@ -33,61 +33,29 @@ export async function createSubAccount(data: {
   currency: string
   timezone: string
 }) {
-  const { userId, orgId, orgRole, supabase } = await getUserContext()
+  const { userId, orgId, supabase } = await getUserContext()
 
-  if (orgRole !== "owner" && orgRole !== "admin") {
-    return { error: "Only admins can create sub-accounts" }
-  }
-
-  // Generate slug from name
   const slug = data.name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
 
-  const { data: subAccount, error } = await supabase
-    .from("sub_accounts")
-    .insert({
-      org_id: orgId,
-      name: data.name,
-      slug,
-      currency: data.currency,
-      timezone: data.timezone,
-      settings: {},
-    })
-    .select("id")
-    .single()
+  const { data: result, error } = await supabase.rpc(
+    "create_sub_account_with_defaults",
+    {
+      p_org_id: orgId,
+      p_user_id: userId,
+      p_name: data.name,
+      p_slug: slug,
+      p_currency: data.currency,
+      p_timezone: data.timezone,
+    }
+  )
 
   if (error) return { error: error.message }
 
-  // Create default pipeline stages
-  const defaultStages = [
-    { name: "New", position: 1, color: "#6366f1" },
-    { name: "Contacted", position: 2, color: "#8b5cf6" },
-    { name: "Qualified", position: 3, color: "#0ea5e9" },
-    { name: "Proposal", position: 4, color: "#f59e0b" },
-    { name: "Negotiation", position: 5, color: "#f97316" },
-    { name: "Won", position: 6, color: "#22c55e" },
-    { name: "Lost", position: 7, color: "#ef4444" },
-  ]
-
-  await supabase.from("pipeline_stages").insert(
-    defaultStages.map((s) => ({
-      org_id: orgId,
-      sub_account_id: subAccount.id,
-      ...s,
-    }))
-  )
-
-  // Create sub-account membership for current user
-  await supabase.from("sub_account_memberships").insert({
-    user_id: userId,
-    sub_account_id: subAccount.id,
-    role: "admin",
-  })
-
   revalidatePath("/settings")
-  return { data: subAccount }
+  return { data: { id: result } }
 }
 
 export async function updateSubAccount(
