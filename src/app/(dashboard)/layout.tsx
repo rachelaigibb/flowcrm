@@ -89,9 +89,18 @@ export default async function DashboardLayout({
           <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
-            <span className="text-sm font-medium text-muted-foreground">
-              {(org as Organization).name}
-            </span>
+            {(() => {
+              const currentSa = typedSubAccounts.find((sa) => sa.id === currentSubAccountId) as (SubAccount & { accent_color?: string }) | undefined
+              const accentColor = currentSa?.accent_color ?? "#6366f1"
+              return (
+                <>
+                  <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: accentColor }} />
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {currentSa?.name ?? (org as Organization).name}
+                  </span>
+                </>
+              )
+            })()}
           </header>
           <div className="flex flex-1 flex-col overflow-auto p-4 md:p-6">
             {children}

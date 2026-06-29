@@ -64,6 +64,8 @@ export async function updateSubAccount(
     name?: string
     currency?: string
     timezone?: string
+    accent_color?: string
+    logo_url?: string | null
     settings?: Record<string, unknown>
   }
 ) {

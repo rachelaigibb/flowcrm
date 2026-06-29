@@ -186,7 +186,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
       {/* Header */}
       <div className="flex shrink-0 flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Pipeline</h1>
           <p className="text-sm text-muted-foreground">
             {deals.length} deal{deals.length !== 1 ? "s" : ""} &middot;{" "}
             {stages.length} stage{stages.length !== 1 ? "s" : ""}

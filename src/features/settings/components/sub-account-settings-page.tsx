@@ -95,6 +95,9 @@ export function SubAccountSettingsPage({
   const [name, setName] = React.useState(subAccount.name)
   const [currency, setCurrency] = React.useState(subAccount.currency)
   const [timezone, setTimezone] = React.useState(subAccount.timezone)
+  const [accentColor, setAccentColor] = React.useState(
+    (subAccount as SubAccount & { accent_color?: string }).accent_color ?? "#6366f1"
+  )
   const [saving, setSaving] = React.useState(false)
 
   const [stages, setStages] = React.useState(initialStages)
@@ -118,6 +121,7 @@ export function SubAccountSettingsPage({
       name: name.trim(),
       currency,
       timezone,
+      accent_color: accentColor,
     })
     setSaving(false)
     if (result.error) {
@@ -268,6 +272,28 @@ export function SubAccountSettingsPage({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Theme color */}
+          <div className="flex flex-col gap-1.5">
+            <Label>Theme Color</Label>
+            <p className="text-xs text-muted-foreground">
+              Sets the accent color for this sub-account in the sidebar and header
+            </p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {STAGE_COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={cn(
+                    "size-8 rounded-full border-2 transition-all",
+                    accentColor === color ? "border-white scale-110" : "border-transparent"
+                  )}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setAccentColor(color)}
+                />
+              ))}
             </div>
           </div>
 

@@ -1,6 +1,7 @@
 "use client"
 
-import Link from "next/link"
+import { useState } from "react"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
@@ -24,14 +25,6 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { SubAccountSwitcher } from "@/components/shared/sub-account-switcher"
 import { signOut } from "@/features/auth/actions"
 import type { Organization, SubAccount } from "@/types/database"
@@ -51,6 +44,15 @@ interface AppSidebarProps {
   userEmail: string
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+}
+
 export function AppSidebar({
   org,
   subAccounts,
@@ -58,13 +60,9 @@ export function AppSidebar({
   userEmail,
 }: AppSidebarProps) {
   const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
 
-  const initials = userEmail
-    ? userEmail
-        .split("@")[0]
-        .slice(0, 2)
-        .toUpperCase()
-    : "U"
+  const orgInitials = getInitials(org.name || "O")
 
   return (
     <Sidebar>
@@ -106,38 +104,56 @@ export function AppSidebar({
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<div role="button" tabIndex={0} className="w-full" />}>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground pointer-events-none"
-                >
-                  <Avatar className="size-8">
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{org.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {userEmail}
-                    </span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                className="w-[--anchor-width]"
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-sidebar-accent transition-colors"
               >
-                <DropdownMenuItem
-                  onClick={async () => {
-                    await signOut()
-                  }}
-                >
-                  <LogOut className="size-4" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                {org.logo_url ? (
+                  <Image
+                    src={org.logo_url}
+                    alt={org.name}
+                    width={32}
+                    height={32}
+                    className="size-8 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-semibold">
+                    {orgInitials}
+                  </div>
+                )}
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">{org.name}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {userEmail}
+                  </span>
+                </div>
+                <ChevronsUpDown className="size-4 text-muted-foreground" />
+              </button>
+
+              {menuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div className="absolute bottom-full left-0 right-0 z-50 mb-1 rounded-md border bg-popover p-1 shadow-md">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setMenuOpen(false)
+                        await signOut()
+                      }}
+                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors text-left"
+                    >
+                      <LogOut className="size-4" />
+                      Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

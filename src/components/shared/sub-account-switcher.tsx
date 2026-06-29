@@ -19,6 +19,9 @@ export function SubAccountSwitcher({
     (sa) => sa.id === currentSubAccountId
   )
 
+  const getAccentColor = (sa: SubAccount) =>
+    (sa as SubAccount & { accent_color?: string }).accent_color ?? "#6366f1"
+
   function handleSelect(subAccountId: string) {
     document.cookie = `flowcrm_sub_account_id=${subAccountId}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
     setOpen(false)
@@ -32,8 +35,11 @@ export function SubAccountSwitcher({
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-sidebar-accent transition-colors"
       >
-        <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <Building2Icon className="size-4" />
+        <div
+          className="flex aspect-square size-8 items-center justify-center rounded-lg text-white text-xs font-semibold"
+          style={{ backgroundColor: currentSubAccount ? getAccentColor(currentSubAccount) : "#6366f1" }}
+        >
+          {(currentSubAccount?.name ?? "?")[0].toUpperCase()}
         </div>
         <div className="grid flex-1 text-left text-sm leading-tight">
           <span className="truncate font-semibold">
@@ -65,7 +71,10 @@ export function SubAccountSwitcher({
                 onClick={() => handleSelect(sa.id)}
                 className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
               >
-                <Building2Icon className="size-4 text-muted-foreground" />
+                <div
+                  className="size-4 rounded-full shrink-0"
+                  style={{ backgroundColor: getAccentColor(sa) }}
+                />
                 <span className="flex-1 truncate text-left">{sa.name}</span>
                 {sa.id === currentSubAccountId && (
                   <Check className="size-4 text-muted-foreground" />
