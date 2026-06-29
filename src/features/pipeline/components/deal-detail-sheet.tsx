@@ -268,15 +268,6 @@ export function DealDetailSheet({
                   </Button>
                 </>
               )}
-              <Button
-                variant="destructive"
-                size="sm"
-                className="ml-auto"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <Trash2 className="size-3.5" data-icon="inline-start" />
-                Delete
-              </Button>
             </div>
 
             <Separator />
@@ -479,6 +470,21 @@ export function DealDetailSheet({
               ) : (
                 <p className="text-xs text-muted-foreground">No activity yet</p>
               )}
+            </div>
+
+            <Separator />
+
+            {/* Danger zone — intentionally at the bottom, away from Save */}
+            <div className="flex justify-end pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="size-3.5" data-icon="inline-start" />
+                Delete Deal
+              </Button>
             </div>
           </div>
         </SheetContent>

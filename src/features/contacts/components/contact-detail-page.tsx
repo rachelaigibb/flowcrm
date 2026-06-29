@@ -50,6 +50,7 @@ import {
   Loader2,
   CheckCircle2,
   Circle,
+  ChevronDown,
 } from "lucide-react"
 import { SOURCE_OPTIONS } from "../types"
 
@@ -90,6 +91,8 @@ export function ContactDetailPage({ contact }: ContactDetailPageProps) {
 
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false)
+  // Activity collapsible
+  const [activityOpen, setActivityOpen] = useState(false)
 
   const displayName =
     [contact.first_name, contact.last_name].filter(Boolean).join(" ") ||
@@ -185,8 +188,48 @@ export function ContactDetailPage({ contact }: ContactDetailPageProps) {
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Activity timeline */}
+        {/* Left: Deals, Tasks, Notes, Activity */}
         <div className="lg:col-span-2 flex flex-col gap-6">
+          {/* Related Deals */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">
+                Deals ({contact.deals.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {contact.deals.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No deals yet.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {contact.deals.map((deal) => (
+                    <DealItem key={deal.id} deal={deal} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Related Tasks */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">
+                Tasks ({contact.tasks.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {contact.tasks.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No tasks yet.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {contact.tasks.map((task) => (
+                    <TaskItem key={task.id} task={task} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Add note form */}
           <Card>
             <CardHeader>
@@ -216,32 +259,47 @@ export function ContactDetailPage({ contact }: ContactDetailPageProps) {
             </CardContent>
           </Card>
 
-          {/* Activity timeline */}
+          {/* Activity timeline — collapsible, collapsed by default */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Activity</CardTitle>
+            <CardHeader
+              className="cursor-pointer select-none"
+              onClick={() => setActivityOpen(!activityOpen)}
+            >
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">
+                  Activity ({contact.activities.length})
+                </CardTitle>
+                <Button variant="ghost" size="icon-sm">
+                  <ChevronDown className={cn(
+                    "size-4 transition-transform",
+                    activityOpen && "rotate-180"
+                  )} />
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent>
-              {contact.activities.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">
-                  No activity yet.
-                </p>
-              ) : (
-                <div className="flex flex-col">
-                  {contact.activities.map((activity, i) => (
-                    <ActivityItem
-                      key={activity.id}
-                      activity={activity}
-                      isLast={i === contact.activities.length - 1}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
+            {activityOpen && (
+              <CardContent>
+                {contact.activities.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No activity yet.
+                  </p>
+                ) : (
+                  <div className="flex flex-col">
+                    {contact.activities.map((activity, i) => (
+                      <ActivityItem
+                        key={activity.id}
+                        activity={activity}
+                        isLast={i === contact.activities.length - 1}
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            )}
           </Card>
         </div>
 
-        {/* Right: Contact info + related */}
+        {/* Right: Contact info + tags */}
         <div className="flex flex-col gap-6">
           {/* Contact info card */}
           <Card>
@@ -404,45 +462,6 @@ export function ContactDetailPage({ contact }: ContactDetailPageProps) {
             </Card>
           )}
 
-          {/* Related Deals */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">
-                Deals ({contact.deals.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contact.deals.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No deals yet.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {contact.deals.map((deal) => (
-                    <DealItem key={deal.id} deal={deal} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Related Tasks */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">
-                Tasks ({contact.tasks.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contact.tasks.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No tasks yet.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {contact.tasks.map((task) => (
-                    <TaskItem key={task.id} task={task} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
 

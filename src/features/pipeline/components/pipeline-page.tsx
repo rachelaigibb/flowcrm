@@ -182,24 +182,24 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
   }, [initialDeals])
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col min-w-0">
       {/* Header */}
-      <div className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex shrink-0 flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
           <p className="text-sm text-muted-foreground">
             {deals.length} deal{deals.length !== 1 ? "s" : ""} &middot;{" "}
             {stages.length} stage{stages.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+        <Button size="sm" className="shrink-0 self-start sm:self-auto" onClick={() => setCreateDialogOpen(true)}>
           <Plus className="size-4" data-icon="inline-start" />
           Add Deal
         </Button>
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 border-b pb-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b pb-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
