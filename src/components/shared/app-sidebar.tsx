@@ -37,7 +37,7 @@ import { signOut } from "@/features/auth/actions"
 import type { Organization, SubAccount } from "@/types/database"
 
 const navItems = [
-  { title: "Dashboard", href: "/", icon: LayoutDashboard },
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Contacts", href: "/contacts", icon: Users },
   { title: "Pipeline", href: "/pipeline", icon: Kanban },
   { title: "Tasks", href: "/tasks", icon: CheckSquare },
@@ -85,10 +85,7 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
-                const isActive =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href)
+                const isActive = pathname.startsWith(item.href)
 
                 return (
                   <SidebarMenuItem key={item.href}>

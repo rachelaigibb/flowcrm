@@ -1,40 +1,12 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { cookies } from "next/headers"
-import { createClient } from "@/lib/supabase/server"
+import { getUserContext } from "@/lib/supabase/get-user-context"
 import type { CreateDealInput, UpdateDealInput } from "./types"
 import type { DealStatus } from "@/types/database"
 
 async function getContext() {
-  const supabase = await createClient()
-  const cookieStore = await cookies()
-  const subAccountId = cookieStore.get("flowcrm_sub_account_id")?.value
-
-  if (!subAccountId) {
-    throw new Error("No sub account selected")
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error("Not authenticated")
-  }
-
-  // Get org_id from sub_account
-  const { data: subAccount } = await supabase
-    .from("sub_accounts")
-    .select("org_id")
-    .eq("id", subAccountId)
-    .single()
-
-  if (!subAccount) {
-    throw new Error("Sub account not found")
-  }
-
-  return { supabase, userId: user.id, orgId: subAccount.org_id, subAccountId }
+  return getUserContext()
 }
 
 export async function createDeal(input: CreateDealInput) {
@@ -225,7 +197,7 @@ export async function addDealNote(dealId: string, content: string) {
 }
 
 export async function fetchDealActivities(dealId: string) {
-  const supabase = await createClient()
+  const { supabase } = await getContext()
 
   const { data, error } = await supabase
     .from("activities")
@@ -241,11 +213,7 @@ export async function fetchDealActivities(dealId: string) {
 }
 
 export async function searchContacts(query: string) {
-  const supabase = await createClient()
-  const cookieStore = await cookies()
-  const subAccountId = cookieStore.get("flowcrm_sub_account_id")?.value
-
-  if (!subAccountId) return []
+  const { supabase, subAccountId } = await getContext()
 
   const { data } = await supabase
     .from("contacts")

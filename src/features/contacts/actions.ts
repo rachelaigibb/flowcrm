@@ -1,47 +1,8 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
-import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
+import { getUserContext } from "@/lib/supabase/get-user-context"
 import type { CreateContactInput, UpdateContactInput } from "./types"
-
-async function getUserContext() {
-  const supabase = await createClient()
-  const cookieStore = await cookies()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    throw new Error("Unauthorized")
-  }
-
-  const subAccountId = cookieStore.get("flowcrm_sub_account_id")?.value
-  if (!subAccountId) {
-    throw new Error("No sub-account selected")
-  }
-
-  // Get org_id from membership
-  const { data: membership, error: membershipError } = await supabase
-    .from("memberships")
-    .select("org_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single()
-
-  if (membershipError || !membership) {
-    throw new Error("No organization found")
-  }
-
-  return {
-    userId: user.id,
-    orgId: membership.org_id,
-    subAccountId,
-    supabase,
-  }
-}
 
 export async function createContact(input: CreateContactInput) {
   const { userId, orgId, subAccountId, supabase } = await getUserContext()

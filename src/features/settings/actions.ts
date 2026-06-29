@@ -1,43 +1,7 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
-import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
-
-async function getUserContext() {
-  const supabase = await createClient()
-  const cookieStore = await cookies()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    throw new Error("Unauthorized")
-  }
-
-  const { data: membership, error: membershipError } = await supabase
-    .from("memberships")
-    .select("org_id, role")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single()
-
-  if (membershipError || !membership) {
-    throw new Error("No organization found")
-  }
-
-  const subAccountId = cookieStore.get("flowcrm_sub_account_id")?.value
-
-  return {
-    userId: user.id,
-    orgId: membership.org_id,
-    orgRole: membership.role,
-    subAccountId,
-    supabase,
-  }
-}
+import { getUserContext } from "@/lib/supabase/get-user-context"
 
 // ── Organization ──
 
