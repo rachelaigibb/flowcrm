@@ -13,6 +13,15 @@ import {
   LogOut,
   Building2,
   ChevronsUpDown,
+  CalendarDays,
+  FileText,
+  Globe,
+  Zap,
+  Megaphone,
+  BarChart3,
+  Home,
+  List,
+  Lock,
 } from "lucide-react"
 import {
   Sidebar,
@@ -31,12 +40,26 @@ import { SubAccountSwitcher } from "@/components/shared/sub-account-switcher"
 import { signOut } from "@/features/auth/actions"
 import type { Organization, SubAccount } from "@/types/database"
 
-const navItems = [
+const agencyNavItems = [
+  { title: "Agency Home", href: "/agency", icon: Home },
+  { title: "Sub-accounts", href: "/agency/sub-accounts", icon: List },
+  { title: "Settings Agency", href: "/agency/settings", icon: Settings },
+]
+
+const subAccountNavItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Contacts", href: "/contacts", icon: Users },
   { title: "Pipeline", href: "/pipeline", icon: Kanban },
+  { title: "Calendar", href: "/calendar", icon: CalendarDays },
   { title: "Tasks", href: "/tasks", icon: CheckSquare },
-  { title: "Settings", href: "/settings", icon: Settings },
+]
+
+const comingSoonItems = [
+  { title: "Forms", icon: FileText },
+  { title: "Website", icon: Globe },
+  { title: "Automations", icon: Zap },
+  { title: "Broadcasts", icon: Megaphone },
+  { title: "Reports", icon: BarChart3 },
 ]
 
 interface AppSidebarProps {
@@ -65,27 +88,35 @@ export function AppSidebar({
   const [menuOpen, setMenuOpen] = useState(false)
 
   const orgInitials = getInitials(org.name || "O")
+  const currentSubAccount = subAccounts.find(
+    (sa) => sa.id === currentSubAccountId
+  )
 
   return (
     <Sidebar>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SubAccountSwitcher
-              subAccounts={subAccounts}
-              currentSubAccountId={currentSubAccountId}
-            />
+            <Link href="/dashboard" className="flex items-center gap-2 px-2 py-1.5">
+              <Building2 className="size-5 text-primary" />
+              <span className="text-sm font-bold tracking-tight">FlowCRM</span>
+            </Link>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
+        {/* AGENCY section */}
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+            Agency
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
-                const isActive = pathname.startsWith(item.href)
+              {agencyNavItems.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/agency" && pathname.startsWith(item.href))
 
                 return (
                   <SidebarMenuItem key={item.href}>
@@ -102,7 +133,70 @@ export function AppSidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarSeparator />
+
+        {/* SUB-ACCOUNT section */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+            Sub-Account
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SubAccountSwitcher
+                  subAccounts={subAccounts}
+                  currentSubAccountId={currentSubAccountId}
+                />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {subAccountNavItems.map((item) => {
+                const isActive = pathname.startsWith(item.href)
+
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      render={<Link href={item.href} />}
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+
+              {/* Coming Soon items */}
+              {comingSoonItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton disabled className="opacity-40 cursor-not-allowed">
+                    <item.icon />
+                    <span className="flex-1">{item.title}</span>
+                    <span className="text-[10px] text-muted-foreground/60 bg-muted/50 px-1.5 py-0.5 rounded">
+                      Soon
+                    </span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {/* Settings Sub-Account */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={pathname === "/settings"}
+                  render={<Link href="/settings" />}
+                >
+                  <Settings />
+                  <span>Settings Sub-Account</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
+
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -142,7 +236,7 @@ export function AppSidebar({
                   />
                   <div className="absolute bottom-full left-0 right-0 z-50 mb-1 rounded-md border bg-popover p-1 shadow-md">
                     <Link
-                      href="/settings?tab=organization"
+                      href="/agency/settings"
                       onClick={() => setMenuOpen(false)}
                       className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors text-left"
                     >

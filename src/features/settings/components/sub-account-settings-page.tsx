@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { toast } from "sonner"
 import {
   Card,
@@ -35,8 +34,8 @@ import { cn } from "@/lib/utils"
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency"
 import { TIMEZONES, ACCENT_COLORS, TAG_COLORS } from "@/lib/constants/colors"
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
+import { ThemeToggle } from "@/components/shared/theme-toggle"
 import {
-  ArrowLeftIcon,
   PlusIcon,
   TrashIcon,
   PencilIcon,
@@ -45,6 +44,7 @@ import {
   GripVerticalIcon,
   UsersIcon,
   TagIcon,
+  PaletteIcon,
 } from "lucide-react"
 import {
   updateSubAccount,
@@ -275,19 +275,30 @@ export function SubAccountSettingsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
-        <Link href="/settings">
-          <Button variant="ghost" size="icon-sm">
-            <ArrowLeftIcon className="size-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {subAccount.name}
-          </h1>
-          <p className="text-sm text-muted-foreground">Sub-account settings</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Settings Sub-Account
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Manage your profile, subscription, and workspace data for {subAccount.name}
+        </p>
       </div>
+
+      {/* Appearance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PaletteIcon className="size-4" />
+            Appearance
+          </CardTitle>
+          <CardDescription>
+            Light, dark, or system
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ThemeToggle />
+        </CardContent>
+      </Card>
 
       {/* General Settings */}
       <Card>

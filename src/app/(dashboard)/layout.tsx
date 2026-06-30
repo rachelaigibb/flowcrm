@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { AppSidebar } from "@/components/shared/app-sidebar"
-import { Providers } from "@/components/shared/providers"
-import type { Organization, SubAccount, Membership, SubAccountMembership } from "@/types/database"
+import { CommandPalette } from "@/components/shared/command-palette"
+import type { Organization, SubAccount, Membership } from "@/types/database"
 
 export default async function DashboardLayout({
   children,
@@ -77,36 +77,35 @@ export default async function DashboardLayout({
   }
 
   return (
-    <Providers>
-      <SidebarProvider>
-        <AppSidebar
-          org={org as Organization}
-          subAccounts={typedSubAccounts}
-          currentSubAccountId={currentSubAccountId}
-          userEmail={user.email ?? ""}
-        />
-        <SidebarInset>
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            {(() => {
-              const currentSa = typedSubAccounts.find((sa) => sa.id === currentSubAccountId) as (SubAccount & { accent_color?: string }) | undefined
-              const accentColor = currentSa?.accent_color ?? "#6366f1"
-              return (
-                <>
-                  <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: accentColor }} />
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {currentSa?.name ?? (org as Organization).name}
-                  </span>
-                </>
-              )
-            })()}
-          </header>
-          <div className="flex flex-1 flex-col overflow-auto p-4 md:p-6">
-            {children}
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </Providers>
+    <SidebarProvider>
+      <AppSidebar
+        org={org as Organization}
+        subAccounts={typedSubAccounts}
+        currentSubAccountId={currentSubAccountId}
+        userEmail={user.email ?? ""}
+      />
+      <SidebarInset>
+        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          {(() => {
+            const currentSa = typedSubAccounts.find((sa) => sa.id === currentSubAccountId) as (SubAccount & { accent_color?: string }) | undefined
+            const accentColor = currentSa?.accent_color ?? "#6366f1"
+            return (
+              <>
+                <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: accentColor }} />
+                <span className="text-sm font-medium text-muted-foreground">
+                  {currentSa?.name ?? (org as Organization).name}
+                </span>
+              </>
+            )
+          })()}
+        </header>
+        <div className="flex flex-1 flex-col overflow-auto p-4 md:p-6">
+          {children}
+        </div>
+      </SidebarInset>
+      <CommandPalette />
+    </SidebarProvider>
   )
 }

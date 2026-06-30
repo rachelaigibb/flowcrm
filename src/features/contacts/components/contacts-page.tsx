@@ -27,6 +27,7 @@ import {
   Search,
   Plus,
   Upload,
+  Download,
   Users,
   X,
   ChevronUp,
@@ -36,6 +37,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { SOURCE_COLORS } from "@/lib/constants/colors"
 import { toast } from "sonner"
 import { deleteContact } from "../actions"
 
@@ -197,6 +199,31 @@ export function ContactsPage({ contacts }: ContactsPageProps) {
     )
   }
 
+  function exportToCsv(rows: Contact[]) {
+    const headers = ["First Name", "Last Name", "Email", "Phone", "Company", "Source", "Tags", "Consent Status", "Created At"]
+    const csvRows = rows.map((c) => [
+      c.first_name ?? "",
+      c.last_name ?? "",
+      c.email ?? "",
+      c.phone ?? "",
+      c.company ?? "",
+      c.source ?? "",
+      (c.tags ?? []).join("; "),
+      c.consent_status,
+      c.created_at,
+    ])
+    const csv = [headers, ...csvRows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n")
+    const blob = new Blob([csv], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `contacts-export-${new Date().toISOString().split("T")[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -208,6 +235,10 @@ export function ContactsPage({ contacts }: ContactsPageProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered)}>
+            <Download className="size-3.5" data-icon="inline-start" />
+            Export
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
             <Upload className="size-3.5" data-icon="inline-start" />
             Import CSV
@@ -407,10 +438,25 @@ export function ContactsPage({ contacts }: ContactsPageProps) {
                     {contact.company ?? "-"}
                   </TableCell>
                   <TableCell
-                    className="hidden lg:table-cell text-muted-foreground"
+                    className="hidden lg:table-cell"
                     onClick={() => router.push(`/contacts/${contact.id}`)}
                   >
-                    {contact.source ?? "-"}
+                    {contact.source ? (
+                      <Badge
+                        variant="outline"
+                        className={
+                          (SOURCE_COLORS[contact.source.toLowerCase()] ?? {
+                            badge: "bg-muted text-muted-foreground border-border",
+                          }).badge
+                        }
+                      >
+                        {(SOURCE_COLORS[contact.source.toLowerCase()] ?? {
+                          label: contact.source,
+                        }).label}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                   <TableCell
                     className="hidden md:table-cell"

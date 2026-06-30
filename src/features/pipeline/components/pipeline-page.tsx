@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -40,9 +41,9 @@ import { DealCard } from "./deal-card"
 import { DealDetailSheet } from "./deal-detail-sheet"
 import { CreateDealDialog } from "./create-deal-dialog"
 import { moveDeal } from "../actions"
-import { formatCurrencyCompact } from "@/lib/utils/currency"
+import { formatCurrency, formatCurrencyCompact } from "@/lib/utils/currency"
 import { formatDateShort } from "@/lib/utils/dates"
-import { Plus, Search, Filter, LayoutGrid, List, Settings } from "lucide-react"
+import { Plus, Search, Filter, LayoutGrid, List, Settings, TrendingUp, DollarSign, Trophy } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import type { DealWithContact, StageWithDeals } from "../types"
@@ -67,6 +68,12 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>("kanban")
 
+  // New filter state
+  const [excludedStageIds, setExcludedStageIds] = useState<Set<string>>(new Set())
+  const [valueMin, setValueMin] = useState("")
+  const [valueMax, setValueMax] = useState("")
+  const [sourceFilter, setSourceFilter] = useState<string>("all")
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -77,6 +84,17 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
+
+  // Extract unique sources from deals' contacts
+  const uniqueSources = useMemo(() => {
+    const sources = new Set<string>()
+    for (const deal of deals) {
+      if (deal.contact?.source) {
+        sources.add(deal.contact.source)
+      }
+    }
+    return Array.from(sources).sort()
+  }, [deals])
 
   // Filter deals
   const filteredDeals = useMemo(() => {
@@ -93,9 +111,55 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
       if (statusFilter !== "all" && deal.status !== statusFilter) {
         return false
       }
+      // Stage filter
+      if (excludedStageIds.size > 0 && excludedStageIds.has(deal.stage_id)) {
+        return false
+      }
+      // Value range filter
+      const minVal = valueMin ? parseFloat(valueMin) : null
+      const maxVal = valueMax ? parseFloat(valueMax) : null
+      if (minVal !== null && !isNaN(minVal) && deal.value < minVal) {
+        return false
+      }
+      if (maxVal !== null && !isNaN(maxVal) && deal.value > maxVal) {
+        return false
+      }
+      // Source filter
+      if (sourceFilter !== "all") {
+        const dealSource = deal.contact?.source ?? null
+        if (dealSource !== sourceFilter) {
+          return false
+        }
+      }
       return true
     })
-  }, [deals, searchQuery, priorityFilter, statusFilter])
+  }, [deals, searchQuery, priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter])
+
+  // Stats computed from filtered deals
+  const stats = useMemo(() => {
+    const openDeals = filteredDeals.filter((d) => d.status === "open")
+    const wonDeals = filteredDeals.filter((d) => d.status === "won")
+
+    const openCount = openDeals.length
+    const openValue = openDeals.reduce((sum, d) => sum + d.value, 0)
+    const wonValue = wonDeals.reduce((sum, d) => sum + d.value, 0)
+
+    // Use the first deal's currency for display, fallback to USD
+    const currency = filteredDeals[0]?.currency ?? "USD"
+
+    return { openCount, openValue, wonValue, currency }
+  }, [filteredDeals])
+
+  // Count active filters (not counting search or defaults)
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (priorityFilter !== "all") count++
+    if (statusFilter !== "all") count++
+    if (excludedStageIds.size > 0) count++
+    if (valueMin || valueMax) count++
+    if (sourceFilter !== "all") count++
+    return count
+  }, [priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter])
 
   // Group deals by stage
   const stagesWithDeals: StageWithDeals[] = useMemo(() => {
@@ -118,6 +182,18 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
     }
     return map
   }, [stages])
+
+  function toggleStage(stageId: string) {
+    setExcludedStageIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(stageId)) {
+        next.delete(stageId)
+      } else {
+        next.add(stageId)
+      }
+      return next
+    })
+  }
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string)
@@ -242,48 +318,156 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
         </div>
       </div>
 
+      {/* Stats row */}
+      <div className="grid shrink-0 grid-cols-3 gap-3 pb-4">
+        <div className="rounded-lg border bg-card p-3">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <TrendingUp className="size-3.5" />
+            Open Deals
+          </div>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+            {stats.openCount}
+          </p>
+        </div>
+        <div className="rounded-lg border bg-card p-3">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <DollarSign className="size-3.5" />
+            Open Pipeline Value
+          </div>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+            {formatCurrency(stats.openValue, stats.currency)}
+          </p>
+        </div>
+        <div className="rounded-lg border bg-card p-3">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Trophy className="size-3.5" />
+            Won This View
+          </div>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-green-400">
+            {formatCurrency(stats.wonValue, stats.currency)}
+          </p>
+        </div>
+      </div>
+
       {/* Filter bar */}
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b pb-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search deals..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 w-48 pl-8 text-sm"
-          />
+      <div className="flex shrink-0 flex-col gap-2.5 border-b pb-3">
+        {/* Row 1: Search + dropdowns + filter count badge */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search deals..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-8 w-48 pl-8 text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Filter className="size-3.5 text-muted-foreground" />
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {activeFilterCount}
+              </Badge>
+            )}
+            <Select
+              value={priorityFilter}
+              onValueChange={(v) => setPriorityFilter((v ?? "all") as DealPriority | "all")}
+            >
+              <SelectTrigger size="sm" className="w-auto gap-1">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter((v ?? "all") as DealStatus | "all")}
+            >
+              <SelectTrigger size="sm" className="w-auto gap-1">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="won">Won</SelectItem>
+                <SelectItem value="lost">Lost</SelectItem>
+              </SelectContent>
+            </Select>
+            {/* Source filter */}
+            {uniqueSources.length > 0 && (
+              <Select
+                value={sourceFilter}
+                onValueChange={(v) => setSourceFilter(v ?? "all")}
+              >
+                <SelectTrigger size="sm" className="w-auto gap-1">
+                  <SelectValue placeholder="Source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  {uniqueSources.map((source) => (
+                    <SelectItem key={source} value={source}>
+                      {source.charAt(0).toUpperCase() + source.slice(1).replace(/_/g, " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {/* Value range inputs */}
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                placeholder="Min $"
+                value={valueMin}
+                onChange={(e) => setValueMin(e.target.value)}
+                className="h-8 w-20 text-sm"
+              />
+              <span className="text-xs text-muted-foreground">-</span>
+              <Input
+                type="number"
+                placeholder="Max $"
+                value={valueMax}
+                onChange={(e) => setValueMax(e.target.value)}
+                className="h-8 w-20 text-sm"
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Filter className="size-3.5 text-muted-foreground" />
-          <Select
-            value={priorityFilter}
-            onValueChange={(v) => setPriorityFilter((v ?? "all") as DealPriority | "all")}
-          >
-            <SelectTrigger size="sm" className="w-auto gap-1">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter((v ?? "all") as DealStatus | "all")}
-          >
-            <SelectTrigger size="sm" className="w-auto gap-1">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="won">Won</SelectItem>
-              <SelectItem value="lost">Lost</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+
+        {/* Row 2: Stage toggle chips */}
+        {stages.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground mr-1">Stages:</span>
+            {stages.map((stage) => {
+              const isActive = !excludedStageIds.has(stage.id)
+              return (
+                <button
+                  key={stage.id}
+                  type="button"
+                  onClick={() => toggleStage(stage.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all cursor-pointer",
+                    isActive
+                      ? "border-transparent text-white"
+                      : "border-border bg-transparent text-muted-foreground opacity-50"
+                  )}
+                  style={isActive ? { backgroundColor: stage.color } : undefined}
+                >
+                  {!isActive && (
+                    <span
+                      className="size-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: stage.color }}
+                    />
+                  )}
+                  {stage.name}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Empty state when no stages */}

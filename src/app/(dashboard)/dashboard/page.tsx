@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils/currency"
 import { ACTIVITY_TYPE_COLORS } from "@/lib/constants/colors"
-import { cn } from "@/lib/utils"
 import {
   Users,
   DollarSign,
@@ -13,8 +12,18 @@ import {
   AlertTriangle,
   ActivityIcon,
   ArrowRight,
+  CalendarDays,
+  CheckSquare,
+  Mail,
+  Phone,
+  TrendingUp,
 } from "lucide-react"
-import type { Activity, PipelineStage } from "@/types/database"
+import { format } from "date-fns"
+import type { Activity, PipelineStage, SubAccount } from "@/types/database"
+
+export const metadata = {
+  title: "Dashboard | FlowCRM",
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -31,14 +40,24 @@ export default async function DashboardPage() {
     )
   }
 
-  // Fetch sub-account for currency
-  const { data: subAccount } = await supabase
-    .from("sub_accounts")
-    .select("currency")
-    .eq("id", subAccountId)
-    .single()
+  // Fetch sub-account details and user info
+  const [subAccountResult, userResult] = await Promise.all([
+    supabase
+      .from("sub_accounts")
+      .select("*")
+      .eq("id", subAccountId)
+      .single(),
+    supabase.auth.getUser(),
+  ])
 
+  const subAccount = subAccountResult.data as SubAccount | null
   const currency = subAccount?.currency ?? "USD"
+  const user = userResult.data.user
+
+  // Get account contact from sub-account settings
+  const accountContact = (subAccount?.settings as Record<string, unknown> | null)?.account_contact as
+    | { name?: string; email?: string; phone?: string }
+    | undefined
 
   // Parallel fetches for dashboard stats
   const [
@@ -46,23 +65,19 @@ export default async function DashboardPage() {
     openDealsResult,
     wonDealsResult,
     overdueTasksResult,
+    pendingTasksResult,
     recentActivitiesResult,
     pipelineResult,
   ] = await Promise.all([
-    // Total contacts
     supabase
       .from("contacts")
       .select("id", { count: "exact", head: true })
       .eq("sub_account_id", subAccountId),
-
-    // Open deals
     supabase
       .from("deals")
       .select("value")
       .eq("sub_account_id", subAccountId)
       .eq("status", "open"),
-
-    // Won deals this month
     supabase
       .from("deals")
       .select("value")
@@ -76,24 +91,23 @@ export default async function DashboardPage() {
           1
         ).toISOString()
       ),
-
-    // Overdue tasks
     supabase
       .from("tasks")
       .select("id", { count: "exact", head: true })
       .eq("sub_account_id", subAccountId)
       .eq("status", "pending")
       .lt("due_date", new Date().toISOString()),
-
-    // Recent activities
+    supabase
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("sub_account_id", subAccountId)
+      .eq("status", "pending"),
     supabase
       .from("activities")
       .select("*")
       .eq("sub_account_id", subAccountId)
       .order("created_at", { ascending: false })
       .limit(10),
-
-    // Pipeline stages with deal counts
     supabase
       .from("pipeline_stages")
       .select("*")
@@ -118,6 +132,7 @@ export default async function DashboardPage() {
   )
 
   const overdueTasksCount = overdueTasksResult.count ?? 0
+  const pendingTasksCount = pendingTasksResult.count ?? 0
 
   const recentActivities = (recentActivitiesResult.data ?? []) as Activity[]
   const pipelineStages = (pipelineResult.data ?? []) as PipelineStage[]
@@ -144,60 +159,111 @@ export default async function DashboardPage() {
     }
   }
 
+  const today = new Date()
+  const dayOfWeek = format(today, "EEEE")
+  const dateStr = format(today, "MMMM d, yyyy")
+  const displayName = accountContact?.name || user?.email?.split("@")[0] || "admin"
+
   const stats = [
-    {
-      title: "Total Contacts",
-      value: totalContacts.toLocaleString(),
-      icon: Users,
-      description: "All contacts in this account",
-      href: "/contacts",
-    },
     {
       title: "Open Deals",
       value: `${openDealsCount}`,
+      icon: TrendingUp,
+      description: openDealsCount > 0 ? `${openDealsCount} active` : "No active deals",
+      href: "/pipeline",
+    },
+    {
+      title: "Pipeline Value",
+      value: formatCurrency(openDealsValue, currency),
       icon: DollarSign,
-      description: formatCurrency(openDealsValue, currency) + " total value",
+      description: "Across open stages",
       href: "/pipeline",
     },
     {
       title: "Won This Month",
-      value: `${wonDealsCount}`,
+      value: formatCurrency(wonDealsValue, currency),
       icon: Trophy,
-      description: formatCurrency(wonDealsValue, currency) + " closed",
+      description: `${wonDealsCount} deal${wonDealsCount !== 1 ? "s" : ""} closed`,
       href: "/pipeline",
+      accent: true,
     },
     {
-      title: "Overdue Tasks",
-      value: `${overdueTasksCount}`,
-      icon: AlertTriangle,
-      description: overdueTasksCount > 0 ? "Needs attention" : "All caught up",
+      title: "New Contacts",
+      value: `${totalContacts}`,
+      icon: Users,
+      description: `${totalContacts} total`,
+      href: "/contacts",
+    },
+    {
+      title: "Tasks Due",
+      value: `${pendingTasksCount}`,
+      icon: CheckSquare,
+      description: overdueTasksCount > 0 ? `${overdueTasksCount} overdue` : "All on track",
       href: "/tasks",
+      warning: overdueTasksCount > 0,
+    },
+    {
+      title: "Activities",
+      value: `${recentActivities.length}`,
+      icon: ActivityIcon,
+      description: "Recent actions",
+      href: "/contacts",
     },
   ]
 
   return (
     <div className="space-y-6">
+      {/* Account Contact Bar */}
+      {(accountContact?.name || accountContact?.email || accountContact?.phone) && (
+        <div className="flex items-center gap-4 text-sm text-muted-foreground border-b pb-3">
+          <span className="font-medium text-foreground">Account contact</span>
+          {accountContact?.name && (
+            <span>{accountContact.name}</span>
+          )}
+          {accountContact?.email && (
+            <span className="flex items-center gap-1">
+              <Mail className="size-3" />
+              {accountContact.email}
+            </span>
+          )}
+          {accountContact?.phone && (
+            <span className="flex items-center gap-1">
+              <Phone className="size-3" />
+              {accountContact.phone}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Welcome Message */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Your business at a glance
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">
+          {dayOfWeek}, {dateStr}
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight mt-1">
+          Welcome back, <span className="italic">{displayName}</span>
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Here&apos;s what&apos;s moving in your pipeline
         </p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stat cards — 6 grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
           <Link key={stat.title} href={stat.href}>
             <Card className="hover:border-primary/50 transition-colors cursor-pointer">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {stat.title}
                 </CardTitle>
-                <stat.icon className="size-4 text-muted-foreground" />
+                <stat.icon className={`size-4 ${stat.warning ? "text-orange-400" : stat.accent ? "text-green-400" : "text-muted-foreground"}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className={`text-2xl font-bold ${stat.accent ? "text-green-400" : ""}`}>
+                  {stat.value}
+                </div>
+                <p className={`text-xs ${stat.warning ? "text-orange-400" : "text-muted-foreground"}`}>
                   {stat.description}
                 </p>
               </CardContent>

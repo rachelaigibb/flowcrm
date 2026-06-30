@@ -1,18 +1,14 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { SettingsPage } from "@/features/settings/components/settings-page"
-import type { Organization, SubAccount, Membership } from "@/types/database"
+import { getSubAccountId } from "@/lib/supabase/get-sub-account"
+import { SubAccountSettingsPage } from "@/features/settings/components/sub-account-settings-page"
+import type { SubAccount, PipelineStage, SubAccountMembership } from "@/types/database"
 
 export const metadata = {
-  title: "Settings | FlowCRM",
+  title: "Settings Sub-Account | FlowCRM",
 }
 
-export default async function SettingsRoute({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>
-}) {
-  const { tab } = await searchParams
+export default async function SettingsRoute() {
   const supabase = await createClient()
 
   const {
@@ -21,51 +17,55 @@ export default async function SettingsRoute({
 
   if (!user) redirect("/login")
 
-  // Get user's membership
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("org_id, role")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single()
+  const subAccountId = await getSubAccountId()
 
-  if (!membership) redirect("/signup")
+  if (!subAccountId) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">
+          No sub-account selected. Create one in Agency Home to get started.
+        </p>
+      </div>
+    )
+  }
 
-  // Parallel fetches
-  const [orgResult, subAccountsResult, membersResult] = await Promise.all([
+  const [subAccountResult, stagesResult, membersResult] = await Promise.all([
+    supabase.from("sub_accounts").select("*").eq("id", subAccountId).single(),
     supabase
-      .from("organizations")
+      .from("pipeline_stages")
       .select("*")
-      .eq("id", membership.org_id)
-      .single(),
+      .eq("sub_account_id", subAccountId)
+      .order("position"),
     supabase
-      .from("sub_accounts")
+      .from("sub_account_memberships")
       .select("*")
-      .eq("org_id", membership.org_id)
-      .order("name"),
-    supabase
-      .from("memberships")
-      .select("*")
-      .eq("org_id", membership.org_id)
-      .order("created_at"),
+      .eq("sub_account_id", subAccountId),
   ])
 
-  if (!orgResult.data) redirect("/signup")
+  if (!subAccountResult.data) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">
+          Sub-account not found.
+        </p>
+      </div>
+    )
+  }
 
-  // Enrich members with the current user's email (can't access auth.users via RLS)
   const enrichedMembers = (membersResult.data ?? []).map((m) => ({
     ...m,
     email: m.user_id === user.id ? user.email ?? undefined : undefined,
-  })) as (Membership & { email?: string })[]
+  })) as (SubAccountMembership & { email?: string })[]
 
-  const defaultTab = tab === "organization" ? "organization" : "sub-accounts"
+  const subAccountData = subAccountResult.data as SubAccount & { settings?: Record<string, unknown> }
+  const tags = (subAccountData.settings?.tags as Array<{ id: string; name: string; color: string }>) ?? []
 
   return (
-    <SettingsPage
-      org={orgResult.data as Organization}
-      subAccounts={(subAccountsResult.data ?? []) as SubAccount[]}
+    <SubAccountSettingsPage
+      subAccount={subAccountResult.data as SubAccount}
+      stages={(stagesResult.data ?? []) as PipelineStage[]}
       members={enrichedMembers}
-      defaultTab={defaultTab}
+      tags={tags}
     />
   )
 }

@@ -121,5 +121,21 @@ export const TIMEZONES = [
   "Australia/Sydney",
 ] as const
 
+// Contact source color badges
+export const SOURCE_COLORS: Record<string, { badge: string; label: string }> = {
+  website: { badge: "bg-green-500/10 text-green-400 border-green-500/20", label: "Website" },
+  referral: { badge: "bg-blue-500/10 text-blue-400 border-blue-500/20", label: "Referral" },
+  linkedin: { badge: "bg-sky-500/10 text-sky-400 border-sky-500/20", label: "LinkedIn" },
+  facebook: { badge: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20", label: "Facebook" },
+  instagram: { badge: "bg-pink-500/10 text-pink-400 border-pink-500/20", label: "Instagram" },
+  twitter: { badge: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20", label: "Twitter" },
+  google: { badge: "bg-red-500/10 text-red-400 border-red-500/20", label: "Google" },
+  email: { badge: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20", label: "Email" },
+  phone: { badge: "bg-orange-500/10 text-orange-400 border-orange-500/20", label: "Phone" },
+  csv_import: { badge: "bg-purple-500/10 text-purple-400 border-purple-500/20", label: "CSV Import" },
+  manual: { badge: "bg-muted text-muted-foreground border-border", label: "Manual" },
+  other: { badge: "bg-muted text-muted-foreground border-border", label: "Other" },
+}
+
 export type PriorityKey = keyof typeof PRIORITY_COLORS
 export type StatusKey = keyof typeof STATUS_COLORS
