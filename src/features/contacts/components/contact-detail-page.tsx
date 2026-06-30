@@ -485,20 +485,21 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
               <Briefcase className="size-4" />
               Deals ({contact.deals.length})
             </CardTitle>
-            <Button variant="ghost" size="icon-xs" onClick={() => router.push("/pipeline")}>
-              <Plus className="size-4" />
+            <Button size="sm" onClick={() => router.push("/pipeline")}>
+              <Plus className="size-3.5" />
+              Deal
             </Button>
           </CardHeader>
           <CardContent className="pt-0">
             {contact.deals.length === 0 ? (
               <p className="text-xs text-muted-foreground py-2">No deals yet</p>
             ) : (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 {contact.deals.map((deal) => (
                   <Link
                     key={deal.id}
                     href="/pipeline"
-                    className="flex items-center justify-between gap-2 rounded-md p-2 -mx-2 hover:bg-muted/50 transition-colors"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border/60 p-3 hover:border-border hover:bg-muted/30 transition-colors"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{deal.title}</p>
@@ -523,20 +524,21 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
               <CheckSquare className="size-4" />
               Tasks ({contact.tasks.length})
             </CardTitle>
-            <Button variant="ghost" size="icon-xs" onClick={() => router.push("/tasks")}>
-              <Plus className="size-4" />
+            <Button size="sm" onClick={() => router.push("/tasks")}>
+              <Plus className="size-3.5" />
+              Task
             </Button>
           </CardHeader>
           <CardContent className="pt-0">
             {contact.tasks.length === 0 ? (
               <p className="text-xs text-muted-foreground py-2">No tasks yet</p>
             ) : (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 {contact.tasks.map((task) => (
                   <Link
                     key={task.id}
                     href="/tasks"
-                    className="flex items-center justify-between gap-2 rounded-md p-2 -mx-2 hover:bg-muted/50 transition-colors"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border/60 p-3 hover:border-border hover:bg-muted/30 transition-colors"
                   >
                     <div className="min-w-0 flex-1">
                       <p className={cn(
