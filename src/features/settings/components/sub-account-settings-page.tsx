@@ -34,7 +34,6 @@ import { cn } from "@/lib/utils"
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency"
 import { TIMEZONES, ACCENT_COLORS, TAG_COLORS } from "@/lib/constants/colors"
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
-import { ThemeToggle } from "@/components/shared/theme-toggle"
 import {
   PlusIcon,
   TrashIcon,
@@ -44,7 +43,6 @@ import {
   GripVerticalIcon,
   UsersIcon,
   TagIcon,
-  PaletteIcon,
   CheckIcon,
 } from "lucide-react"
 import {
@@ -284,22 +282,6 @@ export function SubAccountSettingsPage({
           Manage your profile, subscription, and workspace data for {subAccount.name}
         </p>
       </div>
-
-      {/* Appearance */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PaletteIcon className="size-4" />
-            Appearance
-          </CardTitle>
-          <CardDescription>
-            Light, dark, or system
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ThemeToggle subAccountId={subAccount.id} />
-        </CardContent>
-      </Card>
 
       {/* General Settings */}
       <Card>

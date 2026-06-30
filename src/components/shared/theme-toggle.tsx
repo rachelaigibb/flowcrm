@@ -3,50 +3,38 @@
 import { useTheme } from "next-themes"
 import { Sun, Moon, Monitor } from "lucide-react"
 import { useEffect, useState } from "react"
-import { updateSubAccountTheme } from "@/features/settings/actions"
+import { Button } from "@/components/ui/button"
 
-interface ThemeToggleProps {
-  subAccountId?: string
-}
-
-export function ThemeToggle({ subAccountId }: ThemeToggleProps) {
-  const { theme, setTheme } = useTheme()
+/**
+ * Compact theme toggle for the header bar.
+ * Cycles: dark → light → system → dark
+ */
+export function ThemeToggle() {
+  const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => setMounted(true), [])
 
   if (!mounted) return null
 
-  const options = [
-    { value: "light", icon: Sun, label: "Light" },
-    { value: "dark", icon: Moon, label: "Dark" },
-    { value: "system", icon: Monitor, label: "System" },
-  ] as const
-
-  function handleThemeChange(value: string) {
-    setTheme(value)
-    if (subAccountId) {
-      updateSubAccountTheme(subAccountId, value)
-    }
+  function cycleTheme() {
+    if (theme === "dark") setTheme("light")
+    else if (theme === "light") setTheme("system")
+    else setTheme("dark")
   }
 
+  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor
+  const label = theme === "light" ? "Light" : theme === "dark" ? "Dark" : "System"
+
   return (
-    <div className="flex items-center rounded-lg border p-1 gap-1">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => handleThemeChange(opt.value)}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
-            theme === opt.value
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <opt.icon className="size-4" />
-          {opt.label}
-        </button>
-      ))}
-    </div>
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      onClick={cycleTheme}
+      title={`Theme: ${label}. Click to change.`}
+      className="text-muted-foreground hover:text-foreground"
+    >
+      <Icon className="size-4" />
+    </Button>
   )
 }
