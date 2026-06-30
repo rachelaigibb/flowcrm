@@ -36,27 +36,14 @@ import {
 } from "lucide-react"
 import { updateOrganization, createSubAccount } from "../actions"
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency"
+import { TIMEZONES } from "@/lib/constants/colors"
 import type { Organization, SubAccount, Membership } from "@/types/database"
-
-const TIMEZONES = [
-  "America/Vancouver",
-  "America/Toronto",
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "Asia/Dubai",
-  "Europe/London",
-  "Europe/Paris",
-  "Asia/Singapore",
-  "Asia/Tokyo",
-  "Australia/Sydney",
-]
 
 interface SettingsPageProps {
   org: Organization
   subAccounts: SubAccount[]
   members: (Membership & { email?: string })[]
+  defaultTab?: "sub-accounts" | "organization"
 }
 
 function OrgSettings({
@@ -346,20 +333,20 @@ function SubAccountsTab({ subAccounts }: { subAccounts: SubAccount[] }) {
   )
 }
 
-export function SettingsPage({ org, subAccounts, members }: SettingsPageProps) {
+export function SettingsPage({ org, subAccounts, members, defaultTab = "sub-accounts" }: SettingsPageProps) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="text-sm text-muted-foreground">
           Manage your organization and sub-accounts
         </p>
       </div>
 
-      <Tabs defaultValue="organization">
+      <Tabs defaultValue={defaultTab}>
         <TabsList variant="line">
-          <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="sub-accounts">Sub-accounts</TabsTrigger>
+          <TabsTrigger value="organization">Organization</TabsTrigger>
         </TabsList>
 
         <TabsContent value="organization" className="mt-4">

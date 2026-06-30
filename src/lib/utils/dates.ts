@@ -21,3 +21,19 @@ export function formatDateShort(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date
   return format(d, "MMM d, yyyy")
 }
+
+/**
+ * Convert any date string (ISO timestamp or date-only) to YYYY-MM-DD for <input type="date">.
+ * Returns empty string if null/undefined.
+ */
+export function toDateInputValue(date: string | null | undefined): string {
+  if (!date) return ""
+  // If already YYYY-MM-DD, return as-is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date
+  // Parse and format
+  try {
+    return format(new Date(date), "yyyy-MM-dd")
+  } catch {
+    return ""
+  }
+}

@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 
+// ── Tag type for settings.tags JSONB array ──
+interface SettingsTag {
+  id: string
+  name: string
+  color: string
+}
+
 // ── Organization ──
 
 export async function updateOrganization(data: {
@@ -233,5 +240,118 @@ export async function deletePipelineStage(id: string) {
     revalidatePath(`/settings/sub-accounts/${stage.sub_account_id}`)
   }
 
+  return { success: true }
+}
+
+// ── Tags (stored in sub_account settings JSONB) ──
+
+async function getSubAccountSettings(supabase: Awaited<ReturnType<typeof getUserContext>>["supabase"], id: string, orgId: string) {
+  const { data, error } = await supabase
+    .from("sub_accounts")
+    .select("settings")
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .single()
+
+  if (error) return { error: error.message, settings: null }
+  const settings = (data?.settings as Record<string, unknown>) ?? {}
+  return { error: null, settings }
+}
+
+export async function createTag(
+  subAccountId: string,
+  name: string,
+  color: string
+) {
+  const { orgId, orgRole, supabase } = await getUserContext()
+
+  if (orgRole !== "owner" && orgRole !== "admin") {
+    return { error: "Only admins can manage tags" }
+  }
+
+  const { settings, error: fetchError } = await getSubAccountSettings(supabase, subAccountId, orgId)
+  if (fetchError) return { error: fetchError }
+
+  const existingTags = (settings!.tags as SettingsTag[] | undefined) ?? []
+
+  const newTag: SettingsTag = {
+    id: crypto.randomUUID(),
+    name,
+    color,
+  }
+
+  const { error } = await supabase
+    .from("sub_accounts")
+    .update({
+      settings: { ...settings!, tags: [...existingTags, newTag] },
+    })
+    .eq("id", subAccountId)
+    .eq("org_id", orgId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/settings/sub-accounts/${subAccountId}`)
+  return { data: newTag }
+}
+
+export async function updateTag(
+  subAccountId: string,
+  tagId: string,
+  data: { name?: string; color?: string }
+) {
+  const { orgId, orgRole, supabase } = await getUserContext()
+
+  if (orgRole !== "owner" && orgRole !== "admin") {
+    return { error: "Only admins can manage tags" }
+  }
+
+  const { settings, error: fetchError } = await getSubAccountSettings(supabase, subAccountId, orgId)
+  if (fetchError) return { error: fetchError }
+
+  const existingTags = (settings!.tags as SettingsTag[] | undefined) ?? []
+  const tagIndex = existingTags.findIndex((t) => t.id === tagId)
+
+  if (tagIndex === -1) return { error: "Tag not found" }
+
+  existingTags[tagIndex] = { ...existingTags[tagIndex], ...data }
+
+  const { error } = await supabase
+    .from("sub_accounts")
+    .update({
+      settings: { ...settings!, tags: existingTags },
+    })
+    .eq("id", subAccountId)
+    .eq("org_id", orgId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/settings/sub-accounts/${subAccountId}`)
+  return { success: true }
+}
+
+export async function deleteTag(subAccountId: string, tagId: string) {
+  const { orgId, orgRole, supabase } = await getUserContext()
+
+  if (orgRole !== "owner" && orgRole !== "admin") {
+    return { error: "Only admins can manage tags" }
+  }
+
+  const { settings, error: fetchError } = await getSubAccountSettings(supabase, subAccountId, orgId)
+  if (fetchError) return { error: fetchError }
+
+  const existingTags = (settings!.tags as SettingsTag[] | undefined) ?? []
+  const filtered = existingTags.filter((t) => t.id !== tagId)
+
+  const { error } = await supabase
+    .from("sub_accounts")
+    .update({
+      settings: { ...settings!, tags: filtered },
+    })
+    .eq("id", subAccountId)
+    .eq("org_id", orgId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/settings/sub-accounts/${subAccountId}`)
   return { success: true }
 }

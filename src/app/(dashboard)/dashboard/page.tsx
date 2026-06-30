@@ -1,14 +1,18 @@
+import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { getSubAccountId } from "@/lib/supabase/get-sub-account"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils/currency"
+import { ACTIVITY_TYPE_COLORS } from "@/lib/constants/colors"
+import { cn } from "@/lib/utils"
 import {
   Users,
   DollarSign,
   Trophy,
   AlertTriangle,
   ActivityIcon,
+  ArrowRight,
 } from "lucide-react"
 import type { Activity, PipelineStage } from "@/types/database"
 
@@ -146,24 +150,28 @@ export default async function DashboardPage() {
       value: totalContacts.toLocaleString(),
       icon: Users,
       description: "All contacts in this account",
+      href: "/contacts",
     },
     {
       title: "Open Deals",
       value: `${openDealsCount}`,
       icon: DollarSign,
       description: formatCurrency(openDealsValue, currency) + " total value",
+      href: "/pipeline",
     },
     {
       title: "Won This Month",
       value: `${wonDealsCount}`,
       icon: Trophy,
       description: formatCurrency(wonDealsValue, currency) + " closed",
+      href: "/pipeline",
     },
     {
       title: "Overdue Tasks",
       value: `${overdueTasksCount}`,
       icon: AlertTriangle,
       description: overdueTasksCount > 0 ? "Needs attention" : "All caught up",
+      href: "/tasks",
     },
   ]
 
@@ -179,28 +187,30 @@ export default async function DashboardPage() {
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
+          <Link key={stat.title} href={stat.href}>
+            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                <stat.icon className="size-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stat.description}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Activity */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-sm">
               <ActivityIcon className="size-4" />
               Recent Activity
             </CardTitle>
@@ -245,11 +255,14 @@ export default async function DashboardPage() {
 
         {/* Pipeline Overview */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-sm">
               <DollarSign className="size-4" />
               Pipeline Overview
             </CardTitle>
+            <Link href="/pipeline" className="text-xs text-primary hover:underline">
+              View pipeline <ArrowRight className="inline size-3" />
+            </Link>
           </CardHeader>
           <CardContent>
             {pipelineStages.length === 0 ? (

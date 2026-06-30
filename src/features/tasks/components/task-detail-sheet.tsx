@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useTransition } from "react"
+import { useState, useEffect, useTransition, useCallback } from "react"
+import Link from "next/link"
 import {
   Sheet,
   SheetContent,
@@ -12,7 +13,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
   Select,
@@ -21,20 +21,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { formatSmartDate } from "@/lib/utils/dates"
-import { updateTask, deleteTask, toggleTaskStatus } from "../actions"
+import { toDateInputValue } from "@/lib/utils/dates"
+import { PRIORITY_COLORS, STATUS_COLORS } from "@/lib/constants/colors"
+import { PriorityBadge, StatusBadge } from "@/components/shared/status-badges"
+import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
+import { NotesSection } from "@/components/shared/notes-section"
+import { ActivityLog } from "@/components/shared/activity-log"
+import { updateTask, deleteTask, toggleTaskStatus, addTaskNote, fetchTaskActivities } from "../actions"
 import type { TaskWithRelations, UpdateTaskInput } from "../types"
-import type { DealPriority } from "@/types/database"
+import type { DealPriority, Activity } from "@/types/database"
+import type { PriorityKey } from "@/lib/constants/colors"
 import {
   Trash2,
   Pencil,
@@ -68,18 +66,6 @@ interface TaskDetailSheetProps {
   onTaskUpdated: () => void
 }
 
-const PRIORITY_STYLES: Record<string, { className: string; label: string }> = {
-  low: { className: "bg-green-500/10 text-green-400 border-green-500/20", label: "Low" },
-  medium: { className: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20", label: "Medium" },
-  high: { className: "bg-red-500/10 text-red-400 border-red-500/20", label: "High" },
-}
-
-const STATUS_STYLES: Record<string, { className: string; label: string }> = {
-  pending: { className: "bg-blue-500/10 text-blue-600 dark:text-blue-400", label: "Pending" },
-  completed: { className: "bg-green-500/10 text-green-600 dark:text-green-400", label: "Completed" },
-  cancelled: { className: "bg-muted text-muted-foreground", label: "Cancelled" },
-}
-
 export function TaskDetailSheet({
   task,
   contacts,
@@ -92,13 +78,22 @@ export function TaskDetailSheet({
   const [editData, setEditData] = useState<UpdateTaskInput>({})
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [activities, setActivities] = useState<Activity[]>([])
+
+  const loadActivities = useCallback(async (taskId: string) => {
+    const result = await fetchTaskActivities(taskId)
+    if (result.data) {
+      setActivities(result.data as Activity[])
+    }
+  }, [])
 
   useEffect(() => {
     if (task && open) {
       setIsEditing(false)
       setEditData({})
+      loadActivities(task.id)
     }
-  }, [task, open])
+  }, [task, open, loadActivities])
 
   if (!task) return null
 
@@ -110,15 +105,12 @@ export function TaskDetailSheet({
 
   const dealTitle = currentTask.deal?.title ?? null
 
-  const priorityStyle = PRIORITY_STYLES[currentTask.priority] ?? PRIORITY_STYLES.low
-  const statusStyle = STATUS_STYLES[currentTask.status] ?? STATUS_STYLES.pending
-
   function startEditing() {
     setIsEditing(true)
     setEditData({
       title: currentTask.title,
       description: currentTask.description,
-      due_date: currentTask.due_date,
+      due_date: toDateInputValue(currentTask.due_date),
       priority: currentTask.priority,
       contact_id: currentTask.contact_id,
       deal_id: currentTask.deal_id,
@@ -173,12 +165,21 @@ export function TaskDetailSheet({
           return
         }
         toast.success("Task deleted")
+        setShowDeleteConfirm(false)
         onTaskUpdated()
         onOpenChange(false)
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to delete task")
       }
     })
+  }
+
+  async function handleAddNote(content: string) {
+    const result = await addTaskNote(currentTask.id, content)
+    if (!result.error) {
+      await loadActivities(currentTask.id)
+    }
+    return result
   }
 
   function contactLabel(id: string | null | undefined): string {
@@ -194,6 +195,9 @@ export function TaskDetailSheet({
     return d?.title ?? "Select deal"
   }
 
+  // Separate notes from other activities
+  const notes = activities.filter((a) => a.type === "note")
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
@@ -203,7 +207,7 @@ export function TaskDetailSheet({
               <div className="min-w-0">
                 <SheetTitle className="text-lg">{currentTask.title}</SheetTitle>
                 <SheetDescription className="mt-1">
-                  {contactName ?? "No contact"} &middot; {statusStyle.label}
+                  {contactName ?? "No contact"} &middot; <StatusBadge status={currentTask.status} className="inline-flex" />
                 </SheetDescription>
               </div>
             </div>
@@ -307,12 +311,20 @@ export function TaskDetailSheet({
                         }
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue>
+                            {editData.priority ? PRIORITY_COLORS[editData.priority as PriorityKey]?.label ?? "Select" : "Select"}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="low">
+                            <span className={PRIORITY_COLORS.low.text}>Low</span>
+                          </SelectItem>
+                          <SelectItem value="medium">
+                            <span className={PRIORITY_COLORS.medium.text}>Medium</span>
+                          </SelectItem>
+                          <SelectItem value="high">
+                            <span className={PRIORITY_COLORS.high.text}>High</span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -374,15 +386,15 @@ export function TaskDetailSheet({
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                   <div>
                     <p className="text-muted-foreground">Status</p>
-                    <Badge className={cn("mt-0.5", statusStyle.className)}>
-                      {statusStyle.label}
-                    </Badge>
+                    <div className="mt-0.5">
+                      <StatusBadge status={currentTask.status} />
+                    </div>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Priority</p>
-                    <Badge className={cn("mt-0.5 border", priorityStyle.className)} variant="outline">
-                      {priorityStyle.label}
-                    </Badge>
+                    <div className="mt-0.5">
+                      <PriorityBadge priority={currentTask.priority} />
+                    </div>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Due Date</p>
@@ -399,17 +411,37 @@ export function TaskDetailSheet({
                   </div>
                   <div>
                     <p className="text-muted-foreground">Contact</p>
-                    <p className="font-medium flex items-center gap-1">
-                      <UserIcon className="size-3 text-muted-foreground" />
-                      {contactName ?? "None"}
-                    </p>
+                    {contactName && currentTask.contact ? (
+                      <Link
+                        href={`/contacts/${currentTask.contact.id}`}
+                        className="font-medium flex items-center gap-1 text-primary hover:underline"
+                      >
+                        <UserIcon className="size-3" />
+                        {contactName}
+                      </Link>
+                    ) : (
+                      <p className="font-medium flex items-center gap-1">
+                        <UserIcon className="size-3 text-muted-foreground" />
+                        None
+                      </p>
+                    )}
                   </div>
                   <div className="col-span-2">
                     <p className="text-muted-foreground">Deal</p>
-                    <p className="font-medium flex items-center gap-1">
-                      <BriefcaseIcon className="size-3 text-muted-foreground" />
-                      {dealTitle ?? "None"}
-                    </p>
+                    {dealTitle && currentTask.deal ? (
+                      <Link
+                        href="/pipeline"
+                        className="font-medium flex items-center gap-1 text-primary hover:underline"
+                      >
+                        <BriefcaseIcon className="size-3" />
+                        {dealTitle}
+                      </Link>
+                    ) : (
+                      <p className="font-medium flex items-center gap-1">
+                        <BriefcaseIcon className="size-3 text-muted-foreground" />
+                        None
+                      </p>
+                    )}
                   </div>
                   {currentTask.description && (
                     <div className="col-span-2">
@@ -427,12 +459,26 @@ export function TaskDetailSheet({
 
             <Separator />
 
-            {/* Delete button at the bottom, separated */}
-            <div className="pt-2">
+            {/* Notes section */}
+            <NotesSection
+              notes={notes}
+              onAddNote={handleAddNote}
+            />
+
+            {/* Activity log */}
+            <ActivityLog
+              activities={activities}
+              defaultOpen={false}
+            />
+
+            <Separator />
+
+            {/* Delete button — right-aligned, ghost destructive */}
+            <div className="flex justify-end pt-2">
               <Button
-                variant="destructive"
+                variant="ghost"
                 size="sm"
-                className="w-full"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 <Trash2 className="size-3.5" data-icon="inline-start" />
@@ -443,30 +489,14 @@ export function TaskDetailSheet({
         </SheetContent>
       </Sheet>
 
-      {/* Delete confirmation dialog */}
-      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Task</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete &ldquo;{currentTask.title}&rdquo;? This
-              action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              Cancel
-            </DialogClose>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isPending}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Task"
+        description={`Are you sure you want to delete "${currentTask.title}"? This action cannot be undone.`}
+        onConfirm={handleDelete}
+        isPending={isPending}
+      />
     </>
   )
 }

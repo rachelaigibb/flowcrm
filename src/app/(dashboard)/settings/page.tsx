@@ -7,7 +7,12 @@ export const metadata = {
   title: "Settings | FlowCRM",
 }
 
-export default async function SettingsRoute() {
+export default async function SettingsRoute({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
+  const { tab } = await searchParams
   const supabase = await createClient()
 
   const {
@@ -53,11 +58,14 @@ export default async function SettingsRoute() {
     email: m.user_id === user.id ? user.email ?? undefined : undefined,
   })) as (Membership & { email?: string })[]
 
+  const defaultTab = tab === "organization" ? "organization" : "sub-accounts"
+
   return (
     <SettingsPage
       org={orgResult.data as Organization}
       subAccounts={(subAccountsResult.data ?? []) as SubAccount[]}
       members={enrichedMembers}
+      defaultTab={defaultTab}
     />
   )
 }

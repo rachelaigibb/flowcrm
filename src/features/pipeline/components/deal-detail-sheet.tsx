@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useTransition, useCallback } from "react"
+import { useState, useEffect, useTransition, useCallback, useMemo } from "react"
 import {
   Sheet,
   SheetContent,
@@ -11,8 +11,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
   Select,
@@ -21,18 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog"
-import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/currency"
-import { formatSmartDate } from "@/lib/utils/dates"
+import { toDateInputValue } from "@/lib/utils/dates"
+import { PriorityBadge, StatusBadge } from "@/components/shared/status-badges"
+import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
+import { NotesSection } from "@/components/shared/notes-section"
+import { ActivityLog } from "@/components/shared/activity-log"
 import {
   updateDeal,
   updateDealStatus,
@@ -49,12 +41,9 @@ import {
   Pencil,
   Save,
   X,
-  MessageSquarePlus,
-  ArrowRight,
-  StickyNote,
-  Zap,
 } from "lucide-react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 interface DealDetailSheetProps {
   deal: DealWithContact | null
@@ -64,29 +53,6 @@ interface DealDetailSheetProps {
   onDealUpdated: () => void
 }
 
-const PRIORITY_STYLES: Record<string, { className: string; label: string }> = {
-  low: { className: "bg-muted text-muted-foreground", label: "Low" },
-  medium: { className: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400", label: "Medium" },
-  high: { className: "bg-destructive/10 text-destructive", label: "High" },
-}
-
-const STATUS_STYLES: Record<string, { className: string; label: string }> = {
-  open: { className: "bg-blue-500/10 text-blue-600 dark:text-blue-400", label: "Open" },
-  won: { className: "bg-green-500/10 text-green-600 dark:text-green-400", label: "Won" },
-  lost: { className: "bg-destructive/10 text-destructive", label: "Lost" },
-}
-
-function ActivityIcon({ type }: { type: string }) {
-  switch (type) {
-    case "note":
-      return <StickyNote className="size-3.5" />
-    case "status_change":
-      return <ArrowRight className="size-3.5" />
-    default:
-      return <Zap className="size-3.5" />
-  }
-}
-
 export function DealDetailSheet({
   deal,
   stages,
@@ -94,9 +60,9 @@ export function DealDetailSheet({
   onOpenChange,
   onDealUpdated,
 }: DealDetailSheetProps) {
+  const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState<UpdateDealInput>({})
-  const [noteContent, setNoteContent] = useState("")
   const [activities, setActivities] = useState<Activity[]>([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -118,14 +84,22 @@ export function DealDetailSheet({
       loadActivities()
       setIsEditing(false)
       setEditData({})
-      setNoteContent("")
     }
   }, [deal, open, loadActivities])
+
+  // Filter notes and non-note activities
+  const notes = useMemo(
+    () => activities.filter((a) => a.type === "note"),
+    [activities]
+  )
+  const nonNoteActivities = useMemo(
+    () => activities.filter((a) => a.type !== "note"),
+    [activities]
+  )
 
   if (!deal) return null
 
   // After the null check, deal is guaranteed non-null for the rest of this render.
-  // Capture into a const that TS can narrow for closures.
   const currentDeal: DealWithContact = deal
 
   const contactName = currentDeal.contact
@@ -133,8 +107,6 @@ export function DealDetailSheet({
     : null
 
   const stageName = stages.find((s) => s.id === currentDeal.stage_id)?.name ?? "Unknown"
-  const priorityStyle = PRIORITY_STYLES[currentDeal.priority] ?? PRIORITY_STYLES.low
-  const statusStyle = STATUS_STYLES[currentDeal.status] ?? STATUS_STYLES.open
 
   function startEditing() {
     setIsEditing(true)
@@ -192,18 +164,14 @@ export function DealDetailSheet({
     })
   }
 
-  function handleAddNote() {
-    if (!noteContent.trim()) return
-    startTransition(async () => {
-      try {
-        await addDealNote(currentDeal.id, noteContent.trim())
-        toast.success("Note added")
-        setNoteContent("")
-        loadActivities()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to add note")
-      }
-    })
+  async function handleAddNote(content: string): Promise<{ error?: string }> {
+    try {
+      await addDealNote(currentDeal.id, content)
+      loadActivities()
+      return {}
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Failed to add note" }
+    }
   }
 
   return (
@@ -215,7 +183,23 @@ export function DealDetailSheet({
               <div className="min-w-0">
                 <SheetTitle className="text-lg">{currentDeal.title}</SheetTitle>
                 <SheetDescription className="mt-1">
-                  {contactName ?? "No contact"} &middot; {stageName}
+                  {contactName ? (
+                    <>
+                      <span
+                        className="text-primary cursor-pointer hover:underline"
+                        onClick={() => {
+                          if (currentDeal.contact) {
+                            router.push(`/contacts/${currentDeal.contact.id}`)
+                          }
+                        }}
+                      >
+                        {contactName}
+                      </span>
+                      {" "}&middot; {stageName}
+                    </>
+                  ) : (
+                    <>No contact &middot; {stageName}</>
+                  )}
                 </SheetDescription>
               </div>
             </div>
@@ -368,7 +352,7 @@ export function DealDetailSheet({
                       <Label>Expected Close</Label>
                       <Input
                         type="date"
-                        value={editData.expected_close ?? ""}
+                        value={toDateInputValue(editData.expected_close)}
                         onChange={(e) =>
                           setEditData((prev) => ({
                             ...prev,
@@ -387,15 +371,11 @@ export function DealDetailSheet({
                   </div>
                   <div>
                     <p className="text-muted-foreground">Status</p>
-                    <Badge className={cn("mt-0.5", statusStyle.className)}>
-                      {statusStyle.label}
-                    </Badge>
+                    <StatusBadge status={currentDeal.status} className="mt-0.5" />
                   </div>
                   <div>
                     <p className="text-muted-foreground">Priority</p>
-                    <Badge className={cn("mt-0.5", priorityStyle.className)}>
-                      {priorityStyle.label}
-                    </Badge>
+                    <PriorityBadge priority={currentDeal.priority} className="mt-0.5" />
                   </div>
                   <div>
                     <p className="text-muted-foreground">Stage</p>
@@ -403,7 +383,16 @@ export function DealDetailSheet({
                   </div>
                   <div>
                     <p className="text-muted-foreground">Contact</p>
-                    <p className="font-medium">{contactName ?? "None"}</p>
+                    {contactName && currentDeal.contact ? (
+                      <span
+                        className="font-medium text-primary cursor-pointer hover:underline"
+                        onClick={() => router.push(`/contacts/${currentDeal.contact!.id}`)}
+                      >
+                        {contactName}
+                      </span>
+                    ) : (
+                      <p className="font-medium">None</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-muted-foreground">Expected Close</p>
@@ -423,58 +412,17 @@ export function DealDetailSheet({
 
             <Separator />
 
-            {/* Add Note */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <MessageSquarePlus className="size-4 text-muted-foreground" />
-                <h4 className="text-sm font-medium">Add Note</h4>
-              </div>
-              <Textarea
-                placeholder="Write a note..."
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                rows={3}
-              />
-              <Button
-                size="sm"
-                onClick={handleAddNote}
-                disabled={isPending || !noteContent.trim()}
-              >
-                Add Note
-              </Button>
-            </div>
+            {/* Notes section */}
+            <NotesSection notes={notes} onAddNote={handleAddNote} />
 
             <Separator />
 
-            {/* Activity Timeline */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Activity</h4>
-              {activities.length > 0 ? (
-                <div className="space-y-3">
-                  {activities.map((activity) => (
-                    <div key={activity.id} className="flex gap-3">
-                      <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                        <ActivityIcon type={activity.type} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-foreground">
-                          {activity.content}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatSmartDate(activity.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">No activity yet</p>
-              )}
-            </div>
+            {/* Activity timeline (collapsed by default) */}
+            <ActivityLog activities={nonNoteActivities} defaultOpen={false} />
 
             <Separator />
 
-            {/* Danger zone — intentionally at the bottom, away from Save */}
+            {/* Danger zone -- intentionally at the bottom, away from Save */}
             <div className="flex justify-end pt-2">
               <Button
                 variant="ghost"
@@ -491,29 +439,14 @@ export function DealDetailSheet({
       </Sheet>
 
       {/* Delete confirmation dialog */}
-      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Deal</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete &ldquo;{currentDeal.title}&rdquo;? This
-              action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              Cancel
-            </DialogClose>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isPending}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Deal"
+        description={`Are you sure you want to delete "${currentDeal.title}"? This action cannot be undone.`}
+        onConfirm={handleDelete}
+        isPending={isPending}
+      />
     </>
   )
 }

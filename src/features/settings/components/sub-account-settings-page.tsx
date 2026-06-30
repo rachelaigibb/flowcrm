@@ -25,6 +25,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -32,14 +33,18 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency"
+import { TIMEZONES, ACCENT_COLORS, TAG_COLORS } from "@/lib/constants/colors"
+import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
 import {
   ArrowLeftIcon,
   PlusIcon,
   TrashIcon,
+  PencilIcon,
   ChevronUpIcon,
   ChevronDownIcon,
   GripVerticalIcon,
   UsersIcon,
+  TagIcon,
 } from "lucide-react"
 import {
   updateSubAccount,
@@ -47,50 +52,30 @@ import {
   updatePipelineStage,
   reorderPipelineStages,
   deletePipelineStage,
+  createTag,
+  updateTag,
+  deleteTag,
 } from "@/features/settings/actions"
 import type { SubAccount, PipelineStage } from "@/types/database"
 
-const TIMEZONES = [
-  "America/Vancouver",
-  "America/Toronto",
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "Asia/Dubai",
-  "Europe/London",
-  "Europe/Paris",
-  "Asia/Singapore",
-  "Asia/Tokyo",
-  "Australia/Sydney",
-]
-
-const STAGE_COLORS = [
-  "#6366f1",
-  "#8b5cf6",
-  "#a855f7",
-  "#ec4899",
-  "#ef4444",
-  "#f97316",
-  "#f59e0b",
-  "#22c55e",
-  "#14b8a6",
-  "#06b6d4",
-  "#0ea5e9",
-  "#3b82f6",
-  "#64748b",
-]
+interface Tag {
+  id: string
+  name: string
+  color: string
+}
 
 interface SubAccountSettingsPageProps {
   subAccount: SubAccount
   stages: PipelineStage[]
   members: Array<{ id: string; user_id: string; role: string; email?: string }>
+  tags: Tag[]
 }
 
 export function SubAccountSettingsPage({
   subAccount,
   stages: initialStages,
   members,
+  tags: initialTags,
 }: SubAccountSettingsPageProps) {
   const [name, setName] = React.useState(subAccount.name)
   const [currency, setCurrency] = React.useState(subAccount.currency)
@@ -106,10 +91,33 @@ export function SubAccountSettingsPage({
   const [newStageColor, setNewStageColor] = React.useState("#6366f1")
   const [addingStage, setAddingStage] = React.useState(false)
 
+  // Tag state
+  const [tags, setTags] = React.useState(initialTags)
+  const [addTagOpen, setAddTagOpen] = React.useState(false)
+  const [newTagName, setNewTagName] = React.useState("")
+  const [newTagColor, setNewTagColor] = React.useState<string>(TAG_COLORS[8].value) // indigo default
+  const [addingTag, setAddingTag] = React.useState(false)
+  const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
+  const [editTagName, setEditTagName] = React.useState("")
+  const [editTagColor, setEditTagColor] = React.useState("")
+  const [editTagOpen, setEditTagOpen] = React.useState(false)
+  const [savingTag, setSavingTag] = React.useState(false)
+
+  // Delete confirmation state (shared for stages and tags)
+  const [deleteStageConfirm, setDeleteStageConfirm] = React.useState<string | null>(null)
+  const [deletingStage, setDeletingStage] = React.useState(false)
+  const [deleteTagConfirm, setDeleteTagConfirm] = React.useState<string | null>(null)
+  const [deletingTag, setDeletingTag] = React.useState(false)
+
   // Sync stages from server on re-render
   React.useEffect(() => {
     setStages(initialStages)
   }, [initialStages])
+
+  // Sync tags from server on re-render
+  React.useEffect(() => {
+    setTags(initialTags)
+  }, [initialTags])
 
   async function handleSave() {
     if (!name.trim()) {
@@ -180,7 +188,10 @@ export function SubAccountSettingsPage({
   }
 
   async function handleDeleteStage(id: string) {
+    setDeletingStage(true)
     const result = await deletePipelineStage(id)
+    setDeletingStage(false)
+    setDeleteStageConfirm(null)
     if (result.error) {
       toast.error(result.error)
     } else {
@@ -207,6 +218,61 @@ export function SubAccountSettingsPage({
     }
   }
 
+  // Tag handlers
+  async function handleAddTag() {
+    if (!newTagName.trim()) {
+      toast.error("Tag name is required")
+      return
+    }
+    setAddingTag(true)
+    const result = await createTag(subAccount.id, newTagName.trim(), newTagColor)
+    setAddingTag(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Tag created")
+      setNewTagName("")
+      setNewTagColor(TAG_COLORS[8].value)
+      setAddTagOpen(false)
+    }
+  }
+
+  async function handleEditTag() {
+    if (!editingTag || !editTagName.trim()) return
+    setSavingTag(true)
+    const result = await updateTag(subAccount.id, editingTag.id, {
+      name: editTagName.trim(),
+      color: editTagColor,
+    })
+    setSavingTag(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Tag updated")
+      setEditTagOpen(false)
+      setEditingTag(null)
+    }
+  }
+
+  async function handleDeleteTag(id: string) {
+    setDeletingTag(true)
+    const result = await deleteTag(subAccount.id, id)
+    setDeletingTag(false)
+    setDeleteTagConfirm(null)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Tag deleted")
+    }
+  }
+
+  function openEditTag(tag: Tag) {
+    setEditingTag(tag)
+    setEditTagName(tag.name)
+    setEditTagColor(tag.color)
+    setEditTagOpen(true)
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
@@ -216,7 +282,7 @@ export function SubAccountSettingsPage({
           </Button>
         </Link>
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {subAccount.name}
           </h1>
           <p className="text-sm text-muted-foreground">Sub-account settings</p>
@@ -282,7 +348,7 @@ export function SubAccountSettingsPage({
               Sets the accent color for this sub-account in the sidebar and header
             </p>
             <div className="flex flex-wrap gap-2 mt-1">
-              {STAGE_COLORS.map((color) => (
+              {ACCENT_COLORS.map((color) => (
                 <button
                   key={color}
                   type="button"
@@ -340,7 +406,7 @@ export function SubAccountSettingsPage({
                 <div className="flex flex-col gap-1.5">
                   <Label>Color</Label>
                   <div className="flex flex-wrap gap-2">
-                    {STAGE_COLORS.map((color) => (
+                    {ACCENT_COLORS.map((color) => (
                       <button
                         key={color}
                         type="button"
@@ -379,7 +445,7 @@ export function SubAccountSettingsPage({
                   index={index}
                   total={stages.length}
                   onMove={handleMoveStage}
-                  onDelete={handleDeleteStage}
+                  onDelete={(id) => setDeleteStageConfirm(id)}
                   onUpdateName={handleUpdateStageName}
                   onUpdateColor={handleUpdateStageColor}
                 />
@@ -388,6 +454,191 @@ export function SubAccountSettingsPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Tags */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <CardTitle className="flex items-center gap-2">
+              <TagIcon className="size-4" />
+              Tags
+            </CardTitle>
+            <CardDescription>
+              Organize contacts and deals with colored tags
+            </CardDescription>
+          </div>
+          <Dialog open={addTagOpen} onOpenChange={setAddTagOpen}>
+            <DialogTrigger
+              render={
+                <Button size="sm" variant="outline">
+                  <PlusIcon className="size-4" />
+                  Add Tag
+                </Button>
+              }
+            />
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Tag</DialogTitle>
+                <DialogDescription>
+                  Create a new tag for organizing contacts and deals
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="tag-name">Name</Label>
+                  <Input
+                    id="tag-name"
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    placeholder="e.g. VIP, Hot Lead, Follow Up"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Color</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {TAG_COLORS.map((tc) => (
+                      <button
+                        key={tc.value}
+                        type="button"
+                        onClick={() => setNewTagColor(tc.value)}
+                        className={cn(
+                          "size-7 rounded-md border-2 transition-all",
+                          newTagColor === tc.value
+                            ? "border-foreground scale-110"
+                            : "border-transparent hover:border-border"
+                        )}
+                        style={{ backgroundColor: tc.value }}
+                        title={tc.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleAddTag} disabled={addingTag}>
+                  {addingTag ? "Adding..." : "Add Tag"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {tags.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No tags configured. Add your first tag above.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <div
+                  key={tag.id}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/50 px-3 py-1 text-sm group"
+                >
+                  <div
+                    className="size-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  <span className="font-medium">{tag.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => openEditTag(tag)}
+                    className="size-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                    title="Edit tag"
+                  >
+                    <PencilIcon className="size-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTagConfirm(tag.id)}
+                    className="size-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                    title="Delete tag"
+                  >
+                    <TrashIcon className="size-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Tag Dialog */}
+      <Dialog open={editTagOpen} onOpenChange={(open) => {
+        setEditTagOpen(open)
+        if (!open) setEditingTag(null)
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Tag</DialogTitle>
+            <DialogDescription>
+              Update the tag name or color
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-tag-name">Name</Label>
+              <Input
+                id="edit-tag-name"
+                value={editTagName}
+                onChange={(e) => setEditTagName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Color</Label>
+              <div className="flex flex-wrap gap-2">
+                {TAG_COLORS.map((tc) => (
+                  <button
+                    key={tc.value}
+                    type="button"
+                    onClick={() => setEditTagColor(tc.value)}
+                    className={cn(
+                      "size-7 rounded-md border-2 transition-all",
+                      editTagColor === tc.value
+                        ? "border-foreground scale-110"
+                        : "border-transparent hover:border-border"
+                    )}
+                    style={{ backgroundColor: tc.value }}
+                    title={tc.name}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleEditTag} disabled={savingTag}>
+              {savingTag ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Stage Confirmation */}
+      <DeleteConfirmDialog
+        open={deleteStageConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteStageConfirm(null)
+        }}
+        title="Delete Pipeline Stage"
+        description="Are you sure you want to delete this pipeline stage? This action cannot be undone. Stages with existing deals cannot be deleted."
+        onConfirm={() => {
+          if (deleteStageConfirm) handleDeleteStage(deleteStageConfirm)
+        }}
+        isPending={deletingStage}
+      />
+
+      {/* Delete Tag Confirmation */}
+      <DeleteConfirmDialog
+        open={deleteTagConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTagConfirm(null)
+        }}
+        title="Delete Tag"
+        description="Are you sure you want to delete this tag? It will be removed from all contacts and deals that use it."
+        onConfirm={() => {
+          if (deleteTagConfirm) handleDeleteTag(deleteTagConfirm)
+        }}
+        isPending={deletingTag}
+      />
 
       {/* Members */}
       <Card>
@@ -483,7 +734,7 @@ function StageRow({
 
       {colorOpen ? (
         <div className="flex flex-wrap gap-1.5 flex-1">
-          {STAGE_COLORS.map((color) => (
+          {ACCENT_COLORS.map((color) => (
             <button
               key={color}
               type="button"

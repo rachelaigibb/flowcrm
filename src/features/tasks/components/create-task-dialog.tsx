@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/command"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
+import { PRIORITY_COLORS } from "@/lib/constants/colors"
 import { CalendarIcon, PlusIcon, ChevronsUpDownIcon, CheckIcon } from "lucide-react"
 import { createTask } from "../actions"
 import type { DealPriority } from "@/types/database"
@@ -94,7 +95,7 @@ export function CreateTaskDialog({
     const result = await createTask({
       title: title.trim(),
       description: description.trim() || null,
-      due_date: dueDate ? dueDate.toISOString() : null,
+      due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : null,
       priority,
       contact_id: contactId || null,
       deal_id: dealId || null,
@@ -187,12 +188,20 @@ export function CreateTaskDialog({
               <Label>Priority</Label>
               <Select value={priority} onValueChange={(v) => setPriority(v as DealPriority)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {PRIORITY_COLORS[priority]?.label ?? "Select"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="low">
+                    <span className={PRIORITY_COLORS.low.text}>Low</span>
+                  </SelectItem>
+                  <SelectItem value="medium">
+                    <span className={PRIORITY_COLORS.medium.text}>Medium</span>
+                  </SelectItem>
+                  <SelectItem value="high">
+                    <span className={PRIORITY_COLORS.high.text}>High</span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

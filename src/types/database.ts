@@ -108,6 +108,7 @@ export interface Activity {
   sub_account_id: string
   contact_id: string | null
   deal_id: string | null
+  task_id: string | null
   user_id: string | null
   type: ActivityType
   content: string | null

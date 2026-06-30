@@ -3,17 +3,13 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
+import { PRIORITY_COLORS, STATUS_COLORS } from "@/lib/constants/colors"
+import { PriorityBadge, StatusBadge } from "@/components/shared/status-badges"
 import { formatCurrencyCompact } from "@/lib/utils/currency"
 import { formatDateShort } from "@/lib/utils/dates"
 import { GripVertical, Calendar, User } from "lucide-react"
+import { useRouter } from "next/navigation"
 import type { DealWithContact } from "../types"
-
-const PRIORITY_STYLES: Record<string, { variant: "secondary" | "outline" | "destructive"; label: string }> = {
-  low: { variant: "secondary", label: "Low" },
-  medium: { variant: "outline", label: "Medium" },
-  high: { variant: "destructive", label: "High" },
-}
 
 interface DealCardProps {
   deal: DealWithContact
@@ -21,6 +17,7 @@ interface DealCardProps {
 }
 
 export function DealCard({ deal, onClick }: DealCardProps) {
+  const router = useRouter()
   const {
     attributes,
     listeners,
@@ -42,7 +39,6 @@ export function DealCard({ deal, onClick }: DealCardProps) {
     transition,
   }
 
-  const priorityStyle = PRIORITY_STYLES[deal.priority] ?? PRIORITY_STYLES.low
   const contactName = deal.contact
     ? [deal.contact.first_name, deal.contact.last_name].filter(Boolean).join(" ")
     : null
@@ -75,23 +71,24 @@ export function DealCard({ deal, onClick }: DealCardProps) {
             {formatCurrencyCompact(deal.value, deal.currency)}
           </p>
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant={priorityStyle.variant} className="text-[10px] px-1.5 h-4">
-              {priorityStyle.label}
-            </Badge>
+            <PriorityBadge priority={deal.priority} className="text-[10px] px-1.5 h-4" />
             {deal.status !== "open" && (
-              <Badge
-                variant={deal.status === "won" ? "default" : "destructive"}
-                className="text-[10px] px-1.5 h-4"
-              >
-                {deal.status === "won" ? "Won" : "Lost"}
-              </Badge>
+              <StatusBadge status={deal.status} className="text-[10px] px-1.5 h-4" />
             )}
           </div>
           <div className="space-y-1">
-            {contactName && (
+            {contactName && deal.contact && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <User className="size-3 shrink-0" />
-                <span className="truncate">{contactName}</span>
+                <span
+                  className="truncate cursor-pointer text-primary hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push(`/contacts/${deal.contact!.id}`)
+                  }}
+                >
+                  {contactName}
+                </span>
               </div>
             )}
             {deal.expected_close && (

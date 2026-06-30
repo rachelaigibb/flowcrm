@@ -26,16 +26,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { PriorityBadge, StatusBadge } from "@/components/shared/status-badges"
 import { StageColumn } from "./stage-column"
 import { DealCard } from "./deal-card"
 import { DealDetailSheet } from "./deal-detail-sheet"
 import { CreateDealDialog } from "./create-deal-dialog"
 import { moveDeal } from "../actions"
-import { Plus, Search, Filter } from "lucide-react"
+import { formatCurrencyCompact } from "@/lib/utils/currency"
+import { formatDateShort } from "@/lib/utils/dates"
+import { Plus, Search, Filter, LayoutGrid, List, Settings } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import type { DealWithContact, StageWithDeals } from "../types"
 import type { PipelineStage, DealPriority, DealStatus } from "@/types/database"
+
+type ViewMode = "kanban" | "list"
 
 interface PipelinePageProps {
   stages: PipelineStage[]
@@ -52,6 +65,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
   const [selectedDeal, setSelectedDeal] = useState<DealWithContact | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>("kanban")
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -95,6 +109,15 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
     () => deals.find((d) => d.id === activeId) ?? null,
     [deals, activeId]
   )
+
+  // Stage name lookup for list view
+  const stageNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const s of stages) {
+      map[s.id] = s.name
+    }
+    return map
+  }, [stages])
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string)
@@ -192,10 +215,31 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
             {stages.length} stage{stages.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button size="sm" className="shrink-0 self-start sm:self-auto" onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="size-4" data-icon="inline-start" />
-          Add Deal
-        </Button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          {/* View toggle */}
+          <div className="flex items-center rounded-md border bg-muted p-0.5">
+            <Button
+              variant={viewMode === "kanban" ? "default" : "ghost"}
+              size="sm"
+              className="h-7 px-2.5"
+              onClick={() => setViewMode("kanban")}
+            >
+              <LayoutGrid className="size-3.5" />
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              className="h-7 px-2.5"
+              onClick={() => setViewMode("list")}
+            >
+              <List className="size-3.5" />
+            </Button>
+          </div>
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="size-4" data-icon="inline-start" />
+            Add Deal
+          </Button>
+        </div>
       </div>
 
       {/* Filter bar */}
@@ -242,38 +286,122 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
         </div>
       </div>
 
-      {/* Kanban board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex h-full gap-4 pb-4">
-            {stagesWithDeals.map((stage) => (
-              <StageColumn
-                key={stage.id}
-                stage={stage}
-                deals={stage.deals}
-                onDealClick={handleDealClick}
-              />
-            ))}
+      {/* Empty state when no stages */}
+      {stages.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+          <Settings className="size-10 text-muted-foreground/40" />
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              No pipeline stages configured
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Go to Settings to set up your pipeline.
+            </p>
           </div>
-
-          <DragOverlay>
-            {activeDeal ? (
-              <div className="w-72 rotate-2 opacity-90">
-                <DealCard
-                  deal={activeDeal}
-                  onClick={() => {}}
+        </div>
+      ) : viewMode === "kanban" ? (
+        /* Kanban board */
+        <div className="flex-1 overflow-x-auto overflow-y-hidden">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex h-full gap-4 pb-4">
+              {stagesWithDeals.map((stage) => (
+                <StageColumn
+                  key={stage.id}
+                  stage={stage}
+                  deals={stage.deals}
+                  onDealClick={handleDealClick}
                 />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      </div>
+              ))}
+            </div>
+
+            <DragOverlay>
+              {activeDeal ? (
+                <div className="w-72 rotate-2 opacity-90">
+                  <DealCard
+                    deal={activeDeal}
+                    onClick={() => {}}
+                  />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </div>
+      ) : (
+        /* List view */
+        <div className="flex-1 overflow-y-auto pt-3">
+          {filteredDeals.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <p className="text-sm text-muted-foreground">
+                No deals match your filters.
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Value</TableHead>
+                  <TableHead>Stage</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Expected Close</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDeals.map((deal) => {
+                  const contactName = deal.contact
+                    ? [deal.contact.first_name, deal.contact.last_name].filter(Boolean).join(" ")
+                    : null
+                  return (
+                    <TableRow
+                      key={deal.id}
+                      className="cursor-pointer"
+                      onClick={() => handleDealClick(deal)}
+                    >
+                      <TableCell className="font-medium">{deal.title}</TableCell>
+                      <TableCell>{formatCurrencyCompact(deal.value, deal.currency)}</TableCell>
+                      <TableCell>{stageNameMap[deal.stage_id] ?? "Unknown"}</TableCell>
+                      <TableCell>
+                        <PriorityBadge priority={deal.priority} />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={deal.status} />
+                      </TableCell>
+                      <TableCell>
+                        {contactName && deal.contact ? (
+                          <span
+                            className="text-primary cursor-pointer hover:underline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/contacts/${deal.contact!.id}`)
+                            }}
+                          >
+                            {contactName}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">--</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {deal.expected_close
+                          ? formatDateShort(deal.expected_close)
+                          : <span className="text-muted-foreground">--</span>}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      )}
 
       {/* Detail sheet */}
       <DealDetailSheet

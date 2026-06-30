@@ -42,11 +42,16 @@ export default async function SubAccountSettingsRoute({
     email: m.user_id === user.id ? user.email ?? undefined : undefined,
   })) as (SubAccountMembership & { email?: string })[]
 
+  // Extract tags from sub-account settings JSONB
+  const subAccountData = subAccountResult.data as SubAccount & { settings?: Record<string, unknown> }
+  const tags = (subAccountData.settings?.tags as Array<{ id: string; name: string; color: string }>) ?? []
+
   return (
     <SubAccountSettingsPage
       subAccount={subAccountResult.data as SubAccount}
       stages={(stagesResult.data ?? []) as PipelineStage[]}
       members={enrichedMembers}
+      tags={tags}
     />
   )
 }

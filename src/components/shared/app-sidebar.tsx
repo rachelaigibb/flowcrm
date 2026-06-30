@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
@@ -10,6 +11,7 @@ import {
   CheckSquare,
   Settings,
   LogOut,
+  Building2,
   ChevronsUpDown,
 } from "lucide-react"
 import {
@@ -89,7 +91,7 @@ export function AppSidebar({
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      render={<a href={item.href} />}
+                      render={<Link href={item.href} />}
                     >
                       <item.icon />
                       <span>{item.title}</span>
@@ -139,6 +141,14 @@ export function AppSidebar({
                     onClick={() => setMenuOpen(false)}
                   />
                   <div className="absolute bottom-full left-0 right-0 z-50 mb-1 rounded-md border bg-popover p-1 shadow-md">
+                    <Link
+                      href="/settings?tab=organization"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors text-left"
+                    >
+                      <Building2 className="size-4" />
+                      Organization
+                    </Link>
                     <button
                       type="button"
                       onClick={async () => {

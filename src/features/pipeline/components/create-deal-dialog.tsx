@@ -35,6 +35,8 @@ import {
   CommandItem,
 } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
+import { PRIORITY_COLORS } from "@/lib/constants/colors"
+import type { PriorityKey } from "@/lib/constants/colors"
 import { CalendarIcon, ChevronsUpDown, Check } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "sonner"
@@ -46,6 +48,7 @@ interface CreateDealDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onDealCreated: () => void
+  defaultCurrency?: string
 }
 
 type ContactResult = Pick<Contact, "id" | "first_name" | "last_name" | "email" | "company">
@@ -55,11 +58,12 @@ export function CreateDealDialog({
   open,
   onOpenChange,
   onDealCreated,
+  defaultCurrency = "USD",
 }: CreateDealDialogProps) {
   const [isPending, startTransition] = useTransition()
   const [title, setTitle] = useState("")
   const [value, setValue] = useState("")
-  const [currency, setCurrency] = useState("USD")
+  const [currency, setCurrency] = useState(defaultCurrency)
   const [stageId, setStageId] = useState(stages[0]?.id ?? "")
   const [priority, setPriority] = useState<DealPriority>("medium")
   const [expectedClose, setExpectedClose] = useState<Date | undefined>()
@@ -73,7 +77,7 @@ export function CreateDealDialog({
   function resetForm() {
     setTitle("")
     setValue("")
-    setCurrency("USD")
+    setCurrency(defaultCurrency)
     setStageId(stages[0]?.id ?? "")
     setPriority("medium")
     setExpectedClose(undefined)
@@ -198,12 +202,22 @@ export function CreateDealDialog({
               <Label>Priority</Label>
               <Select value={priority} onValueChange={(v) => setPriority((v ?? "medium") as DealPriority)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    <span className={cn("flex items-center gap-1.5")}>
+                      <span className={cn("size-2 rounded-full", PRIORITY_COLORS[priority as PriorityKey]?.dot)} />
+                      {PRIORITY_COLORS[priority as PriorityKey]?.label ?? "Medium"}
+                    </span>
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
+                  {(["low", "medium", "high"] as const).map((p) => (
+                    <SelectItem key={p} value={p}>
+                      <span className="flex items-center gap-1.5">
+                        <span className={cn("size-2 rounded-full", PRIORITY_COLORS[p].dot)} />
+                        <span className={PRIORITY_COLORS[p].text}>{PRIORITY_COLORS[p].label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
