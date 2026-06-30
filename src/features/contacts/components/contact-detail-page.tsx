@@ -12,7 +12,7 @@ import { ACTIVITY_TYPE_COLORS, SOURCE_COLORS } from "@/lib/constants/colors"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -480,15 +480,17 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
       <div className="flex flex-col gap-4">
         {/* Deals */}
         <Card>
-          <CardHeader className="flex-row items-center justify-between py-3">
+          <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
               <Briefcase className="size-4" />
               Deals ({contact.deals.length})
             </CardTitle>
-            <Button size="sm" onClick={() => router.push("/pipeline")}>
-              <Plus className="size-3.5" />
-              Deal
-            </Button>
+            <CardAction>
+              <Button size="sm" onClick={() => router.push("/pipeline")}>
+                <Plus className="size-3.5" />
+                Deal
+              </Button>
+            </CardAction>
           </CardHeader>
           <CardContent className="pt-0">
             {contact.deals.length === 0 ? (
@@ -519,15 +521,17 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
 
         {/* Tasks */}
         <Card>
-          <CardHeader className="flex-row items-center justify-between py-3">
+          <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
               <CheckSquare className="size-4" />
               Tasks ({contact.tasks.length})
             </CardTitle>
-            <Button size="sm" onClick={() => router.push("/tasks")}>
-              <Plus className="size-3.5" />
-              Task
-            </Button>
+            <CardAction>
+              <Button size="sm" onClick={() => router.push("/tasks")}>
+                <Plus className="size-3.5" />
+                Task
+              </Button>
+            </CardAction>
           </CardHeader>
           <CardContent className="pt-0">
             {contact.tasks.length === 0 ? (
