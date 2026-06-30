@@ -44,11 +44,22 @@ import { deleteContact } from "../actions"
 type SortField = "name" | "email" | "company" | "created_at"
 type SortOrder = "asc" | "desc"
 
-interface ContactsPageProps {
-  contacts: Contact[]
+interface TagColor {
+  id: string
+  name: string
+  color: string
 }
 
-export function ContactsPage({ contacts }: ContactsPageProps) {
+interface ContactsPageProps {
+  contacts: Contact[]
+  tagColors: TagColor[]
+}
+
+function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined {
+  return tagColors.find((t) => t.name.toLowerCase() === tagName.toLowerCase())?.color
+}
+
+export function ContactsPage({ contacts, tagColors }: ContactsPageProps) {
   const router = useRouter()
   const [search, setSearch] = useState("")
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
@@ -277,21 +288,28 @@ export function ContactsPage({ contacts }: ContactsPageProps) {
               </PopoverTrigger>
               <PopoverContent align="start" className="w-56 p-2">
                 <div className="flex flex-col gap-1">
-                  {allTags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors text-left"
-                    >
-                      <Checkbox
-                        checked={selectedTags.has(tag)}
-                        onCheckedChange={() => toggleTag(tag)}
-                      />
-                      <Tag className="size-3.5 text-muted-foreground" />
-                      <span className="truncate">{tag}</span>
-                    </button>
-                  ))}
+                  {allTags.map((tag) => {
+                    const color = getTagColor(tag, tagColors)
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleTag(tag)}
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors text-left"
+                      >
+                        <Checkbox
+                          checked={selectedTags.has(tag)}
+                          onCheckedChange={() => toggleTag(tag)}
+                        />
+                        {color ? (
+                          <span className="size-3.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        ) : (
+                          <Tag className="size-3.5 text-muted-foreground" />
+                        )}
+                        <span className="truncate">{tag}</span>
+                      </button>
+                    )
+                  })}
                 </div>
               </PopoverContent>
             </Popover>
@@ -463,15 +481,24 @@ export function ContactsPage({ contacts }: ContactsPageProps) {
                     onClick={() => router.push(`/contacts/${contact.id}`)}
                   >
                     <div className="flex items-center gap-1 flex-wrap">
-                      {contact.tags?.slice(0, 3).map((tag) => (
-                        <Badge
-                          key={tag}
-                          variant="secondary"
-                          className="text-xs"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
+                      {contact.tags?.slice(0, 3).map((tag) => {
+                        const color = getTagColor(tag, tagColors)
+                        return (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="text-xs"
+                            style={color ? {
+                              backgroundColor: `${color}20`,
+                              color: color,
+                              borderColor: `${color}40`,
+                            } : undefined}
+                          >
+                            {color && <span className="size-1.5 rounded-full mr-1 inline-block" style={{ backgroundColor: color }} />}
+                            {tag}
+                          </Badge>
+                        )
+                      })}
                       {(contact.tags?.length ?? 0) > 3 && (
                         <span className="text-xs text-muted-foreground">
                           +{contact.tags!.length - 3}

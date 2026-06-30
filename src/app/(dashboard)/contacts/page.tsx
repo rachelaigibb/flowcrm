@@ -16,11 +16,18 @@ export default async function ContactsRoute() {
   const subAccountId = await getSubAccountId()
   if (!subAccountId) redirect("/settings")
 
-  const { data: contacts, error } = await supabase
-    .from("contacts")
-    .select("*")
-    .eq("sub_account_id", subAccountId)
-    .order("created_at", { ascending: false })
+  const [{ data: contacts, error }, { data: subAccount }] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select("*")
+      .eq("sub_account_id", subAccountId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("sub_accounts")
+      .select("settings")
+      .eq("id", subAccountId)
+      .single(),
+  ])
 
   if (error) {
     return (
@@ -32,5 +39,7 @@ export default async function ContactsRoute() {
     )
   }
 
-  return <ContactsPage contacts={(contacts ?? []) as Contact[]} />
+  const tagColors = ((subAccount?.settings as Record<string, unknown>)?.tags as Array<{ id: string; name: string; color: string }>) ?? []
+
+  return <ContactsPage contacts={(contacts ?? []) as Contact[]} tagColors={tagColors} />
 }

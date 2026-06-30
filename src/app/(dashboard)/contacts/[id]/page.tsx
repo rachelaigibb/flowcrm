@@ -25,38 +25,47 @@ export default async function ContactDetailRoute({
     redirect("/settings")
   }
 
-  // Fetch contact
-  const { data: contact, error: contactError } = await supabase
-    .from("contacts")
-    .select("*")
-    .eq("id", id)
-    .eq("sub_account_id", subAccountId)
-    .single()
+  // Fetch contact + sub-account settings in parallel
+  const [
+    { data: contact, error: contactError },
+    { data: subAccount },
+  ] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select("*")
+      .eq("id", id)
+      .eq("sub_account_id", subAccountId)
+      .single(),
+    supabase
+      .from("sub_accounts")
+      .select("settings")
+      .eq("id", subAccountId)
+      .single(),
+  ])
 
   if (contactError || !contact) {
     notFound()
   }
 
-  // Fetch activities
-  const { data: activities } = await supabase
-    .from("activities")
-    .select("*")
-    .eq("contact_id", id)
-    .order("created_at", { ascending: false })
-
-  // Fetch deals
-  const { data: deals } = await supabase
-    .from("deals")
-    .select("*, stage:pipeline_stages(*)")
-    .eq("contact_id", id)
-    .order("created_at", { ascending: false })
-
-  // Fetch tasks
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("contact_id", id)
-    .order("created_at", { ascending: false })
+  // Fetch related data in parallel
+  const [{ data: activities }, { data: deals }, { data: tasks }] =
+    await Promise.all([
+      supabase
+        .from("activities")
+        .select("*")
+        .eq("contact_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("deals")
+        .select("*, stage:pipeline_stages(*)")
+        .eq("contact_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("tasks")
+        .select("*")
+        .eq("contact_id", id)
+        .order("created_at", { ascending: false }),
+    ])
 
   const contactWithRelations: ContactWithRelations = {
     ...contact,
@@ -65,5 +74,7 @@ export default async function ContactDetailRoute({
     tasks: tasks ?? [],
   }
 
-  return <ContactDetailPage contact={contactWithRelations} />
+  const tagColors = ((subAccount?.settings as Record<string, unknown>)?.tags as Array<{ id: string; name: string; color: string }>) ?? []
+
+  return <ContactDetailPage contact={contactWithRelations} tagColors={tagColors} />
 }

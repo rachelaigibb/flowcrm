@@ -187,3 +187,55 @@ export async function addNote(contactId: string, content: string) {
   revalidatePath(`/contacts/${contactId}`)
   return { data: activity }
 }
+
+export async function editNote(noteId: string, content: string) {
+  const { supabase } = await getUserContext()
+
+  if (!content.trim()) {
+    return { error: "Note content is required" }
+  }
+
+  const { error } = await supabase
+    .from("activities")
+    .update({ content: content.trim() })
+    .eq("id", noteId)
+    .eq("type", "note")
+
+  if (error) return { error: error.message }
+
+  // Get the contact_id to revalidate the right path
+  const { data: activity } = await supabase
+    .from("activities")
+    .select("contact_id")
+    .eq("id", noteId)
+    .single()
+
+  if (activity?.contact_id) {
+    revalidatePath(`/contacts/${activity.contact_id}`)
+  }
+  return { success: true }
+}
+
+export async function deleteNote(noteId: string) {
+  const { supabase } = await getUserContext()
+
+  // Get contact_id before deleting for revalidation
+  const { data: activity } = await supabase
+    .from("activities")
+    .select("contact_id")
+    .eq("id", noteId)
+    .single()
+
+  const { error } = await supabase
+    .from("activities")
+    .delete()
+    .eq("id", noteId)
+    .eq("type", "note")
+
+  if (error) return { error: error.message }
+
+  if (activity?.contact_id) {
+    revalidatePath(`/contacts/${activity.contact_id}`)
+  }
+  return { success: true }
+}

@@ -127,101 +127,108 @@ function TaskItem({
     : null
 
   return (
-    <div
-      className={cn(
-        "group flex items-start gap-3 rounded-lg border border-border/50 bg-card p-3 transition-colors hover:border-border",
-        task.status === "completed" && "opacity-60",
-        selected && "border-primary/50 bg-primary/5"
-      )}
-    >
-      <div className="pt-0.5 flex items-center gap-2">
-        <Checkbox
-          checked={selected}
-          onCheckedChange={(checked) => onSelectChange(checked === true)}
-          onClick={(e) => e.stopPropagation()}
-        />
-        <Checkbox
-          checked={task.status === "completed"}
-          onCheckedChange={() => onToggle(task.id)}
-        />
-      </div>
+    <div className="flex items-center gap-2">
+      {/* Bulk select — outside the tile */}
+      <Checkbox
+        checked={selected}
+        onCheckedChange={(checked) => onSelectChange(checked === true)}
+        onClick={(e) => e.stopPropagation()}
+        className="shrink-0"
+      />
 
+      {/* Task tile */}
       <div
-        className="flex flex-1 min-w-0 flex-col gap-1 cursor-pointer"
-        onClick={() => onClick(task)}
-      >
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "text-sm font-medium truncate",
-              task.status === "completed" && "line-through text-muted-foreground"
-            )}
-          >
-            {task.title}
-          </span>
-          <PriorityBadge priority={task.priority} className="shrink-0" />
-        </div>
-
-        {task.description && (
-          <p className="text-xs text-muted-foreground line-clamp-1">
-            {task.description}
-          </p>
+        className={cn(
+          "group flex flex-1 items-start gap-3 rounded-lg border border-border/50 bg-card p-3 transition-colors hover:border-border",
+          task.status === "completed" && "opacity-60",
+          selected && "border-primary/50 bg-primary/5"
         )}
-
-        <div className="flex items-center gap-3 text-xs">
-          {task.due_date && (
-            <span className={cn("flex items-center gap-1", dueDateColor(task))}>
-              <CalendarIcon className="size-3" />
-              {format(new Date(task.due_date), "MMM d, yyyy")}
-            </span>
-          )}
-
-          {contactName && (
-            <Link
-              href={`/contacts/${task.contact!.id}`}
-              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <UserIcon className="size-3" />
-              {contactName}
-            </Link>
-          )}
-
-          {task.deal && (
-            <Link
-              href="/pipeline"
-              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <BriefcaseIcon className="size-3" />
-              {task.deal.title}
-            </Link>
-          )}
+      >
+        {/* Completion checkbox — inside tile */}
+        <div className="pt-0.5">
+          <Checkbox
+            checked={task.status === "completed"}
+            onCheckedChange={() => onToggle(task.id)}
+          />
         </div>
-      </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
+        <div
+          className="flex flex-1 min-w-0 flex-col gap-1 cursor-pointer"
+          onClick={() => onClick(task)}
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "text-sm font-medium truncate",
+                task.status === "completed" && "line-through text-muted-foreground"
+              )}
             >
-              <MoreHorizontalIcon className="size-4" />
-            </Button>
-          }
-        />
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={() => onDelete(task.id)}
-          >
-            <TrashIcon className="size-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+              {task.title}
+            </span>
+            <PriorityBadge priority={task.priority} className="shrink-0" />
+          </div>
+
+          {task.description && (
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {task.description}
+            </p>
+          )}
+
+          <div className="flex items-center gap-3 text-xs">
+            {task.due_date && (
+              <span className={cn("flex items-center gap-1", dueDateColor(task))}>
+                <CalendarIcon className="size-3" />
+                {format(new Date(task.due_date), "MMM d, yyyy")}
+              </span>
+            )}
+
+            {contactName && (
+              <Link
+                href={`/contacts/${task.contact!.id}`}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <UserIcon className="size-3" />
+                {contactName}
+              </Link>
+            )}
+
+            {task.deal && (
+              <Link
+                href="/pipeline"
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <BriefcaseIcon className="size-3" />
+                {task.deal.title}
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <MoreHorizontalIcon className="size-4" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => onDelete(task.id)}
+            >
+              <TrashIcon className="size-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   )
 }

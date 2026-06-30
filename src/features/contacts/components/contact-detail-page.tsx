@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import type { ContactWithRelations } from "../types"
 import type { ConsentStatus, Deal, Task } from "@/types/database"
-import { updateContact, deleteContact, addNote } from "../actions"
+import { updateContact, deleteContact, addNote, editNote, deleteNote } from "../actions"
 import { formatSmartDate, formatDateShort } from "@/lib/utils/dates"
 import { formatCurrencyCompact } from "@/lib/utils/currency"
 import { cn } from "@/lib/utils"
@@ -46,11 +46,22 @@ import {
 } from "lucide-react"
 import { SOURCE_OPTIONS } from "../types"
 
-interface ContactDetailPageProps {
-  contact: ContactWithRelations
+interface TagColor {
+  id: string
+  name: string
+  color: string
 }
 
-export function ContactDetailPage({ contact }: ContactDetailPageProps) {
+interface ContactDetailPageProps {
+  contact: ContactWithRelations
+  tagColors: TagColor[]
+}
+
+function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined {
+  return tagColors.find((t) => t.name.toLowerCase() === tagName.toLowerCase())?.color
+}
+
+export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -134,6 +145,18 @@ export function ContactDetailPage({ contact }: ContactDetailPageProps) {
     return {}
   }
 
+  async function handleEditNote(noteId: string, content: string) {
+    const result = await editNote(noteId, content)
+    if (result.error) return { error: result.error }
+    return {}
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    const result = await deleteNote(noteId)
+    if (result.error) return { error: result.error }
+    return {}
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -174,7 +197,12 @@ export function ContactDetailPage({ contact }: ContactDetailPageProps) {
           </div>
 
           {/* Notes section */}
-          <NotesSection notes={notes} onAddNote={handleAddNote} />
+          <NotesSection
+            notes={notes}
+            onAddNote={handleAddNote}
+            onEditNote={handleEditNote}
+            onDeleteNote={handleDeleteNote}
+          />
 
           {/* Deals card */}
           <Card>
@@ -385,11 +413,23 @@ export function ContactDetailPage({ contact }: ContactDetailPageProps) {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-1.5">
-                  {contact.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
+                  {contact.tags.map((tag) => {
+                    const color = getTagColor(tag, tagColors)
+                    return (
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        style={color ? {
+                          backgroundColor: `${color}20`,
+                          color: color,
+                          borderColor: `${color}40`,
+                        } : undefined}
+                      >
+                        {color && <span className="size-1.5 rounded-full mr-1 inline-block" style={{ backgroundColor: color }} />}
+                        {tag}
+                      </Badge>
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>
