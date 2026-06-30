@@ -18,7 +18,6 @@ import {
   Phone,
   TrendingUp,
 } from "lucide-react"
-import { format } from "date-fns"
 import type { Activity, PipelineStage, SubAccount } from "@/types/database"
 
 export const metadata = {
@@ -159,9 +158,19 @@ export default async function DashboardPage() {
     }
   }
 
-  const today = new Date()
-  const dayOfWeek = format(today, "EEEE")
-  const dateStr = format(today, "MMMM d, yyyy")
+  // Use sub-account timezone for date display
+  const saTimezone = subAccount?.timezone ?? "UTC"
+  const now = new Date()
+  const dayOfWeek = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    timeZone: saTimezone,
+  }).format(now)
+  const dateStr = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: saTimezone,
+  }).format(now)
   const displayName = accountContact?.name || user?.email?.split("@")[0] || "admin"
 
   const stats = [

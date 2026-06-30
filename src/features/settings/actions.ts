@@ -243,6 +243,31 @@ export async function deletePipelineStage(id: string) {
   return { success: true }
 }
 
+// ── Theme (stored in sub_account settings JSONB) ──
+
+export async function updateSubAccountTheme(
+  subAccountId: string,
+  theme: string
+) {
+  const { orgId, supabase } = await getUserContext()
+
+  const { settings, error: fetchError } = await getSubAccountSettings(supabase, subAccountId, orgId)
+  if (fetchError) return { error: fetchError }
+
+  const { error } = await supabase
+    .from("sub_accounts")
+    .update({
+      settings: { ...settings!, theme },
+    })
+    .eq("id", subAccountId)
+    .eq("org_id", orgId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath("/settings")
+  return { success: true }
+}
+
 // ── Tags (stored in sub_account settings JSONB) ──
 
 async function getSubAccountSettings(supabase: Awaited<ReturnType<typeof getUserContext>>["supabase"], id: string, orgId: string) {

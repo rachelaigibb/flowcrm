@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { Separator } from "@/components/ui/separator"
 import { AppSidebar } from "@/components/shared/app-sidebar"
 import { CommandPalette } from "@/components/shared/command-palette"
+import { ThemeSyncer } from "@/components/shared/theme-syncer"
 import type { Organization, SubAccount, Membership } from "@/types/database"
 
 export default async function DashboardLayout({
@@ -105,6 +106,15 @@ export default async function DashboardLayout({
           {children}
         </div>
       </SidebarInset>
+      <ThemeSyncer
+        subAccountTheme={
+          (() => {
+            const currentSa = typedSubAccounts.find((sa) => sa.id === currentSubAccountId)
+            const settings = currentSa?.settings as Record<string, unknown> | undefined
+            return (settings?.theme as string) ?? null
+          })()
+        }
+      />
       <CommandPalette />
     </SidebarProvider>
   )

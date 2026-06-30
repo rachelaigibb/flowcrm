@@ -45,6 +45,7 @@ import {
   UsersIcon,
   TagIcon,
   PaletteIcon,
+  CheckIcon,
 } from "lucide-react"
 import {
   updateSubAccount,
@@ -296,7 +297,7 @@ export function SubAccountSettingsPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ThemeToggle />
+          <ThemeToggle subAccountId={subAccount.id} />
         </CardContent>
       </Card>
 
@@ -364,12 +365,18 @@ export function SubAccountSettingsPage({
                   key={color}
                   type="button"
                   className={cn(
-                    "size-8 rounded-full border-2 transition-all",
-                    accentColor === color ? "border-white scale-110" : "border-transparent"
+                    "size-8 rounded-full border-2 transition-all flex items-center justify-center",
+                    accentColor === color
+                      ? "border-foreground scale-110 ring-2 ring-foreground/20 ring-offset-2 ring-offset-background"
+                      : "border-transparent hover:border-border"
                   )}
                   style={{ backgroundColor: color }}
                   onClick={() => setAccentColor(color)}
-                />
+                >
+                  {accentColor === color && (
+                    <CheckIcon className="size-4 text-white drop-shadow-sm" />
+                  )}
+                </button>
               ))}
             </div>
           </div>
