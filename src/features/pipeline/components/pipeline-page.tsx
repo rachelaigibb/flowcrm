@@ -281,7 +281,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
   }, [initialDeals])
 
   return (
-    <div className="flex h-full flex-col min-w-0">
+    <div className="flex h-full flex-col min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between gap-3 pb-4">
         <div className="min-w-0">
