@@ -501,7 +501,7 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
                   <Link
                     key={deal.id}
                     href="/pipeline"
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border/60 p-3 hover:border-border hover:bg-muted/30 transition-colors"
+                    className="flex items-center justify-between gap-2 rounded-lg border bg-card p-3 shadow-sm hover:shadow-md transition-shadow"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{deal.title}</p>
@@ -542,7 +542,7 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
                   <Link
                     key={task.id}
                     href="/tasks"
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border/60 p-3 hover:border-border hover:bg-muted/30 transition-colors"
+                    className="flex items-center justify-between gap-2 rounded-lg border bg-card p-3 shadow-sm hover:shadow-md transition-shadow"
                   >
                     <div className="min-w-0 flex-1">
                       <p className={cn(
@@ -574,15 +574,12 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      {/* Top bar: back + name */}
+      {/* Top bar: back to contacts */}
       <div className="flex items-center gap-3 shrink-0">
         <Button variant="ghost" size="icon-sm" onClick={() => router.push("/contacts")}>
           <ArrowLeft className="size-4" />
         </Button>
-        <h1 className="text-xl font-semibold tracking-tight truncate">{displayName}</h1>
-        {contact.company && (
-          <span className="text-sm text-muted-foreground hidden sm:inline">· {contact.company}</span>
-        )}
+        <span className="text-sm text-muted-foreground">Contacts</span>
       </div>
 
       {/* Mobile tabs (shown below lg breakpoint) */}

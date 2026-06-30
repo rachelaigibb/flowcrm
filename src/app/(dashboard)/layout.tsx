@@ -103,7 +103,7 @@ export default async function DashboardLayout({
           <div className="flex-1" />
           <ThemeToggle />
         </header>
-        <div className="flex flex-1 flex-col overflow-auto p-4 md:p-6">
+        <div className="flex flex-1 flex-col overflow-auto overflow-x-hidden p-4 md:p-6">
           {children}
         </div>
       </SidebarInset>
