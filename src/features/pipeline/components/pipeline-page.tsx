@@ -283,7 +283,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
   return (
     <div className="flex h-full flex-col min-w-0">
       {/* Header */}
-      <div className="flex shrink-0 flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex shrink-0 items-center justify-between gap-3 pb-4">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Pipeline</h1>
           <p className="text-sm text-muted-foreground">
@@ -291,7 +291,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
             {stages.length} stage{stages.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+        <div className="flex items-center gap-2 shrink-0">
           {/* View toggle */}
           <div className="flex items-center rounded-md border bg-muted p-0.5">
             <Button
@@ -362,7 +362,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
               className="h-8 w-48 pl-8 text-sm"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Filter className="size-3.5 text-muted-foreground" />
             {activeFilterCount > 0 && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">

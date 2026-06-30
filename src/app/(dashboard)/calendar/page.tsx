@@ -51,8 +51,8 @@ export default async function CalendarPage({
   const rangeStartISO = format(gridStart, "yyyy-MM-dd")
   const rangeEndISO = format(gridEnd, "yyyy-MM-dd")
 
-  // Fetch tasks and deals in parallel for the grid range
-  const [tasksResult, dealsResult] = await Promise.all([
+  // Fetch tasks, deals, and option lists for the create-task dialog in parallel
+  const [tasksResult, dealsResult, contactsResult, allDealsResult] = await Promise.all([
     supabase
       .from("tasks")
       .select(
@@ -81,6 +81,21 @@ export default async function CalendarPage({
       .gte("expected_close", rangeStartISO)
       .lte("expected_close", rangeEndISO)
       .order("expected_close", { ascending: true }),
+
+    // Contacts for the create-task dialog
+    supabase
+      .from("contacts")
+      .select("id, first_name, last_name")
+      .eq("sub_account_id", subAccountId)
+      .order("first_name"),
+
+    // All open deals for the create-task dialog
+    supabase
+      .from("deals")
+      .select("id, title")
+      .eq("sub_account_id", subAccountId)
+      .eq("status", "open")
+      .order("title"),
   ])
 
   const tasks = (tasksResult.data ?? []) as unknown as CalendarTask[]
@@ -92,6 +107,8 @@ export default async function CalendarPage({
       deals={deals}
       month={displayMonth}
       year={displayYear}
+      contacts={(contactsResult.data ?? []) as Array<{ id: string; first_name: string | null; last_name: string | null }>}
+      dealOptions={(allDealsResult.data ?? []) as Array<{ id: string; title: string }>}
     />
   )
 }

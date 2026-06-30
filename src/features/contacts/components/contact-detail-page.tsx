@@ -159,7 +159,7 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
+      {/* Header row: back + name + edit/delete */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon-sm" onClick={() => router.push("/contacts")}>
           <ArrowLeft className="size-4" />
@@ -170,285 +170,256 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
             <p className="text-sm text-muted-foreground">{contact.company}</p>
           )}
         </div>
-      </div>
-
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column (2/3) */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Quick Actions */}
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          {!editing ? (
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setEditing(true)}
+            >
+              Edit
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelEdit}
+                disabled={isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Save className="size-3.5" data-icon="inline-start" />
+                )}
+                Save
+              </Button>
+            </>
+          )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Contact info card — horizontal at top */}
+      <Card>
+        <CardContent className="pt-4 pb-4">
+          {editing ? (
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">First Name</Label>
+                  <Input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Last Name</Label>
+                  <Input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Email</Label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Phone</Label>
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Company</Label>
+                  <Input
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Source</Label>
+                  <Select value={source} onValueChange={(v) => setSource(v ?? "")}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {source || "Select source"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SOURCE_OPTIONS.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Consent</Label>
+                  <Select
+                    value={consentStatus}
+                    onValueChange={(v) =>
+                      setConsentStatus(v as ConsentStatus)
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {consentStatus === "explicit"
+                          ? "Explicit"
+                          : consentStatus === "implied"
+                            ? "Implied"
+                            : consentStatus === "none"
+                              ? "None"
+                              : "Withdrawn"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="explicit">Explicit</SelectItem>
+                      <SelectItem value="implied">Implied</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">Tags</Label>
+                  <Input
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    placeholder="Comma-separated"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {/* Row 1: key fields */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                <InfoField label="Email" value={contact.email} />
+                <InfoField label="Phone" value={contact.phone} />
+                <InfoField label="Source" value={contact.source} />
+                <InfoField label="Consent" value={contact.consent_status} />
+                <InfoField label="Created" value={formatDateShort(contact.created_at)} />
+              </div>
+              {/* Row 2: tags */}
+              {contact.tags && contact.tags.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Tags</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {contact.tags.map((tag) => {
+                      const color = getTagColor(tag, tagColors)
+                      return (
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          style={color ? {
+                            backgroundColor: `${color}20`,
+                            color: color,
+                            borderColor: `${color}40`,
+                          } : undefined}
+                        >
+                          {color && <span className="size-1.5 rounded-full mr-1 inline-block" style={{ backgroundColor: color }} />}
+                          {tag}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Three tiles: Notes, Deals, Tasks */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Notes tile */}
+        <NotesSection
+          notes={notes}
+          onAddNote={handleAddNote}
+          onEditNote={handleEditNote}
+          onDeleteNote={handleDeleteNote}
+        />
+
+        {/* Deals tile */}
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Briefcase className="size-4" />
+              Deals ({contact.deals.length})
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => router.push("/pipeline")}
             >
-              <Plus className="size-3.5" data-icon="inline-start" />
-              Add Deal
+              <Plus className="size-4" />
             </Button>
+          </CardHeader>
+          <CardContent>
+            {contact.deals.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No deals yet.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {contact.deals.map((deal) => (
+                  <DealTile key={deal.id} deal={deal} />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tasks tile */}
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <CheckSquare className="size-4" />
+              Tasks ({contact.tasks.length})
+            </CardTitle>
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => router.push("/tasks")}
             >
-              <Plus className="size-3.5" data-icon="inline-start" />
-              Add Task
+              <Plus className="size-4" />
             </Button>
-          </div>
-
-          {/* Notes section */}
-          <NotesSection
-            notes={notes}
-            onAddNote={handleAddNote}
-            onEditNote={handleEditNote}
-            onDeleteNote={handleDeleteNote}
-          />
-
-          {/* Deals card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Briefcase className="size-4" />
-                Deals ({contact.deals.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contact.deals.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No deals yet.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {contact.deals.map((deal) => (
-                    <DealTile key={deal.id} deal={deal} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Tasks card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <CheckSquare className="size-4" />
-                Tasks ({contact.tasks.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contact.tasks.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No tasks yet.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {contact.tasks.map((task) => (
-                    <TaskTile key={task.id} task={task} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Activity log — collapsed by default */}
-          <ActivityLog activities={contact.activities} defaultOpen={false} />
-        </div>
-
-        {/* Right column (1/3) */}
-        <div className="flex flex-col gap-6">
-          {/* Contact info card */}
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-sm">Contact Info</CardTitle>
-              {!editing ? (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setEditing(true)}
-                >
-                  Edit
-                </Button>
-              ) : (
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    onClick={handleCancelEdit}
-                    disabled={isPending}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="xs"
-                    onClick={handleSave}
-                    disabled={isPending}
-                  >
-                    {isPending ? (
-                      <Loader2 className="size-3 animate-spin" />
-                    ) : (
-                      <Save className="size-3" data-icon="inline-start" />
-                    )}
-                    Save
-                  </Button>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-3">
-                {editing ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-xs">First Name</Label>
-                        <Input
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-xs">Last Name</Label>
-                        <Input
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs">Email</Label>
-                      <Input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs">Phone</Label>
-                      <Input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs">Company</Label>
-                      <Input
-                        value={company}
-                        onChange={(e) => setCompany(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs">Source</Label>
-                      <Select value={source} onValueChange={(v) => setSource(v ?? "")}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue>
-                            {source || "Select source"}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SOURCE_OPTIONS.map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {s}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs">Tags</Label>
-                      <Input
-                        value={tags}
-                        onChange={(e) => setTags(e.target.value)}
-                        placeholder="Comma-separated"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs">Consent</Label>
-                      <Select
-                        value={consentStatus}
-                        onValueChange={(v) =>
-                          setConsentStatus(v as ConsentStatus)
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue>
-                            {consentStatus === "explicit"
-                              ? "Explicit"
-                              : consentStatus === "implied"
-                                ? "Implied"
-                                : consentStatus === "none"
-                                  ? "None"
-                                  : "Withdrawn"}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="explicit">Explicit</SelectItem>
-                          <SelectItem value="implied">Implied</SelectItem>
-                          <SelectItem value="none">None</SelectItem>
-                          <SelectItem value="withdrawn">Withdrawn</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <InfoRow label="Email" value={contact.email} />
-                    <InfoRow label="Phone" value={contact.phone} />
-                    <InfoRow label="Company" value={contact.company} />
-                    <InfoRow label="Source" value={contact.source} />
-                    <InfoRow
-                      label="Consent"
-                      value={contact.consent_status}
-                    />
-                    <InfoRow
-                      label="Created"
-                      value={formatDateShort(contact.created_at)}
-                    />
-                  </>
-                )}
+          </CardHeader>
+          <CardContent>
+            {contact.tasks.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No tasks yet.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {contact.tasks.map((task) => (
+                  <TaskTile key={task.id} task={task} />
+                ))}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Tags card */}
-          {!editing && contact.tags && contact.tags.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Tags</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-1.5">
-                  {contact.tags.map((tag) => {
-                    const color = getTagColor(tag, tagColors)
-                    return (
-                      <Badge
-                        key={tag}
-                        variant="secondary"
-                        style={color ? {
-                          backgroundColor: `${color}20`,
-                          color: color,
-                          borderColor: `${color}40`,
-                        } : undefined}
-                      >
-                        {color && <span className="size-1.5 rounded-full mr-1 inline-block" style={{ backgroundColor: color }} />}
-                        {tag}
-                      </Badge>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Delete button — bottom of page, right-aligned */}
-      <div className="flex justify-end pt-4 border-t">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={() => setDeleteOpen(true)}
-        >
-          <Trash2 className="size-3.5" data-icon="inline-start" />
-          Delete Contact
-        </Button>
-      </div>
+      {/* Activity log — collapsed by default */}
+      <ActivityLog activities={contact.activities} defaultOpen={false} />
 
       {/* Delete confirmation dialog */}
       <DeleteConfirmDialog
@@ -465,7 +436,7 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
 
 // --- Sub-components ---
 
-function InfoRow({
+function InfoField({
   label,
   value,
 }: {
@@ -473,12 +444,12 @@ function InfoRow({
   value: string | null | undefined
 }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
-      <span className="text-sm text-right truncate">
+    <span className="inline-flex items-center gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}:</span>
+      <span className="text-sm">
         {value || <span className="text-muted-foreground">-</span>}
       </span>
-    </div>
+    </span>
   )
 }
 

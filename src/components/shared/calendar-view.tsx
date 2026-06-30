@@ -17,7 +17,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { PRIORITY_COLORS } from "@/lib/constants/colors"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react"
+import { ChevronLeft, ChevronRight, CalendarDays, Plus } from "lucide-react"
+import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog"
 import type { DealPriority } from "@/types/database"
 
 export interface CalendarTask {
@@ -43,9 +44,11 @@ interface CalendarViewProps {
   deals: CalendarDeal[]
   month: number // 0-indexed
   year: number
+  contacts: Array<{ id: string; first_name: string | null; last_name: string | null }>
+  dealOptions: Array<{ id: string; title: string }>
 }
 
-export function CalendarView({ tasks, deals, month, year }: CalendarViewProps) {
+export function CalendarView({ tasks, deals, month, year, contacts, dealOptions }: CalendarViewProps) {
   const router = useRouter()
   const currentDate = new Date(year, month, 1)
 
@@ -102,6 +105,12 @@ export function CalendarView({ tasks, deals, month, year }: CalendarViewProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <CreateTaskDialog contacts={contacts} deals={dealOptions}>
+            <Button size="sm">
+              <Plus className="size-4" />
+              Add Task
+            </Button>
+          </CreateTaskDialog>
           <Button variant="outline" size="sm" onClick={goToToday}>
             Today
           </Button>
