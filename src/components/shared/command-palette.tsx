@@ -20,6 +20,9 @@ import {
   Settings,
   Home,
   Search,
+  FileText,
+  Zap,
+  Megaphone,
 } from "lucide-react"
 
 const pages = [
@@ -28,6 +31,9 @@ const pages = [
   { name: "Pipeline", href: "/pipeline", icon: Kanban },
   { name: "Calendar", href: "/calendar", icon: CalendarDays },
   { name: "Tasks", href: "/tasks", icon: CheckSquare },
+  { name: "Forms", href: "/forms", icon: FileText },
+  { name: "Automations", href: "/automations", icon: Zap },
+  { name: "Broadcasts", href: "/broadcasts", icon: Megaphone },
   { name: "Agency Home", href: "/agency", icon: Home },
   { name: "Settings", href: "/settings", icon: Settings },
 ]

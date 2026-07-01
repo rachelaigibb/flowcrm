@@ -36,6 +36,8 @@ import {
 
 import { PriorityBadge, StatusBadge } from "@/components/shared/status-badges"
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
+import { ComposeEmailDialog } from "@/features/email/components/compose-email-dialog"
+import { ComposeSmsDialog } from "@/features/sms/components/compose-sms-dialog"
 
 import {
   ArrowLeft,
@@ -120,6 +122,12 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
   const [deleteNoteOpen, setDeleteNoteOpen] = useState(false)
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null)
   const [isNoteDeleting, startNoteDeleteTransition] = useTransition()
+
+  // Email compose dialog
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
+
+  // SMS compose dialog
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false)
 
   // Mobile tab state
   const [mobileTab, setMobileTab] = useState<"profile" | "activity" | "context">("activity")
@@ -429,16 +437,22 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
             Log Note
           </Button>
           {contact.email && (
-            <Button variant="outline" size="sm" render={<a href={`mailto:${contact.email}`} />}>
+            <Button variant="outline" size="sm" onClick={() => setEmailDialogOpen(true)}>
               <Mail className="size-3.5" />
               Email
             </Button>
           )}
           {contact.phone && (
-            <Button variant="outline" size="sm" render={<a href={`tel:${contact.phone}`} />}>
-              <Phone className="size-3.5" />
-              Call
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={() => setSmsDialogOpen(true)}>
+                <Send className="size-3.5" />
+                SMS
+              </Button>
+              <Button variant="outline" size="sm" render={<a href={`tel:${contact.phone}`} />}>
+                <Phone className="size-3.5" />
+                Call
+              </Button>
+            </>
           )}
         </div>
 
@@ -672,6 +686,26 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
         onConfirm={handleDelete}
         isPending={isPending}
       />
+
+      {contact.email && (
+        <ComposeEmailDialog
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
+          contactId={contact.id}
+          contactEmail={contact.email}
+          contactName={displayName}
+        />
+      )}
+
+      {contact.phone && (
+        <ComposeSmsDialog
+          open={smsDialogOpen}
+          onOpenChange={setSmsDialogOpen}
+          contactId={contact.id}
+          contactPhone={contact.phone}
+          contactName={displayName}
+        />
+      )}
     </div>
   )
 }

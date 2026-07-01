@@ -135,6 +135,146 @@ export interface Task {
   deal?: Deal | null
 }
 
+export type FormFieldType = "text" | "email" | "phone" | "textarea" | "select" | "checkbox" | "date" | "number"
+
+export interface FormField {
+  id: string
+  type: FormFieldType
+  label: string
+  placeholder: string | null
+  required: boolean
+  options: string[] // for select type
+}
+
+export interface FormSettings {
+  submit_button_text: string
+  success_message: string
+  redirect_url: string | null
+  create_contact: boolean
+  notify_email: string | null
+}
+
+export interface Form {
+  id: string
+  org_id: string
+  sub_account_id: string
+  name: string
+  slug: string
+  description: string | null
+  fields: FormField[]
+  settings: FormSettings
+  published: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface FormSubmission {
+  id: string
+  org_id: string
+  sub_account_id: string
+  form_id: string
+  contact_id: string | null
+  data: Record<string, string | boolean>
+  created_at: string
+}
+
+export type AutomationTriggerType = "form_submission" | "contact_created" | "deal_stage_change" | "tag_added" | "manual"
+export type AutomationStepActionType = "send_email" | "send_sms" | "wait" | "add_tag" | "remove_tag" | "create_task"
+export type AutomationRunStatus = "running" | "completed" | "failed" | "paused"
+
+export interface Automation {
+  id: string
+  org_id: string
+  sub_account_id: string
+  name: string
+  description: string | null
+  trigger_type: AutomationTriggerType
+  trigger_config: Record<string, unknown>
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AutomationStep {
+  id: string
+  org_id: string
+  automation_id: string
+  position: number
+  action_type: AutomationStepActionType
+  config: Record<string, unknown>
+  created_at: string
+}
+
+export type BroadcastChannel = "email" | "sms"
+export type BroadcastStatus = "draft" | "scheduled" | "sending" | "sent" | "failed"
+
+export interface BroadcastRecipientFilter {
+  tags?: string[]
+  sources?: string[]
+  all?: boolean
+}
+
+export interface BroadcastStats {
+  total: number
+  sent: number
+  failed: number
+  opened: number
+}
+
+export interface Broadcast {
+  id: string
+  org_id: string
+  sub_account_id: string
+  name: string
+  channel: BroadcastChannel
+  status: BroadcastStatus
+  email_subject: string | null
+  email_body: string | null
+  email_template_id: string | null
+  sms_body: string | null
+  sms_template_id: string | null
+  recipient_filter: BroadcastRecipientFilter
+  scheduled_at: string | null
+  sent_at: string | null
+  stats: BroadcastStats
+  created_at: string
+  updated_at: string
+}
+
+export interface AutomationRun {
+  id: string
+  org_id: string
+  automation_id: string
+  contact_id: string | null
+  status: AutomationRunStatus
+  current_step: number
+  started_at: string
+  completed_at: string | null
+  error: string | null
+  metadata: Record<string, unknown>
+}
+
+export interface SmsTemplate {
+  id: string
+  org_id: string
+  sub_account_id: string
+  name: string
+  body: string
+  created_at: string
+  updated_at: string
+}
+
+export interface EmailTemplate {
+  id: string
+  org_id: string
+  sub_account_id: string
+  name: string
+  subject: string
+  body: string
+  created_at: string
+  updated_at: string
+}
+
 // Helper type for the current user's context
 export interface UserContext {
   userId: string

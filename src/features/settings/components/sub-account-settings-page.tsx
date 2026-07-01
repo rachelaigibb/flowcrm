@@ -44,6 +44,11 @@ import {
   UsersIcon,
   TagIcon,
   CheckIcon,
+  MailIcon,
+  FileTextIcon,
+  Loader2Icon,
+  MessageSquareIcon,
+  SmartphoneIcon,
 } from "lucide-react"
 import {
   updateSubAccount,
@@ -55,7 +60,21 @@ import {
   updateTag,
   deleteTag,
 } from "@/features/settings/actions"
-import type { SubAccount, PipelineStage } from "@/types/database"
+import {
+  updateEmailSettings,
+  getEmailTemplates,
+  createEmailTemplate,
+  updateEmailTemplate,
+  deleteEmailTemplate,
+} from "@/features/email/actions"
+import {
+  updateSmsSettings,
+  getSmsTemplates,
+  createSmsTemplate,
+  updateSmsTemplate,
+  deleteSmsTemplate,
+} from "@/features/sms/actions"
+import type { SubAccount, PipelineStage, EmailTemplate, SmsTemplate } from "@/types/database"
 
 interface Tag {
   id: string
@@ -101,6 +120,54 @@ export function SubAccountSettingsPage({
   const [editTagColor, setEditTagColor] = React.useState("")
   const [editTagOpen, setEditTagOpen] = React.useState(false)
   const [savingTag, setSavingTag] = React.useState(false)
+
+  // Email settings state
+  const emailSettings = (subAccount.settings as Record<string, unknown>)?.email as
+    | { from_name?: string; from_email?: string; reply_to?: string }
+    | undefined
+  const [fromName, setFromName] = React.useState(emailSettings?.from_name ?? "")
+  const [fromEmail, setFromEmail] = React.useState(emailSettings?.from_email ?? "")
+  const [replyTo, setReplyTo] = React.useState(emailSettings?.reply_to ?? "")
+  const [savingEmail, setSavingEmail] = React.useState(false)
+
+  // Email templates state
+  const [emailTemplates, setEmailTemplates] = React.useState<EmailTemplate[]>([])
+  const [loadingTemplates, setLoadingTemplates] = React.useState(true)
+  const [addTemplateOpen, setAddTemplateOpen] = React.useState(false)
+  const [newTemplateName, setNewTemplateName] = React.useState("")
+  const [newTemplateSubject, setNewTemplateSubject] = React.useState("")
+  const [newTemplateBody, setNewTemplateBody] = React.useState("")
+  const [addingTemplate, setAddingTemplate] = React.useState(false)
+  const [editTemplateOpen, setEditTemplateOpen] = React.useState(false)
+  const [editingTemplate, setEditingTemplate] = React.useState<EmailTemplate | null>(null)
+  const [editTemplateName, setEditTemplateName] = React.useState("")
+  const [editTemplateSubject, setEditTemplateSubject] = React.useState("")
+  const [editTemplateBody, setEditTemplateBody] = React.useState("")
+  const [savingTemplate, setSavingTemplate] = React.useState(false)
+  const [deleteTemplateConfirm, setDeleteTemplateConfirm] = React.useState<string | null>(null)
+  const [deletingTemplate, setDeletingTemplate] = React.useState(false)
+
+  // SMS settings state
+  const smsSettings = (subAccount.settings as Record<string, unknown>)?.sms as
+    | { twilio_phone_number?: string }
+    | undefined
+  const [twilioPhone, setTwilioPhone] = React.useState(smsSettings?.twilio_phone_number ?? "")
+  const [savingSms, setSavingSms] = React.useState(false)
+
+  // SMS templates state
+  const [smsTemplates, setSmsTemplates] = React.useState<SmsTemplate[]>([])
+  const [loadingSmsTemplates, setLoadingSmsTemplates] = React.useState(true)
+  const [addSmsTemplateOpen, setAddSmsTemplateOpen] = React.useState(false)
+  const [newSmsTemplateName, setNewSmsTemplateName] = React.useState("")
+  const [newSmsTemplateBody, setNewSmsTemplateBody] = React.useState("")
+  const [addingSmsTemplate, setAddingSmsTemplate] = React.useState(false)
+  const [editSmsTemplateOpen, setEditSmsTemplateOpen] = React.useState(false)
+  const [editingSmsTemplate, setEditingSmsTemplate] = React.useState<SmsTemplate | null>(null)
+  const [editSmsTemplateName, setEditSmsTemplateName] = React.useState("")
+  const [editSmsTemplateBody, setEditSmsTemplateBody] = React.useState("")
+  const [savingSmsTemplate, setSavingSmsTemplate] = React.useState(false)
+  const [deleteSmsTemplateConfirm, setDeleteSmsTemplateConfirm] = React.useState<string | null>(null)
+  const [deletingSmsTemplate, setDeletingSmsTemplate] = React.useState(false)
 
   // Delete confirmation state (shared for stages and tags)
   const [deleteStageConfirm, setDeleteStageConfirm] = React.useState<string | null>(null)
@@ -270,6 +337,186 @@ export function SubAccountSettingsPage({
     setEditTagName(tag.name)
     setEditTagColor(tag.color)
     setEditTagOpen(true)
+  }
+
+  // Load email templates on mount
+  React.useEffect(() => {
+    getEmailTemplates().then((result) => {
+      if (result.data) setEmailTemplates(result.data)
+      setLoadingTemplates(false)
+    })
+  }, [])
+
+  // Email settings handler
+  async function handleSaveEmailSettings() {
+    setSavingEmail(true)
+    const result = await updateEmailSettings({
+      from_name: fromName.trim() || undefined,
+      from_email: fromEmail.trim() || undefined,
+      reply_to: replyTo.trim() || undefined,
+    })
+    setSavingEmail(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Email settings saved")
+    }
+  }
+
+  // Email template handlers
+  async function handleAddTemplate() {
+    if (!newTemplateName.trim() || !newTemplateSubject.trim() || !newTemplateBody.trim()) {
+      toast.error("All template fields are required")
+      return
+    }
+    setAddingTemplate(true)
+    const result = await createEmailTemplate({
+      name: newTemplateName.trim(),
+      subject: newTemplateSubject.trim(),
+      body: newTemplateBody.trim(),
+    })
+    setAddingTemplate(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Template created")
+      if (result.data) setEmailTemplates((prev) => [...prev, result.data!].sort((a, b) => a.name.localeCompare(b.name)))
+      setNewTemplateName("")
+      setNewTemplateSubject("")
+      setNewTemplateBody("")
+      setAddTemplateOpen(false)
+    }
+  }
+
+  function openEditTemplate(template: EmailTemplate) {
+    setEditingTemplate(template)
+    setEditTemplateName(template.name)
+    setEditTemplateSubject(template.subject)
+    setEditTemplateBody(template.body)
+    setEditTemplateOpen(true)
+  }
+
+  async function handleEditTemplate() {
+    if (!editingTemplate || !editTemplateName.trim() || !editTemplateSubject.trim() || !editTemplateBody.trim()) return
+    setSavingTemplate(true)
+    const result = await updateEmailTemplate(editingTemplate.id, {
+      name: editTemplateName.trim(),
+      subject: editTemplateSubject.trim(),
+      body: editTemplateBody.trim(),
+    })
+    setSavingTemplate(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Template updated")
+      if (result.data) {
+        setEmailTemplates((prev) =>
+          prev.map((t) => (t.id === editingTemplate.id ? result.data! : t)).sort((a, b) => a.name.localeCompare(b.name))
+        )
+      }
+      setEditTemplateOpen(false)
+      setEditingTemplate(null)
+    }
+  }
+
+  async function handleDeleteTemplate(id: string) {
+    setDeletingTemplate(true)
+    const result = await deleteEmailTemplate(id)
+    setDeletingTemplate(false)
+    setDeleteTemplateConfirm(null)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("Template deleted")
+      setEmailTemplates((prev) => prev.filter((t) => t.id !== id))
+    }
+  }
+
+  // Load SMS templates on mount
+  React.useEffect(() => {
+    getSmsTemplates().then((result) => {
+      if (result.data) setSmsTemplates(result.data)
+      setLoadingSmsTemplates(false)
+    })
+  }, [])
+
+  // SMS settings handler
+  async function handleSaveSmsSettings() {
+    setSavingSms(true)
+    const result = await updateSmsSettings({
+      twilio_phone_number: twilioPhone.trim() || undefined,
+    })
+    setSavingSms(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("SMS settings saved")
+    }
+  }
+
+  // SMS template handlers
+  async function handleAddSmsTemplate() {
+    if (!newSmsTemplateName.trim() || !newSmsTemplateBody.trim()) {
+      toast.error("Template name and body are required")
+      return
+    }
+    setAddingSmsTemplate(true)
+    const result = await createSmsTemplate({
+      name: newSmsTemplateName.trim(),
+      body: newSmsTemplateBody.trim(),
+    })
+    setAddingSmsTemplate(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("SMS template created")
+      if (result.data) setSmsTemplates((prev) => [...prev, result.data!].sort((a, b) => a.name.localeCompare(b.name)))
+      setNewSmsTemplateName("")
+      setNewSmsTemplateBody("")
+      setAddSmsTemplateOpen(false)
+    }
+  }
+
+  function openEditSmsTemplate(template: SmsTemplate) {
+    setEditingSmsTemplate(template)
+    setEditSmsTemplateName(template.name)
+    setEditSmsTemplateBody(template.body)
+    setEditSmsTemplateOpen(true)
+  }
+
+  async function handleEditSmsTemplate() {
+    if (!editingSmsTemplate || !editSmsTemplateName.trim() || !editSmsTemplateBody.trim()) return
+    setSavingSmsTemplate(true)
+    const result = await updateSmsTemplate(editingSmsTemplate.id, {
+      name: editSmsTemplateName.trim(),
+      body: editSmsTemplateBody.trim(),
+    })
+    setSavingSmsTemplate(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("SMS template updated")
+      if (result.data) {
+        setSmsTemplates((prev) =>
+          prev.map((t) => (t.id === editingSmsTemplate.id ? result.data! : t)).sort((a, b) => a.name.localeCompare(b.name))
+        )
+      }
+      setEditSmsTemplateOpen(false)
+      setEditingSmsTemplate(null)
+    }
+  }
+
+  async function handleDeleteSmsTemplate(id: string) {
+    setDeletingSmsTemplate(true)
+    const result = await deleteSmsTemplate(id)
+    setDeletingSmsTemplate(false)
+    setDeleteSmsTemplateConfirm(null)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success("SMS template deleted")
+      setSmsTemplates((prev) => prev.filter((t) => t.id !== id))
+    }
   }
 
   return (
@@ -638,6 +885,426 @@ export function SubAccountSettingsPage({
           if (deleteTagConfirm) handleDeleteTag(deleteTagConfirm)
         }}
         isPending={deletingTag}
+      />
+
+      {/* Email Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MailIcon className="size-4" />
+            Email Settings
+          </CardTitle>
+          <CardDescription>
+            Configure the sender details for outbound emails via Resend
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="from-name">From Name</Label>
+            <Input
+              id="from-name"
+              value={fromName}
+              onChange={(e) => setFromName(e.target.value)}
+              placeholder="e.g. Rachel Gibb"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="from-email">From Email</Label>
+            <Input
+              id="from-email"
+              type="email"
+              value={fromEmail}
+              onChange={(e) => setFromEmail(e.target.value)}
+              placeholder="e.g. hello@yourdomain.com"
+            />
+            <p className="text-xs text-muted-foreground">
+              Must be a verified domain in Resend. Emails will fail without this.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="reply-to">Reply-To Email</Label>
+            <Input
+              id="reply-to"
+              type="email"
+              value={replyTo}
+              onChange={(e) => setReplyTo(e.target.value)}
+              placeholder="e.g. rachel@yourdomain.com (optional)"
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleSaveEmailSettings} disabled={savingEmail}>
+              {savingEmail ? "Saving..." : "Save Email Settings"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Email Templates */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <CardTitle className="flex items-center gap-2">
+              <FileTextIcon className="size-4" />
+              Email Templates
+            </CardTitle>
+            <CardDescription>
+              Reusable email templates for quick sending from contact pages
+            </CardDescription>
+          </div>
+          <Dialog open={addTemplateOpen} onOpenChange={setAddTemplateOpen}>
+            <DialogTrigger
+              render={
+                <Button size="sm" variant="outline">
+                  <PlusIcon className="size-4" />
+                  Add Template
+                </Button>
+              }
+            />
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add Email Template</DialogTitle>
+                <DialogDescription>
+                  Create a reusable email template
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="template-name">Template Name</Label>
+                  <Input
+                    id="template-name"
+                    value={newTemplateName}
+                    onChange={(e) => setNewTemplateName(e.target.value)}
+                    placeholder="e.g. Welcome Email"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="template-subject">Subject Line</Label>
+                  <Input
+                    id="template-subject"
+                    value={newTemplateSubject}
+                    onChange={(e) => setNewTemplateSubject(e.target.value)}
+                    placeholder="e.g. Welcome to our community"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="template-body">Email Body</Label>
+                  <textarea
+                    id="template-body"
+                    value={newTemplateBody}
+                    onChange={(e) => setNewTemplateBody(e.target.value)}
+                    placeholder="Write the email body..."
+                    className="flex min-h-32 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleAddTemplate} disabled={addingTemplate}>
+                  {addingTemplate ? "Adding..." : "Add Template"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {loadingTemplates ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : emailTemplates.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No email templates yet. Add your first template above.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {emailTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className="flex items-center justify-between rounded-lg border border-border/50 p-3 group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{template.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      Subject: {template.subject}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => openEditTemplate(template)}
+                      title="Edit template"
+                    >
+                      <PencilIcon className="size-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => setDeleteTemplateConfirm(template.id)}
+                      title="Delete template"
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <TrashIcon className="size-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Template Dialog */}
+      <Dialog open={editTemplateOpen} onOpenChange={(open) => {
+        setEditTemplateOpen(open)
+        if (!open) setEditingTemplate(null)
+      }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Email Template</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-template-name">Template Name</Label>
+              <Input
+                id="edit-template-name"
+                value={editTemplateName}
+                onChange={(e) => setEditTemplateName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-template-subject">Subject Line</Label>
+              <Input
+                id="edit-template-subject"
+                value={editTemplateSubject}
+                onChange={(e) => setEditTemplateSubject(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-template-body">Email Body</Label>
+              <textarea
+                id="edit-template-body"
+                value={editTemplateBody}
+                onChange={(e) => setEditTemplateBody(e.target.value)}
+                className="flex min-h-32 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleEditTemplate} disabled={savingTemplate}>
+              {savingTemplate ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Template Confirmation */}
+      <DeleteConfirmDialog
+        open={deleteTemplateConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTemplateConfirm(null)
+        }}
+        title="Delete Email Template"
+        description="Are you sure you want to delete this email template? This action cannot be undone."
+        onConfirm={() => {
+          if (deleteTemplateConfirm) handleDeleteTemplate(deleteTemplateConfirm)
+        }}
+        isPending={deletingTemplate}
+      />
+
+      {/* SMS Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <SmartphoneIcon className="size-4" />
+            SMS Settings
+          </CardTitle>
+          <CardDescription>
+            Configure your Twilio phone number for outbound SMS
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="twilio-phone">Twilio Phone Number</Label>
+            <Input
+              id="twilio-phone"
+              type="tel"
+              value={twilioPhone}
+              onChange={(e) => setTwilioPhone(e.target.value)}
+              placeholder="e.g. +16045551234"
+            />
+            <p className="text-xs text-muted-foreground">
+              Must be a verified Twilio number. Use E.164 format (+1XXXXXXXXXX).
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleSaveSmsSettings} disabled={savingSms}>
+              {savingSms ? "Saving..." : "Save SMS Settings"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SMS Templates */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquareIcon className="size-4" />
+              SMS Templates
+            </CardTitle>
+            <CardDescription>
+              Reusable SMS templates for quick sending from contact pages
+            </CardDescription>
+          </div>
+          <Dialog open={addSmsTemplateOpen} onOpenChange={setAddSmsTemplateOpen}>
+            <DialogTrigger
+              render={
+                <Button size="sm" variant="outline">
+                  <PlusIcon className="size-4" />
+                  Add Template
+                </Button>
+              }
+            />
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add SMS Template</DialogTitle>
+                <DialogDescription>
+                  Create a reusable SMS template
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="sms-template-name">Template Name</Label>
+                  <Input
+                    id="sms-template-name"
+                    value={newSmsTemplateName}
+                    onChange={(e) => setNewSmsTemplateName(e.target.value)}
+                    placeholder="e.g. Follow-up Reminder"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="sms-template-body">Message</Label>
+                  <textarea
+                    id="sms-template-body"
+                    value={newSmsTemplateBody}
+                    onChange={(e) => setNewSmsTemplateBody(e.target.value)}
+                    placeholder="Write the SMS message..."
+                    className="flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    maxLength={1600}
+                  />
+                  <p className="text-xs text-muted-foreground text-right">
+                    {newSmsTemplateBody.length} / 1600
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleAddSmsTemplate} disabled={addingSmsTemplate}>
+                  {addingSmsTemplate ? "Adding..." : "Add Template"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {loadingSmsTemplates ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : smsTemplates.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No SMS templates yet. Add your first template above.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {smsTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className="flex items-center justify-between rounded-lg border border-border/50 p-3 group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{template.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {template.body.slice(0, 60)}{template.body.length > 60 ? "..." : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => openEditSmsTemplate(template)}
+                      title="Edit template"
+                    >
+                      <PencilIcon className="size-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => setDeleteSmsTemplateConfirm(template.id)}
+                      title="Delete template"
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <TrashIcon className="size-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit SMS Template Dialog */}
+      <Dialog open={editSmsTemplateOpen} onOpenChange={(open) => {
+        setEditSmsTemplateOpen(open)
+        if (!open) setEditingSmsTemplate(null)
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit SMS Template</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-sms-template-name">Template Name</Label>
+              <Input
+                id="edit-sms-template-name"
+                value={editSmsTemplateName}
+                onChange={(e) => setEditSmsTemplateName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-sms-template-body">Message</Label>
+              <textarea
+                id="edit-sms-template-body"
+                value={editSmsTemplateBody}
+                onChange={(e) => setEditSmsTemplateBody(e.target.value)}
+                className="flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                maxLength={1600}
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {editSmsTemplateBody.length} / 1600
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleEditSmsTemplate} disabled={savingSmsTemplate}>
+              {savingSmsTemplate ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete SMS Template Confirmation */}
+      <DeleteConfirmDialog
+        open={deleteSmsTemplateConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteSmsTemplateConfirm(null)
+        }}
+        title="Delete SMS Template"
+        description="Are you sure you want to delete this SMS template? This action cannot be undone."
+        onConfirm={() => {
+          if (deleteSmsTemplateConfirm) handleDeleteSmsTemplate(deleteSmsTemplateConfirm)
+        }}
+        isPending={deletingSmsTemplate}
       />
 
       {/* Members */}

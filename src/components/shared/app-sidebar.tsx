@@ -52,13 +52,13 @@ const subAccountNavItems = [
   { title: "Pipeline", href: "/pipeline", icon: Kanban },
   { title: "Calendar", href: "/calendar", icon: CalendarDays },
   { title: "Tasks", href: "/tasks", icon: CheckSquare },
+  { title: "Forms", href: "/forms", icon: FileText },
+  { title: "Automations", href: "/automations", icon: Zap },
+  { title: "Broadcasts", href: "/broadcasts", icon: Megaphone },
 ]
 
 const comingSoonItems = [
-  { title: "Forms", icon: FileText },
   { title: "Website", icon: Globe },
-  { title: "Automations", icon: Zap },
-  { title: "Broadcasts", icon: Megaphone },
   { title: "Reports", icon: BarChart3 },
 ]
 
