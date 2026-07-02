@@ -1,6 +1,6 @@
 "use client"
 
-import { useTransition, useState } from "react"
+import { useTransition, useState, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -13,6 +13,14 @@ import { login, signInWithMagicLink } from "@/features/auth/actions"
 import { Loader2Icon, MailIcon } from "lucide-react"
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<Card><CardContent className="p-8 flex justify-center"><Loader2Icon className="animate-spin" /></CardContent></Card>}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const [isPending, startTransition] = useTransition()
   const [isMagicLinkPending, startMagicLinkTransition] = useTransition()
   const [email, setEmail] = useState("")
