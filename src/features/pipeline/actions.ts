@@ -78,6 +78,7 @@ export async function createDeal(input: CreateDealInput) {
   })
 
   revalidatePath("/pipeline")
+  revalidatePath("/calendar")
   return deal
 }
 
@@ -128,6 +129,7 @@ export async function updateDeal(dealId: string, input: UpdateDealInput) {
   })
 
   revalidatePath("/pipeline")
+  revalidatePath("/calendar")
   return deal
 }
 
@@ -170,6 +172,7 @@ export async function moveDeal(dealId: string, newStageId: string) {
   })
 
   revalidatePath("/pipeline")
+  revalidatePath("/calendar")
 }
 
 export async function updateDealStatus(dealId: string, status: DealStatus) {
@@ -199,6 +202,7 @@ export async function updateDealStatus(dealId: string, status: DealStatus) {
   })
 
   revalidatePath("/pipeline")
+  revalidatePath("/calendar")
   return deal
 }
 
@@ -216,6 +220,7 @@ export async function deleteDeal(dealId: string) {
   }
 
   revalidatePath("/pipeline")
+  revalidatePath("/calendar")
 }
 
 export async function addDealNote(dealId: string, content: string) {
@@ -243,6 +248,7 @@ export async function addDealNote(dealId: string, content: string) {
   }
 
   revalidatePath("/pipeline")
+  revalidatePath("/calendar")
 }
 
 export async function fetchDealActivities(dealId: string) {

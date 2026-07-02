@@ -48,7 +48,7 @@ export default async function ContactDetailRoute({
   }
 
   // Fetch related data in parallel
-  const [{ data: activities }, { data: deals }, { data: tasks }] =
+  const [{ data: activities }, { data: deals }, { data: tasks }, { data: stages }] =
     await Promise.all([
       supabase
         .from("activities")
@@ -65,6 +65,11 @@ export default async function ContactDetailRoute({
         .select("*")
         .eq("contact_id", id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("pipeline_stages")
+        .select("*")
+        .eq("sub_account_id", subAccountId)
+        .order("position"),
     ])
 
   const contactWithRelations: ContactWithRelations = {
@@ -75,6 +80,14 @@ export default async function ContactDetailRoute({
   }
 
   const tagColors = ((subAccount?.settings as Record<string, unknown>)?.tags as Array<{ id: string; name: string; color: string }>) ?? []
+  const currency = (subAccount as { currency?: string } | null)?.currency ?? "USD"
 
-  return <ContactDetailPage contact={contactWithRelations} tagColors={tagColors} />
+  return (
+    <ContactDetailPage
+      contact={contactWithRelations}
+      tagColors={tagColors}
+      stages={(stages ?? []) as import("@/types/database").PipelineStage[]}
+      defaultCurrency={currency}
+    />
+  )
 }

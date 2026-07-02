@@ -4,6 +4,43 @@ import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import type { CreateContactInput, UpdateContactInput } from "./types"
 
+// Auto-register any new tags in sub-account settings (with default gray color)
+async function syncNewTags(
+  supabase: Awaited<ReturnType<typeof getUserContext>>["supabase"],
+  orgId: string,
+  subAccountId: string,
+  tags: string[]
+) {
+  if (!tags.length) return
+
+  const { data: subAccount } = await supabase
+    .from("sub_accounts")
+    .select("settings")
+    .eq("id", subAccountId)
+    .single()
+
+  const settings = (subAccount?.settings ?? {}) as Record<string, unknown>
+  const existingTags = (settings.tags as Array<{ id: string; name: string; color: string }>) ?? []
+  const existingNames = new Set(existingTags.map((t) => t.name.toLowerCase()))
+
+  const newTags = tags.filter((t) => !existingNames.has(t.toLowerCase()))
+  if (!newTags.length) return
+
+  const tagsToAdd = newTags.map((name) => ({
+    id: crypto.randomUUID(),
+    name,
+    color: "#6b7280", // default gray — user can change color in settings
+  }))
+
+  await supabase
+    .from("sub_accounts")
+    .update({
+      settings: { ...settings, tags: [...existingTags, ...tagsToAdd] },
+    })
+    .eq("id", subAccountId)
+    .eq("org_id", orgId)
+}
+
 export async function createContact(input: CreateContactInput) {
   const { userId, orgId, subAccountId, supabase } = await getUserContext()
 
@@ -29,6 +66,11 @@ export async function createContact(input: CreateContactInput) {
     return { error: error.message }
   }
 
+  // Sync any new tags to settings
+  if (input.tags?.length) {
+    await syncNewTags(supabase, orgId, subAccountId, input.tags)
+  }
+
   // Create system activity
   await supabase.from("activities").insert({
     org_id: orgId,
@@ -41,6 +83,7 @@ export async function createContact(input: CreateContactInput) {
   })
 
   revalidatePath("/contacts")
+  revalidatePath("/settings")
   return { data: contact }
 }
 
@@ -66,6 +109,11 @@ export async function updateContact(
     return { error: error.message }
   }
 
+  // Sync any new tags to settings
+  if (input.tags?.length) {
+    await syncNewTags(supabase, orgId, subAccountId, input.tags)
+  }
+
   // Create system activity
   await supabase.from("activities").insert({
     org_id: orgId,
@@ -79,6 +127,7 @@ export async function updateContact(
 
   revalidatePath("/contacts")
   revalidatePath(`/contacts/${id}`)
+  revalidatePath("/settings")
   return { data: contact }
 }
 

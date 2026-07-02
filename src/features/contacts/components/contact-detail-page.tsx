@@ -6,6 +6,8 @@ import Link from "next/link"
 import type { ContactWithRelations } from "../types"
 import type { ConsentStatus, Deal, Task, Activity } from "@/types/database"
 import { updateContact, deleteContact, addNote, editNote, deleteNote } from "../actions"
+import { updateDealStatus } from "@/features/pipeline/actions"
+import type { DealStatus } from "@/types/database"
 import { formatSmartDate, formatDateShort } from "@/lib/utils/dates"
 import { formatCurrencyCompact } from "@/lib/utils/currency"
 import { ACTIVITY_TYPE_COLORS, SOURCE_COLORS } from "@/lib/constants/colors"
@@ -38,6 +40,8 @@ import { PriorityBadge, StatusBadge } from "@/components/shared/status-badges"
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
 import { ComposeEmailDialog } from "@/features/email/components/compose-email-dialog"
 import { ComposeSmsDialog } from "@/features/sms/components/compose-sms-dialog"
+import { CreateDealDialog } from "@/features/pipeline/components/create-deal-dialog"
+import type { PipelineStage } from "@/types/database"
 
 import {
   ArrowLeft,
@@ -76,6 +80,8 @@ interface TagColor {
 interface ContactDetailPageProps {
   contact: ContactWithRelations
   tagColors: TagColor[]
+  stages: PipelineStage[]
+  defaultCurrency: string
 }
 
 function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined {
@@ -94,7 +100,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 
 // ── Main Component ──
 
-export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps) {
+export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency }: ContactDetailPageProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -128,6 +134,9 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
 
   // SMS compose dialog
   const [smsDialogOpen, setSmsDialogOpen] = useState(false)
+
+  // Create deal dialog
+  const [createDealOpen, setCreateDealOpen] = useState(false)
 
   // Mobile tab state
   const [mobileTab, setMobileTab] = useState<"profile" | "activity" | "context">("activity")
@@ -500,7 +509,7 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
               Deals ({contact.deals.length})
             </CardTitle>
             <CardAction>
-              <Button size="sm" onClick={() => router.push("/pipeline")}>
+              <Button size="sm" onClick={() => setCreateDealOpen(true)}>
                 <Plus className="size-3.5" />
                 Deal
               </Button>
@@ -512,21 +521,7 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
             ) : (
               <div className="flex flex-col gap-2">
                 {contact.deals.map((deal) => (
-                  <Link
-                    key={deal.id}
-                    href="/pipeline"
-                    className="flex items-center justify-between gap-2 rounded-lg border bg-card p-3 shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{deal.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {deal.stage?.name ?? "No stage"} · {formatCurrencyCompact(deal.value, deal.currency)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <StatusBadge status={deal.status} />
-                    </div>
-                  </Link>
+                  <DealTile key={deal.id} deal={deal} />
                 ))}
               </div>
             )}
@@ -706,11 +701,67 @@ export function ContactDetailPage({ contact, tagColors }: ContactDetailPageProps
           contactName={displayName}
         />
       )}
+
+      {stages.length > 0 && (
+        <CreateDealDialog
+          stages={stages}
+          open={createDealOpen}
+          onOpenChange={setCreateDealOpen}
+          onDealCreated={() => router.refresh()}
+          defaultCurrency={defaultCurrency}
+          defaultContactId={contact.id}
+          defaultContactLabel={displayName}
+        />
+      )}
     </div>
   )
 }
 
 // ── Sub-components ──
+
+function DealTile({ deal }: { deal: Deal & { stage?: { name: string } | null } }) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  function handleStatusChange(newStatus: string | null) {
+    if (!newStatus || newStatus === deal.status) return
+    startTransition(async () => {
+      try {
+        await updateDealStatus(deal.id, newStatus as DealStatus)
+        toast.success(`Deal marked as ${newStatus}`)
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to update status")
+      }
+    })
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border bg-card p-3 shadow-sm hover:shadow-md transition-shadow">
+      <Link href="/pipeline" className="min-w-0 flex-1">
+        <p className="text-sm font-medium truncate">{deal.title}</p>
+        <p className="text-xs text-muted-foreground">
+          {deal.stage?.name ?? "No stage"} · {formatCurrencyCompact(deal.value, deal.currency)}
+        </p>
+      </Link>
+      <div className="flex items-center gap-1 shrink-0">
+        <Select value={deal.status} onValueChange={handleStatusChange}>
+          <SelectTrigger className="h-6 w-auto gap-1 border-none bg-transparent px-1 text-xs shadow-none focus:ring-0 [&>svg]:size-3">
+            <SelectValue>
+              <StatusBadge status={deal.status} />
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent align="end">
+            <SelectItem value="open">Open</SelectItem>
+            <SelectItem value="won">Won</SelectItem>
+            <SelectItem value="lost">Lost</SelectItem>
+          </SelectContent>
+        </Select>
+        {isPending && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
+      </div>
+    </div>
+  )
+}
 
 function ActivityRow({
   activity,

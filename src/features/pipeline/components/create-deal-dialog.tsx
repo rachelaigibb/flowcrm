@@ -25,7 +25,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
 import {
   Command,
   CommandInput,
@@ -37,7 +36,7 @@ import {
 import { cn } from "@/lib/utils"
 import { PRIORITY_COLORS } from "@/lib/constants/colors"
 import type { PriorityKey } from "@/lib/constants/colors"
-import { CalendarIcon, ChevronsUpDown, Check } from "lucide-react"
+import { ChevronsUpDown, Check } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "sonner"
 import { createDeal, searchContacts } from "../actions"
@@ -49,6 +48,8 @@ interface CreateDealDialogProps {
   onOpenChange: (open: boolean) => void
   onDealCreated: () => void
   defaultCurrency?: string
+  defaultContactId?: string | null
+  defaultContactLabel?: string
 }
 
 type ContactResult = Pick<Contact, "id" | "first_name" | "last_name" | "email" | "company">
@@ -59,6 +60,8 @@ export function CreateDealDialog({
   onOpenChange,
   onDealCreated,
   defaultCurrency = "USD",
+  defaultContactId = null,
+  defaultContactLabel = "",
 }: CreateDealDialogProps) {
   const [isPending, startTransition] = useTransition()
   const [title, setTitle] = useState("")
@@ -67,13 +70,12 @@ export function CreateDealDialog({
   const [stageId, setStageId] = useState(stages[0]?.id ?? "")
   const [priority, setPriority] = useState<DealPriority>("medium")
   const [expectedClose, setExpectedClose] = useState<Date | undefined>()
-  const [contactId, setContactId] = useState<string | null>(null)
+  const [contactId, setContactId] = useState<string | null>(defaultContactId)
   const [contactSearch, setContactSearch] = useState("")
   const [contacts, setContacts] = useState<ContactResult[]>([])
   const [address, setAddress] = useState("")
   const [contactPopoverOpen, setContactPopoverOpen] = useState(false)
-  const [datePopoverOpen, setDatePopoverOpen] = useState(false)
-  const [selectedContactLabel, setSelectedContactLabel] = useState("")
+  const [selectedContactLabel, setSelectedContactLabel] = useState(defaultContactLabel)
 
   function resetForm() {
     setTitle("")
@@ -228,32 +230,14 @@ export function CreateDealDialog({
 
           <div className="space-y-1.5">
             <Label>Expected Close</Label>
-            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
-              <PopoverTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !expectedClose && "text-muted-foreground"
-                    )}
-                  />
-                }
-              >
-                <CalendarIcon className="size-4" data-icon="inline-start" />
-                {expectedClose ? format(expectedClose, "MMM d, yyyy") : "Select date"}
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={expectedClose}
-                  onSelect={(date) => {
-                    setExpectedClose(date ?? undefined)
-                    setDatePopoverOpen(false)
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
+            <Input
+              type="date"
+              value={expectedClose ? format(expectedClose, "yyyy-MM-dd") : ""}
+              onChange={(e) => {
+                const val = e.target.value
+                setExpectedClose(val ? new Date(val + "T00:00:00") : undefined)
+              }}
+            />
           </div>
 
           <div className="space-y-1.5">

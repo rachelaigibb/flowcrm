@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -104,14 +104,17 @@ export function NotesSection({
   return (
     <>
       <Card>
-        <CardHeader className="flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
             <MessageSquare className="size-4" />
             Notes ({notes.length})
           </CardTitle>
-          <Button variant="ghost" size="icon-xs" onClick={openAddDialog}>
-            <Plus className="size-4" />
-          </Button>
+          <CardAction>
+            <Button size="sm" onClick={openAddDialog}>
+              <Plus className="size-3.5" />
+              Note
+            </Button>
+          </CardAction>
         </CardHeader>
         {notes.length > 0 && (
           <CardContent>

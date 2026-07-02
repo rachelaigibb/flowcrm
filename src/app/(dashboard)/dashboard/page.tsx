@@ -4,7 +4,7 @@ import { getSubAccountId } from "@/lib/supabase/get-sub-account"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils/currency"
-import { ACTIVITY_TYPE_COLORS } from "@/lib/constants/colors"
+import { CollapsibleActivityList } from "@/components/shared/collapsible-activity-list"
 import {
   Users,
   DollarSign,
@@ -291,40 +291,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {recentActivities.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No recent activity
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {recentActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-start gap-3 text-sm"
-                  >
-                    <Badge variant="secondary" className="mt-0.5 shrink-0">
-                      {activity.type}
-                    </Badge>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-foreground">
-                        {activity.content ?? "No description"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(activity.created_at).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <CollapsibleActivityList activities={recentActivities} />
           </CardContent>
         </Card>
 
