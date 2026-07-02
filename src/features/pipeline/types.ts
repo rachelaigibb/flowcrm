@@ -22,6 +22,7 @@ export interface CreateDealInput {
   priority: DealPriority
   expected_close: string | null
   contact_id: string | null
+  address: string | null
 }
 
 export interface UpdateDealInput {
@@ -33,4 +34,7 @@ export interface UpdateDealInput {
   status?: DealStatus
   expected_close?: string | null
   contact_id?: string | null
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
 }

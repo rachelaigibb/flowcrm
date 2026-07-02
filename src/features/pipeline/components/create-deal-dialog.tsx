@@ -70,6 +70,7 @@ export function CreateDealDialog({
   const [contactId, setContactId] = useState<string | null>(null)
   const [contactSearch, setContactSearch] = useState("")
   const [contacts, setContacts] = useState<ContactResult[]>([])
+  const [address, setAddress] = useState("")
   const [contactPopoverOpen, setContactPopoverOpen] = useState(false)
   const [datePopoverOpen, setDatePopoverOpen] = useState(false)
   const [selectedContactLabel, setSelectedContactLabel] = useState("")
@@ -85,6 +86,7 @@ export function CreateDealDialog({
     setContactSearch("")
     setContacts([])
     setSelectedContactLabel("")
+    setAddress("")
   }
 
   async function handleContactSearch(q: string) {
@@ -118,6 +120,7 @@ export function CreateDealDialog({
           priority,
           expected_close: expectedClose ? format(expectedClose, "yyyy-MM-dd") : null,
           contact_id: contactId,
+          address: address.trim() || null,
         })
         toast.success("Deal created")
         resetForm()
@@ -322,6 +325,19 @@ export function CreateDealDialog({
                 </Command>
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="deal-address">Property Address</Label>
+            <Input
+              id="deal-address"
+              placeholder="e.g. 123 Marina Walk, Dubai"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Used for the deal map view
+            </p>
           </div>
 
           <DialogFooter>

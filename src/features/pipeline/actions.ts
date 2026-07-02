@@ -9,8 +9,36 @@ async function getContext() {
   return getUserContext()
 }
 
+// Free geocoding via OpenStreetMap Nominatim
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`,
+      { headers: { "User-Agent": "FlowCRM/1.0" } }
+    )
+    const data = await res.json()
+    if (data && data.length > 0) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+    }
+  } catch {
+    // Geocoding failed — not critical
+  }
+  return null
+}
+
 export async function createDeal(input: CreateDealInput) {
   const { supabase, userId, orgId, subAccountId } = await getContext()
+
+  // Geocode address if provided
+  let latitude: number | null = null
+  let longitude: number | null = null
+  if (input.address?.trim()) {
+    const coords = await geocodeAddress(input.address.trim())
+    if (coords) {
+      latitude = coords.lat
+      longitude = coords.lng
+    }
+  }
 
   const { data: deal, error } = await supabase
     .from("deals")
@@ -25,6 +53,9 @@ export async function createDeal(input: CreateDealInput) {
       status: "open" as const,
       expected_close: input.expected_close,
       contact_id: input.contact_id,
+      address: input.address?.trim() || null,
+      latitude,
+      longitude,
       metadata: {},
     })
     .select()
@@ -52,6 +83,24 @@ export async function createDeal(input: CreateDealInput) {
 
 export async function updateDeal(dealId: string, input: UpdateDealInput) {
   const { supabase, userId, orgId, subAccountId } = await getContext()
+
+  // Re-geocode if address changed
+  if (input.address !== undefined) {
+    if (input.address?.trim()) {
+      const coords = await geocodeAddress(input.address.trim())
+      if (coords) {
+        input.latitude = coords.lat
+        input.longitude = coords.lng
+      } else {
+        input.latitude = null
+        input.longitude = null
+      }
+    } else {
+      input.address = null
+      input.latitude = null
+      input.longitude = null
+    }
+  }
 
   const { data: deal, error } = await supabase
     .from("deals")
