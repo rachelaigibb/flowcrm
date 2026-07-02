@@ -2,6 +2,7 @@
 
 import { useTransition, useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,10 +16,12 @@ export default function LoginPage() {
   const [isPending, startTransition] = useTransition()
   const [isMagicLinkPending, startMagicLinkTransition] = useTransition()
   const [email, setEmail] = useState("")
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("redirect") ?? undefined
 
   function handleLogin(formData: FormData) {
     startTransition(async () => {
-      const result = await login(formData)
+      const result = await login(formData, redirectTo)
       if (result?.error) {
         toast.error(result.error)
       }

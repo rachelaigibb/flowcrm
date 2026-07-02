@@ -23,6 +23,7 @@ import {
   FileText,
   Zap,
   Megaphone,
+  BarChart3,
 } from "lucide-react"
 
 const pages = [
@@ -34,6 +35,7 @@ const pages = [
   { name: "Forms", href: "/forms", icon: FileText },
   { name: "Automations", href: "/automations", icon: Zap },
   { name: "Broadcasts", href: "/broadcasts", icon: Megaphone },
+  { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Agency Home", href: "/agency", icon: Home },
   { name: "Settings", href: "/settings", icon: Settings },
 ]

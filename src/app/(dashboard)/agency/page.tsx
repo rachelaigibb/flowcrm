@@ -25,6 +25,11 @@ export default async function AgencyPage() {
 
   if (!membership) redirect("/login")
 
+  // Only owners and admins can access agency pages
+  if (membership.role !== "owner" && membership.role !== "admin") {
+    redirect("/dashboard")
+  }
+
   const { data: subAccounts } = await supabase
     .from("sub_accounts")
     .select("*")

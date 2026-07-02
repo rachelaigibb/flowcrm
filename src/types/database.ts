@@ -94,6 +94,9 @@ export interface Deal {
   priority: DealPriority
   status: DealStatus
   expected_close: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -271,6 +274,24 @@ export interface EmailTemplate {
   name: string
   subject: string
   body: string
+  created_at: string
+  updated_at: string
+}
+
+export type InvitationStatus = "pending" | "accepted" | "expired" | "revoked"
+
+export interface Invitation {
+  id: string
+  org_id: string
+  email: string
+  role: OrgRole
+  sub_account_ids: string[]
+  sub_account_role: SubAccountRole
+  token: string
+  status: InvitationStatus
+  invited_by: string
+  accepted_by: string | null
+  expires_at: string
   created_at: string
   updated_at: string
 }

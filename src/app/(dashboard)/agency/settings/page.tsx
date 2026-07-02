@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AgencySettingsPage } from "@/features/settings/components/agency-settings-page"
-import type { Organization, Membership } from "@/types/database"
+import type { Organization, Membership, SubAccount } from "@/types/database"
 
 export const metadata = {
   title: "Agency Settings | FlowCRM",
@@ -25,7 +25,7 @@ export default async function AgencySettingsRoute() {
 
   if (!membership) redirect("/login")
 
-  const [orgResult, membersResult] = await Promise.all([
+  const [orgResult, membersResult, subAccountsResult] = await Promise.all([
     supabase
       .from("organizations")
       .select("*")
@@ -36,6 +36,11 @@ export default async function AgencySettingsRoute() {
       .select("*")
       .eq("org_id", membership.org_id)
       .order("created_at"),
+    supabase
+      .from("sub_accounts")
+      .select("*")
+      .eq("org_id", membership.org_id)
+      .order("name"),
   ])
 
   if (!orgResult.data) redirect("/login")
@@ -49,6 +54,7 @@ export default async function AgencySettingsRoute() {
     <AgencySettingsPage
       org={orgResult.data as Organization}
       members={enrichedMembers}
+      subAccounts={(subAccountsResult.data ?? []) as SubAccount[]}
     />
   )
 }

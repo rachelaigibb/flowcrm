@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 
-export async function login(formData: FormData) {
+export async function login(formData: FormData, redirectTo?: string) {
   const supabase = await createClient()
 
   const email = formData.get("email") as string
@@ -24,7 +24,7 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath("/", "layout")
-  redirect("/")
+  redirect(redirectTo || "/")
 }
 
 export async function signup(formData: FormData) {

@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/sidebar"
 import { SubAccountSwitcher } from "@/components/shared/sub-account-switcher"
 import { signOut } from "@/features/auth/actions"
-import type { Organization, SubAccount } from "@/types/database"
+import type { Organization, SubAccount, OrgRole } from "@/types/database"
 
 const agencyNavItems = [
   { title: "Agency Home", href: "/agency", icon: Home },
@@ -55,11 +55,11 @@ const subAccountNavItems = [
   { title: "Forms", href: "/forms", icon: FileText },
   { title: "Automations", href: "/automations", icon: Zap },
   { title: "Broadcasts", href: "/broadcasts", icon: Megaphone },
+  { title: "Reports", href: "/reports", icon: BarChart3 },
 ]
 
 const comingSoonItems = [
   { title: "Website", icon: Globe },
-  { title: "Reports", icon: BarChart3 },
 ]
 
 interface AppSidebarProps {
@@ -67,6 +67,7 @@ interface AppSidebarProps {
   subAccounts: SubAccount[]
   currentSubAccountId: string | null
   userEmail: string
+  orgRole: OrgRole
 }
 
 function getInitials(name: string): string {
@@ -83,10 +84,12 @@ export function AppSidebar({
   subAccounts,
   currentSubAccountId,
   userEmail,
+  orgRole,
 }: AppSidebarProps) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
 
+  const isAdmin = orgRole === "owner" || orgRole === "admin"
   const orgInitials = getInitials(org.name || "O")
   const currentSubAccount = subAccounts.find(
     (sa) => sa.id === currentSubAccountId
@@ -106,35 +109,39 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
-        {/* AGENCY section */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
-            Agency
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {agencyNavItems.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/agency" && pathname.startsWith(item.href))
+        {/* AGENCY section — only visible to owners and admins */}
+        {isAdmin && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+                Agency
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {agencyNavItems.map((item) => {
+                    const isActive =
+                      pathname === item.href ||
+                      (item.href !== "/agency" && pathname.startsWith(item.href))
 
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      render={<Link href={item.href} />}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                    return (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          render={<Link href={item.href} />}
+                        >
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-        <SidebarSeparator />
+            <SidebarSeparator />
+          </>
+        )}
 
         {/* SUB-ACCOUNT section */}
         <SidebarGroup>

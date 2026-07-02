@@ -6,7 +6,8 @@ import { Separator } from "@/components/ui/separator"
 import { AppSidebar } from "@/components/shared/app-sidebar"
 import { CommandPalette } from "@/components/shared/command-palette"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
-import type { Organization, SubAccount, Membership } from "@/types/database"
+import { RoleProvider } from "@/components/shared/role-context"
+import type { Organization, SubAccount, Membership, OrgRole } from "@/types/database"
 
 export default async function DashboardLayout({
   children,
@@ -83,6 +84,7 @@ export default async function DashboardLayout({
         subAccounts={typedSubAccounts}
         currentSubAccountId={currentSubAccountId}
         userEmail={user.email ?? ""}
+        orgRole={membership.role as OrgRole}
       />
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
@@ -104,7 +106,9 @@ export default async function DashboardLayout({
           <ThemeToggle />
         </header>
         <div className="flex flex-1 flex-col overflow-auto overflow-x-hidden p-4 md:p-6">
-          {children}
+          <RoleProvider orgRole={membership.role as OrgRole} userId={user.id}>
+            {children}
+          </RoleProvider>
         </div>
       </SidebarInset>
       <CommandPalette />

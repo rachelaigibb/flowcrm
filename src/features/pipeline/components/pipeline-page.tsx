@@ -43,7 +43,8 @@ import { CreateDealDialog } from "./create-deal-dialog"
 import { moveDeal } from "../actions"
 import { formatCurrency, formatCurrencyCompact } from "@/lib/utils/currency"
 import { formatDateShort } from "@/lib/utils/dates"
-import { Plus, Search, Filter, LayoutGrid, List, Settings, TrendingUp, DollarSign, Trophy } from "lucide-react"
+import { Plus, Search, Filter, LayoutGrid, List, MapPin, Settings, TrendingUp, DollarSign, Trophy } from "lucide-react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import type { DealWithContact, StageWithDeals } from "../types"
@@ -310,6 +311,15 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
             >
               <List className="size-3.5" />
             </Button>
+            <Link href="/pipeline/map">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2.5"
+              >
+                <MapPin className="size-3.5" />
+              </Button>
+            </Link>
           </div>
           <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
             <Plus className="size-4" data-icon="inline-start" />
