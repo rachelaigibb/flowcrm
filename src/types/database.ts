@@ -3,7 +3,7 @@
 
 export type OrgRole = "owner" | "admin" | "member"
 export type SubAccountRole = "admin" | "collaborator"
-export type DealStatus = "open" | "won" | "lost"
+export type DealStatus = "open" | "won" | "lost" | "closed"
 export type DealPriority = "low" | "medium" | "high"
 export type TaskStatus = "pending" | "completed" | "cancelled"
 export type ConsentStatus = "explicit" | "implied" | "none" | "withdrawn"

@@ -44,6 +44,12 @@ export const STATUS_COLORS = {
     text: "text-red-400",
     label: "Lost",
   },
+  closed: {
+    badge: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+    dot: "bg-gray-400",
+    text: "text-gray-400",
+    label: "Closed",
+  },
   // Task statuses
   pending: {
     badge: "bg-blue-500/10 text-blue-400 border-blue-500/20",

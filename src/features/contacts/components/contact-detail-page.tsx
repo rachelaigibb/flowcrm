@@ -41,6 +41,9 @@ import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
 import { ComposeEmailDialog } from "@/features/email/components/compose-email-dialog"
 import { ComposeSmsDialog } from "@/features/sms/components/compose-sms-dialog"
 import { CreateDealDialog } from "@/features/pipeline/components/create-deal-dialog"
+import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog"
+import { DealDetailSheet } from "@/features/pipeline/components/deal-detail-sheet"
+import type { DealWithContact } from "@/features/pipeline/types"
 import type { PipelineStage } from "@/types/database"
 
 import {
@@ -66,6 +69,8 @@ import {
   Shield,
   Clock,
   Tag,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { SOURCE_OPTIONS } from "../types"
 
@@ -82,6 +87,10 @@ interface ContactDetailPageProps {
   tagColors: TagColor[]
   stages: PipelineStage[]
   defaultCurrency: string
+  prevContactId: string | null
+  nextContactId: string | null
+  allContacts: { id: string; first_name: string | null; last_name: string | null }[]
+  allDeals: { id: string; title: string }[]
 }
 
 function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined {
@@ -100,7 +109,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 
 // ── Main Component ──
 
-export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency }: ContactDetailPageProps) {
+export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency, prevContactId, nextContactId, allContacts, allDeals }: ContactDetailPageProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -137,6 +146,13 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency 
 
   // Create deal dialog
   const [createDealOpen, setCreateDealOpen] = useState(false)
+
+  // Create task dialog
+  const [createTaskOpen, setCreateTaskOpen] = useState(false)
+
+  // Deal detail sheet
+  const [selectedDeal, setSelectedDeal] = useState<DealWithContact | null>(null)
+  const [dealSheetOpen, setDealSheetOpen] = useState(false)
 
   // Mobile tab state
   const [mobileTab, setMobileTab] = useState<"profile" | "activity" | "context">("activity")
@@ -521,7 +537,14 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency 
             ) : (
               <div className="flex flex-col gap-2">
                 {contact.deals.map((deal) => (
-                  <DealTile key={deal.id} deal={deal} />
+                  <DealTile
+                    key={deal.id}
+                    deal={deal}
+                    onOpenDetail={() => {
+                      setSelectedDeal(deal as DealWithContact)
+                      setDealSheetOpen(true)
+                    }}
+                  />
                 ))}
               </div>
             )}
@@ -536,7 +559,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency 
               Tasks ({contact.tasks.length})
             </CardTitle>
             <CardAction>
-              <Button size="sm" onClick={() => router.push("/tasks")}>
+              <Button size="sm" onClick={() => setCreateTaskOpen(true)}>
                 <Plus className="size-3.5" />
                 Task
               </Button>
@@ -583,12 +606,33 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency 
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      {/* Top bar: back to contacts */}
+      {/* Top bar: back to contacts + prev/next nav */}
       <div className="flex items-center gap-3 shrink-0">
         <Button variant="ghost" size="icon-sm" onClick={() => router.push("/contacts")}>
           <ArrowLeft className="size-4" />
         </Button>
         <span className="text-sm text-muted-foreground">Contacts</span>
+        <div className="flex-1" />
+        <div className="flex items-center gap-1">
+          {prevContactId ? (
+            <Button variant="ghost" size="icon-sm" render={<Link href={`/contacts/${prevContactId}`} />}>
+              <ChevronLeft className="size-4" />
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon-sm" disabled>
+              <ChevronLeft className="size-4" />
+            </Button>
+          )}
+          {nextContactId ? (
+            <Button variant="ghost" size="icon-sm" render={<Link href={`/contacts/${nextContactId}`} />}>
+              <ChevronRight className="size-4" />
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon-sm" disabled>
+              <ChevronRight className="size-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Mobile tabs (shown below lg breakpoint) */}
@@ -713,13 +757,31 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency 
           defaultContactLabel={displayName}
         />
       )}
+
+      <CreateTaskDialog
+        contacts={allContacts}
+        deals={allDeals.map((d) => ({ id: d.id, title: d.title }))}
+        externalOpen={createTaskOpen}
+        onExternalOpenChange={setCreateTaskOpen}
+        defaultContactId={contact.id}
+      />
+
+      {selectedDeal && (
+        <DealDetailSheet
+          deal={selectedDeal}
+          stages={stages}
+          open={dealSheetOpen}
+          onOpenChange={setDealSheetOpen}
+          onDealUpdated={() => router.refresh()}
+        />
+      )}
     </div>
   )
 }
 
 // ── Sub-components ──
 
-function DealTile({ deal }: { deal: Deal & { stage?: { name: string } | null } }) {
+function DealTile({ deal, onOpenDetail }: { deal: Deal & { stage?: { name: string } | null }; onOpenDetail: () => void }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -738,12 +800,12 @@ function DealTile({ deal }: { deal: Deal & { stage?: { name: string } | null } }
 
   return (
     <div className="flex items-center justify-between gap-2 rounded-lg border bg-card p-3 shadow-sm hover:shadow-md transition-shadow">
-      <Link href="/pipeline" className="min-w-0 flex-1">
+      <button type="button" onClick={onOpenDetail} className="min-w-0 flex-1 text-left">
         <p className="text-sm font-medium truncate">{deal.title}</p>
         <p className="text-xs text-muted-foreground">
           {deal.stage?.name ?? "No stage"} · {formatCurrencyCompact(deal.value, deal.currency)}
         </p>
-      </Link>
+      </button>
       <div className="flex items-center gap-1 shrink-0">
         <Select value={deal.status} onValueChange={handleStatusChange}>
           <SelectTrigger className="h-6 w-auto gap-1 border-none bg-transparent px-1 text-xs shadow-none focus:ring-0 [&>svg]:size-3">
@@ -753,8 +815,7 @@ function DealTile({ deal }: { deal: Deal & { stage?: { name: string } | null } }
           </SelectTrigger>
           <SelectContent align="end">
             <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="won">Won</SelectItem>
-            <SelectItem value="lost">Lost</SelectItem>
+            <SelectItem value="closed">Closed</SelectItem>
           </SelectContent>
         </Select>
         {isPending && <Loader2 className="size-3 animate-spin text-muted-foreground" />}

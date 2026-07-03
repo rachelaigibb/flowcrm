@@ -57,20 +57,28 @@ interface CreateTaskDialogProps {
   contacts: ContactOption[]
   deals: DealOption[]
   children?: React.ReactNode
+  externalOpen?: boolean
+  onExternalOpenChange?: (open: boolean) => void
+  defaultContactId?: string
 }
 
 export function CreateTaskDialog({
   contacts,
   deals,
   children,
+  externalOpen,
+  onExternalOpenChange,
+  defaultContactId = "",
 }: CreateTaskDialogProps) {
-  const [open, setOpen] = React.useState(false)
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  const open = externalOpen !== undefined ? externalOpen : internalOpen
+  const setOpen = onExternalOpenChange ?? setInternalOpen
   const [loading, setLoading] = React.useState(false)
   const [title, setTitle] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [dueDate, setDueDate] = React.useState<Date | undefined>()
   const [priority, setPriority] = React.useState<DealPriority>("medium")
-  const [contactId, setContactId] = React.useState<string>("")
+  const [contactId, setContactId] = React.useState<string>(defaultContactId)
   const [dealId, setDealId] = React.useState<string>("")
   const [contactOpen, setContactOpen] = React.useState(false)
   const [dealOpen, setDealOpen] = React.useState(false)

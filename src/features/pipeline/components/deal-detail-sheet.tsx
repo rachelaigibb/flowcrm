@@ -35,8 +35,8 @@ import {
 import type { DealWithContact, UpdateDealInput } from "../types"
 import type { PipelineStage, Activity, DealStatus, DealPriority } from "@/types/database"
 import {
-  Trophy,
-  XCircle,
+  Lock,
+  Unlock,
   Trash2,
   Pencil,
   Save,
@@ -115,6 +115,7 @@ export function DealDetailSheet({
       value: currentDeal.value,
       currency: currentDeal.currency,
       stage_id: currentDeal.stage_id,
+      status: currentDeal.status,
       priority: currentDeal.priority,
       expected_close: currentDeal.expected_close,
     })
@@ -208,28 +209,27 @@ export function DealDetailSheet({
           <div className="flex-1 space-y-6 px-4 pb-6">
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2">
-              {currentDeal.status === "open" && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleStatusChange("won")}
-                    disabled={isPending}
-                  >
-                    <Trophy className="size-3.5" data-icon="inline-start" />
-                    Mark as Won
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleStatusChange("lost")}
-                    disabled={isPending}
-                  >
-                    <XCircle className="size-3.5" data-icon="inline-start" />
-                    Mark as Lost
-                  </Button>
-                </>
-              )}
+              {currentDeal.status === "open" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStatusChange("closed")}
+                  disabled={isPending}
+                >
+                  <Lock className="size-3.5" data-icon="inline-start" />
+                  Close Deal
+                </Button>
+              ) : (currentDeal.status === "closed" || currentDeal.status === "won" || currentDeal.status === "lost") ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStatusChange("open")}
+                  disabled={isPending}
+                >
+                  <Unlock className="size-3.5" data-icon="inline-start" />
+                  Reopen Deal
+                </Button>
+              ) : null}
               {!isEditing ? (
                 <Button variant="ghost" size="sm" onClick={startEditing}>
                   <Pencil className="size-3.5" data-icon="inline-start" />
@@ -323,6 +323,28 @@ export function DealDetailSheet({
                             {stage.name}
                           </SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Status</Label>
+                    <Select
+                      value={editData.status}
+                      onValueChange={(val: string | null) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          status: (val ?? undefined) as DealStatus | undefined,
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {editData.status ? editData.status.charAt(0).toUpperCase() + editData.status.slice(1) : "Select status"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

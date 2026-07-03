@@ -67,7 +67,7 @@ interface TasksPageProps {
 }
 
 type FilterTab = "all" | "pending" | "completed" | "overdue"
-type GroupMode = "none" | "date"
+type GroupMode = "none" | "date" | "priority"
 type SortField = "due_date" | "priority" | "created_at"
 type SortDir = "asc" | "desc"
 
@@ -97,6 +97,19 @@ function getDateGroup(task: TaskWithRelations): string {
 }
 
 const groupOrder = ["Overdue", "Today", "This Week", "Later", "No Date"]
+const priorityGroupOrder = ["High", "Medium", "Low"]
+
+function getPriorityGroup(task: TaskWithRelations): string {
+  switch (task.priority) {
+    case "high":
+      return "High"
+    case "medium":
+      return "Medium"
+    case "low":
+    default:
+      return "Low"
+  }
+}
 
 const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 }
 
@@ -317,12 +330,14 @@ export function TasksPage({ tasks, contacts, deals }: TasksPageProps) {
     if (groupMode === "none") return null
     const groups: Record<string, TaskWithRelations[]> = {}
     for (const task of filteredTasks) {
-      const group = getDateGroup(task)
+      const group = groupMode === "priority" ? getPriorityGroup(task) : getDateGroup(task)
       if (!groups[group]) groups[group] = []
       groups[group].push(task)
     }
     return groups
   }, [filteredTasks, groupMode])
+
+  const activeGroupOrder = groupMode === "priority" ? priorityGroupOrder : groupOrder
 
   async function handleToggle(id: string) {
     const result = await toggleTaskStatus(id)
@@ -440,14 +455,22 @@ export function TasksPage({ tasks, contacts, deals }: TasksPageProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button
-            variant={groupMode === "none" ? "outline" : "secondary"}
-            size="sm"
-            onClick={() => setGroupMode(groupMode === "none" ? "date" : "none")}
+          <Select
+            value={groupMode}
+            onValueChange={(val: string | null) => setGroupMode((val ?? "none") as GroupMode)}
           >
-            <CalendarDaysIcon className="size-4" />
-            {groupMode === "none" ? "Group by date" : "Ungroup"}
-          </Button>
+            <SelectTrigger className="h-9 w-auto gap-1.5 text-sm">
+              <CalendarDaysIcon className="size-4" />
+              <SelectValue>
+                {groupMode === "none" ? "No grouping" : groupMode === "date" ? "Group by date" : "Group by priority"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="none">No grouping</SelectItem>
+              <SelectItem value="date">Group by date</SelectItem>
+              <SelectItem value="priority">Group by priority</SelectItem>
+            </SelectContent>
+          </Select>
           <CreateTaskDialog contacts={contacts} deals={deals} />
         </div>
       </div>
@@ -524,14 +547,18 @@ export function TasksPage({ tasks, contacts, deals }: TasksPageProps) {
             </div>
           ) : grouped ? (
             <div className="flex flex-col gap-6">
-              {groupOrder
+              {activeGroupOrder
                 .filter((g) => grouped[g]?.length)
                 .map((group) => (
                   <div key={group} className="flex flex-col gap-2">
                     <h3
                       className={cn(
                         "text-xs font-medium uppercase tracking-wider",
-                        group === "Overdue" ? PRIORITY_COLORS.high.text : "text-muted-foreground"
+                        group === "Overdue" || group === "High"
+                          ? PRIORITY_COLORS.high.text
+                          : group === "Medium"
+                            ? PRIORITY_COLORS.medium.text
+                            : "text-muted-foreground"
                       )}
                     >
                       {group} ({grouped[group].length})

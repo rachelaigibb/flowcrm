@@ -17,7 +17,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { PRIORITY_COLORS } from "@/lib/constants/colors"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, ChevronRight, CalendarDays, Plus } from "lucide-react"
+import { ChevronLeft, ChevronRight, CalendarDays, Plus, CheckSquare, Briefcase } from "lucide-react"
+import { formatCurrencyCompact } from "@/lib/utils/currency"
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog"
 import type { DealPriority } from "@/types/database"
 
@@ -273,6 +274,149 @@ export function CalendarView({ tasks, deals, month, year, contacts, dealOptions 
           </p>
         </div>
       )}
+
+      {/* Monthly event list */}
+      <MonthlyEventList
+        tasks={tasks}
+        deals={deals}
+        monthStart={monthStart}
+        monthEnd={monthEnd}
+        monthLabel={format(currentDate, "MMMM yyyy")}
+      />
+    </div>
+  )
+}
+
+// ── Monthly event list below the calendar grid ──
+
+interface MonthlyEventListProps {
+  tasks: CalendarTask[]
+  deals: CalendarDeal[]
+  monthStart: Date
+  monthEnd: Date
+  monthLabel: string
+}
+
+interface EventItem {
+  id: string
+  date: string
+  type: "task" | "deal"
+  title: string
+  priority: DealPriority
+  // deal-specific
+  value?: number
+  currency?: string
+  status?: string
+  // task-specific
+  taskStatus?: string
+}
+
+function MonthlyEventList({ tasks, deals, monthStart, monthEnd, monthLabel }: MonthlyEventListProps) {
+  const msStart = monthStart.getTime()
+  const msEnd = monthEnd.getTime()
+
+  const events: EventItem[] = []
+
+  for (const task of tasks) {
+    if (!task.due_date) continue
+    const d = new Date(task.due_date.slice(0, 10))
+    if (d.getTime() >= msStart && d.getTime() <= msEnd) {
+      events.push({
+        id: `task-${task.id}`,
+        date: task.due_date.slice(0, 10),
+        type: "task",
+        title: task.title,
+        priority: task.priority,
+        taskStatus: task.status,
+      })
+    }
+  }
+
+  for (const deal of deals) {
+    if (!deal.expected_close) continue
+    const d = new Date(deal.expected_close.slice(0, 10))
+    if (d.getTime() >= msStart && d.getTime() <= msEnd) {
+      events.push({
+        id: `deal-${deal.id}`,
+        date: deal.expected_close.slice(0, 10),
+        type: "deal",
+        title: deal.title,
+        priority: deal.priority,
+        value: deal.value,
+        currency: deal.currency,
+        status: deal.status,
+      })
+    }
+  }
+
+  events.sort((a, b) => a.date.localeCompare(b.date))
+
+  if (events.length === 0) return null
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-sm font-semibold text-foreground">
+        Events in {monthLabel}
+      </h2>
+      <div className="rounded-lg border border-border divide-y divide-border max-h-[400px] overflow-y-auto">
+        {events.map((event) => (
+          <Link
+            key={event.id}
+            href={event.type === "task" ? "/tasks" : "/pipeline"}
+            className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors"
+          >
+            {/* Date */}
+            <span className="text-xs text-muted-foreground w-[70px] shrink-0">
+              {format(new Date(event.date), "MMM d")}
+            </span>
+
+            {/* Type icon */}
+            <div
+              className={cn(
+                "flex items-center justify-center size-6 rounded-full shrink-0",
+                event.type === "task"
+                  ? "bg-blue-500/10 text-blue-400"
+                  : "bg-emerald-500/10 text-emerald-400"
+              )}
+            >
+              {event.type === "task" ? (
+                <CheckSquare className="size-3.5" />
+              ) : (
+                <Briefcase className="size-3.5" />
+              )}
+            </div>
+
+            {/* Title + details */}
+            <div className="flex-1 min-w-0">
+              <p
+                className={cn(
+                  "text-sm font-medium truncate",
+                  event.taskStatus === "completed" && "line-through text-muted-foreground"
+                )}
+              >
+                {event.title}
+              </p>
+            </div>
+
+            {/* Meta: priority for tasks, value/stage for deals */}
+            <div className="flex items-center gap-2 shrink-0 text-xs">
+              {event.type === "deal" && event.value != null && (
+                <span className="text-muted-foreground">
+                  {formatCurrencyCompact(event.value, event.currency ?? "USD")}
+                </span>
+              )}
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
+                  PRIORITY_COLORS[event.priority]?.badge ?? PRIORITY_COLORS.medium.badge
+                )}
+              >
+                {PRIORITY_COLORS[event.priority]?.label ?? "Medium"}
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
