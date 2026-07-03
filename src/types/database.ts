@@ -66,6 +66,7 @@ export interface Contact {
   source: string | null
   tags: string[]
   metadata: Record<string, unknown>
+  birthday: string | null
   consent_status: ConsentStatus
   consent_date: string | null
   created_at: string

@@ -14,6 +14,7 @@ export interface CreateContactInput {
   company?: string
   source?: string
   tags?: string[]
+  birthday?: string | null
   consent_status?: ConsentStatus
 }
 
@@ -25,6 +26,7 @@ export interface UpdateContactInput {
   company?: string | null
   source?: string | null
   tags?: string[]
+  birthday?: string | null
   consent_status?: ConsentStatus
 }
 

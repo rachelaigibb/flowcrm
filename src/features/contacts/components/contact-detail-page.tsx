@@ -122,6 +122,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
   const [company, setCompany] = useState(contact.company ?? "")
   const [source, setSource] = useState(contact.source ?? "")
   const [tags, setTags] = useState(contact.tags?.join(", ") ?? "")
+  const [birthday, setBirthday] = useState(contact.birthday ?? "")
   const [consentStatus, setConsentStatus] = useState<ConsentStatus>(contact.consent_status)
 
   // Delete dialog
@@ -175,6 +176,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
         company: company.trim() || null,
         source: source || null,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+        birthday: birthday || null,
         consent_status: consentStatus,
       })
       if (result.error) {
@@ -194,6 +196,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
     setCompany(contact.company ?? "")
     setSource(contact.source ?? "")
     setTags(contact.tags?.join(", ") ?? "")
+    setBirthday(contact.birthday ?? "")
     setConsentStatus(contact.consent_status)
     setEditing(false)
   }
@@ -359,6 +362,14 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
             </span>
             <span>{formatDateShort(contact.created_at)}</span>
           </div>
+          {contact.birthday && (
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <Calendar className="size-3" /> Birthday
+              </span>
+              <span>{formatDateShort(contact.birthday)}</span>
+            </div>
+          )}
         </div>
 
         {/* Tags */}
@@ -441,6 +452,10 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
               <SelectItem value="withdrawn">Withdrawn</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Birthday</Label>
+          <Input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} className="h-8 text-sm" />
         </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs">Tags</Label>

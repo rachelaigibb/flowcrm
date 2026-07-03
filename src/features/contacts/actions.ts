@@ -56,6 +56,7 @@ export async function createContact(input: CreateContactInput) {
       company: input.company || null,
       source: input.source || null,
       tags: input.tags ?? [],
+      birthday: input.birthday || null,
       consent_status: input.consent_status ?? "none",
       metadata: {},
     })
