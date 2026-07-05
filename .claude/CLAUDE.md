@@ -101,8 +101,8 @@ tests/
 ## Phases
 - **Phase 1** (EXTENDED 2026-06-29 — LeadStack parity): Auth + multi-tenant + contacts (CRUD, CSV import/export, source badges, colored tags) + pipeline (kanban+list, stage/value/source filters, stats row) + tasks (separated select/complete checkboxes) + calendar (month grid) + dashboard (welcome, 6 stats, timezone-aware) + settings (agency + sub-account split) + two-tier sidebar + light/dark/system theme + Cmd+K search + notes with edit/delete + agency home + sub-accounts pages
 - **Phase 2** (2026-06-30): Email sending via Resend (compose dialog, templates, settings) + SMS via Twilio (compose dialog, templates, settings) + Form builder (visual editor, public submission page, auto-create contacts) + Automations (trigger→step sequences, 5 triggers, 6 action types, run history) + Broadcasts (email/SMS campaigns, recipient filtering by tags/source/all, consent enforcement, send/schedule)
-- **Phase 3** (NEXT): Agency collaboration + invite flow + role-based UI + deal map + reporting
-- **Phase 4**: AI service layer + lead scoring + draft follow-ups + timeline summaries + NL search
+- **Phase 3** (DONE 2026-07-01): Agency collaboration + invite flow + role-based UI + deal map + reporting
+- **Phase 4** (NEXT): AI service layer + lead scoring + draft follow-ups + timeline summaries + NL search
 - **Phase 5**: Landing page templates (evaluate GrapeJS/Craft.js)
 
 ## Architecture decisions log (2026-06-29)
@@ -131,3 +131,11 @@ tests/
 - **Automations**: Linear step sequences (not flowcharts). 5 trigger types: form_submission, contact_created, deal_stage_change, tag_added, manual. 6 action types: send_email, send_sms, wait, add_tag, remove_tag, create_task. Steps saved as batch (delete-all + reinsert). Execution engine is scaffolded but actual step processing is deferred (runs create records but don't execute yet).
 - **Broadcasts**: Email or SMS campaigns. Recipient filtering by tags (OR), sources (OR), or all. CASL consent enforcement: only contacts with `explicit` or `implied` consent receive broadcasts. Stats tracked in `stats` JSONB on the broadcast record. Actual send loop is scaffolded (marks sent but doesn't call Resend/Twilio yet — needs queue implementation).
 - **Sidebar**: Forms, Automations, Broadcasts now active links. Remaining Coming Soon: Website, Reports.
+
+## Architecture decisions log (2026-07-01 — Phase 3)
+- **Member invitations**: `invitations` table with token-based acceptance. `accept_invitation()` SECURITY DEFINER function creates membership + sub_account_memberships atomically. Invite email sent via Resend (if configured). Invite link: `/invite/[token]`. 7-day expiry. Org admins can revoke.
+- **Role-based UI**: `RoleProvider` context in dashboard layout wraps all children. `useRole()` hook returns `{ orgRole, userId, isAdmin }`. Sidebar hides Agency section for non-admins. Agency pages redirect members to dashboard. Server actions check `orgRole` before destructive operations.
+- **Deal map**: `/pipeline/map` uses Leaflet + OpenStreetMap via react-leaflet. Dynamically imported with `ssr: false`. CircleMarker (not Marker) colored by pipeline stage. Deals geocoded via Nominatim on create/update. Address field added to deals table (`address`, `latitude`, `longitude`).
+- **Reports**: `/reports` with 6 CSS-only charts (no charting library): pipeline funnel, revenue over time, conversion rate, contact growth, top sources, task completion. Client-side date range filtering via date-fns. CSV export.
+- **Resend + Google Workspace coexistence**: DKIM CNAME records don't conflict with Google MX. SPF records must be merged into ONE TXT record (never two `v=spf1` records on the same domain). `rachelgibbrealtor.com` already verified in Resend from the investor-portal project.
+- **Sidebar**: Forms, Automations, Broadcasts, Reports now active. Only "Website" remains Coming Soon.
