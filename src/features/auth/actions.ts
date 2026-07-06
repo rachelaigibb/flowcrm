@@ -80,7 +80,7 @@ export async function signInWithMagicLink(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback?next=/`,
     },
   })
 
@@ -89,6 +89,55 @@ export async function signInWithMagicLink(formData: FormData) {
   }
 
   return { success: "Check your email for the magic link." }
+}
+
+export async function requestPasswordReset(formData: FormData) {
+  const supabase = await createClient()
+
+  const email = formData.get("email") as string
+
+  if (!email) {
+    return { error: "Email is required." }
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { success: "If that email exists, a password reset link is on its way." }
+}
+
+export async function updatePassword(formData: FormData) {
+  const supabase = await createClient()
+
+  const password = formData.get("password") as string
+
+  if (!password || password.length < 6) {
+    return { error: "Password must be at least 6 characters." }
+  }
+
+  // Requires an active session — set by the recovery link via /auth/callback.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Your reset link has expired. Please request a new one." }
+  }
+
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath("/", "layout")
+  redirect("/")
 }
 
 export async function signOut() {

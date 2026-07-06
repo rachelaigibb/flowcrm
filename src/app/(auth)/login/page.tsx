@@ -1,6 +1,6 @@
 "use client"
 
-import { useTransition, useState, Suspense } from "react"
+import { useTransition, useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { login, signInWithMagicLink } from "@/features/auth/actions"
+import { login, signInWithMagicLink, requestPasswordReset } from "@/features/auth/actions"
 import { Loader2Icon, MailIcon } from "lucide-react"
 
 export default function LoginPage() {
@@ -23,9 +23,35 @@ export default function LoginPage() {
 function LoginForm() {
   const [isPending, startTransition] = useTransition()
   const [isMagicLinkPending, startMagicLinkTransition] = useTransition()
+  const [isResetPending, startResetTransition] = useTransition()
   const [email, setEmail] = useState("")
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") ?? undefined
+
+  // Surface errors handed back by the auth callback (expired/invalid link).
+  useEffect(() => {
+    const error = searchParams.get("error")
+    if (error) toast.error(error)
+  }, [searchParams])
+
+  function handleForgotPassword() {
+    if (!email) {
+      toast.error("Enter your email first.")
+      return
+    }
+    const formData = new FormData()
+    formData.set("email", email)
+
+    startResetTransition(async () => {
+      const result = await requestPasswordReset(formData)
+      if (result?.error) {
+        toast.error(result.error)
+      }
+      if (result?.success) {
+        toast.success(result.success)
+      }
+    })
+  }
 
   function handleLogin(formData: FormData) {
     startTransition(async () => {
@@ -78,7 +104,17 @@ function LoginForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={isResetPending}
+                className="text-sm text-muted-foreground underline-offset-4 hover:underline disabled:opacity-50"
+              >
+                Forgot password?
+              </button>
+            </div>
             <Input
               id="password"
               name="password"
