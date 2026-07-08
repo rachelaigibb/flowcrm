@@ -279,6 +279,20 @@ export async function submitPublicForm(
     return { error: "Failed to submit form" }
   }
 
+  // Enqueue form_submission automation runs. Anon can't pass automation_runs
+  // RLS, so this goes through a SECURITY DEFINER function that derives the
+  // tenant from the form row; the engine executes the runs on the next
+  // authenticated visit to the automations pages.
+  if (contactId) {
+    const { error: enqueueError } = await supabase.rpc("enqueue_form_automation_runs", {
+      p_form_id: formId,
+      p_contact_id: contactId,
+    })
+    if (enqueueError) {
+      console.error("[Forms] Failed to enqueue automation runs:", enqueueError.message)
+    }
+  }
+
   return {
     success: true,
     message: typedForm.settings.success_message,

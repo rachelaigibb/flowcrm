@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
+import { executeAutomationRun, processDueAutomationRuns } from "./engine"
 import type { AutomationTriggerType, AutomationStepActionType } from "@/types/database"
 
 // ── Automation CRUD ──
 
 export async function getAutomations() {
-  const { orgId, subAccountId, supabase } = await getUserContext()
+  const { userId, orgId, subAccountId, supabase } = await getUserContext()
+
+  // Opportunistically resume paused runs whose wait has elapsed
+  await processDueAutomationRuns(supabase, { orgId, subAccountId, userId })
 
   const { data, error } = await supabase
     .from("automations")
@@ -168,7 +172,9 @@ export async function saveAutomationSteps(
 // ── Automation Runs ──
 
 export async function getAutomationRuns(automationId: string) {
-  const { orgId, subAccountId, supabase } = await getUserContext()
+  const { userId, orgId, subAccountId, supabase } = await getUserContext()
+
+  await processDueAutomationRuns(supabase, { orgId, subAccountId, userId })
 
   const { data, error } = await supabase
     .from("automation_runs")
@@ -184,7 +190,7 @@ export async function getAutomationRuns(automationId: string) {
 }
 
 export async function runAutomationManually(automationId: string, contactId: string) {
-  const { orgId, subAccountId, supabase } = await getUserContext()
+  const { userId, orgId, subAccountId, supabase } = await getUserContext()
 
   const { data, error } = await supabase
     .from("automation_runs")
@@ -203,7 +209,7 @@ export async function runAutomationManually(automationId: string, contactId: str
 
   if (error) return { error: error.message }
 
-  // TODO: Phase 2+ — trigger actual step execution engine here
+  await executeAutomationRun(supabase, { orgId, subAccountId, userId }, data.id)
 
   revalidatePath("/automations")
   revalidatePath(`/automations/${automationId}`)

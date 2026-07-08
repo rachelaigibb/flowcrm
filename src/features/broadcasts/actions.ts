@@ -2,6 +2,14 @@
 
 import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
+import {
+  getEmailSettings,
+  getSmsSettings,
+  renderTemplate,
+  sendEmailToContact,
+  sendSmsToContact,
+  type MessageContact,
+} from "@/lib/messaging/send"
 import type { BroadcastChannel, BroadcastRecipientFilter } from "@/types/database"
 
 // ── Broadcast Queries ──
@@ -153,7 +161,7 @@ export async function deleteBroadcast(id: string) {
 // ── Send Broadcast ──
 
 export async function sendBroadcast(id: string) {
-  const { orgId, subAccountId, supabase } = await getUserContext()
+  const { userId, orgId, subAccountId, supabase } = await getUserContext()
 
   // Step a: Fetch the broadcast — must be draft or scheduled
   const { data: broadcast, error: fetchError } = await supabase
@@ -169,11 +177,32 @@ export async function sendBroadcast(id: string) {
     return { error: "Only draft or scheduled broadcasts can be sent" }
   }
 
+  // Validate content and provider settings up front, while still draft
+  if (broadcast.channel === "email") {
+    if (!broadcast.email_subject?.trim() || !broadcast.email_body?.trim()) {
+      return { error: "Email subject and body are required before sending" }
+    }
+  } else if (!broadcast.sms_body?.trim()) {
+    return { error: "SMS message body is required before sending" }
+  }
+
+  const emailSettings =
+    broadcast.channel === "email" ? await getEmailSettings(supabase, subAccountId) : null
+  const smsSettings =
+    broadcast.channel === "sms" ? await getSmsSettings(supabase, subAccountId) : null
+
+  if (broadcast.channel === "email" && !emailSettings) {
+    return { error: "Email sending is not configured. Set a verified sender email in Settings > Email." }
+  }
+  if (broadcast.channel === "sms" && !smsSettings) {
+    return { error: "SMS sending is not configured. Set a Twilio phone number in Settings > SMS." }
+  }
+
   // Step b: Fetch recipient contacts based on recipient_filter
   const filter = broadcast.recipient_filter as BroadcastRecipientFilter
   let query = supabase
     .from("contacts")
-    .select("id, email, phone, consent_status")
+    .select("id, first_name, last_name, email, phone, consent_status")
     .eq("org_id", orgId)
     .eq("sub_account_id", subAccountId)
 
@@ -205,6 +234,9 @@ export async function sendBroadcast(id: string) {
   if (recipientError) return { error: recipientError.message }
 
   const totalRecipients = recipients?.length ?? 0
+  if (totalRecipients === 0) {
+    return { error: "No eligible recipients match this filter (consent and contact method required)" }
+  }
 
   // Step e: Update status to 'sending' with total count
   const { error: sendingError } = await supabase
@@ -219,14 +251,72 @@ export async function sendBroadcast(id: string) {
 
   if (sendingError) return { error: sendingError.message }
 
-  // Step f: TODO — Implement actual email/SMS sending via a queue system (Resend for email, Twilio for SMS).
-  // For now, mark as sent immediately with the total count as sent count.
+  // Step f: Send to each recipient via Resend/Twilio, personalized per
+  // contact, in small concurrent batches. Stats update after every batch so
+  // the UI shows live progress on refresh.
+  let sent = 0
+  let failed = 0
+  const failures: Array<{ contact_id: string; error: string }> = []
+  const BATCH_SIZE = 5
+
+  for (let i = 0; i < totalRecipients; i += BATCH_SIZE) {
+    const batch = (recipients ?? []).slice(i, i + BATCH_SIZE) as MessageContact[]
+
+    const results = await Promise.all(
+      batch.map(async (contact) => {
+        if (broadcast.channel === "email") {
+          return sendEmailToContact({
+            supabase,
+            orgId,
+            subAccountId,
+            userId,
+            contact,
+            settings: emailSettings!,
+            subject: renderTemplate(broadcast.email_subject as string, contact),
+            body: renderTemplate(broadcast.email_body as string, contact),
+            activityMetadata: { broadcast_id: id },
+          })
+        }
+        return sendSmsToContact({
+          supabase,
+          orgId,
+          subAccountId,
+          userId,
+          contact,
+          settings: smsSettings!,
+          body: renderTemplate(broadcast.sms_body as string, contact),
+          activityMetadata: { broadcast_id: id },
+        })
+      })
+    )
+
+    results.forEach((result, idx) => {
+      if (result.ok) {
+        sent++
+      } else {
+        failed++
+        failures.push({ contact_id: batch[idx].id, error: result.error })
+      }
+    })
+
+    await supabase
+      .from("broadcasts")
+      .update({
+        stats: { total: totalRecipients, sent, failed, opened: 0 },
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("org_id", orgId)
+  }
+
+  // Step g: Final status — 'failed' only if nothing went out
+  const finalStatus = sent > 0 ? "sent" : "failed"
   const { error: sentError } = await supabase
     .from("broadcasts")
     .update({
-      status: "sent",
+      status: finalStatus,
       sent_at: new Date().toISOString(),
-      stats: { total: totalRecipients, sent: totalRecipients, failed: 0, opened: 0 },
+      stats: { total: totalRecipients, sent, failed, opened: 0 },
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -234,13 +324,18 @@ export async function sendBroadcast(id: string) {
 
   if (sentError) return { error: sentError.message }
 
-  // Step g: Log the send count
-  console.log(`[Broadcast ${id}] Sent to ${totalRecipients} recipients (channel: ${broadcast.channel})`)
+  if (failures.length > 0) {
+    console.error(`[Broadcast ${id}] ${failed}/${totalRecipients} sends failed:`, failures.slice(0, 5))
+  }
 
   // Step h: Revalidate paths
   revalidatePath("/broadcasts")
   revalidatePath(`/broadcasts/${id}`)
-  return { data: { sent: totalRecipients } }
+
+  if (sent === 0) {
+    return { error: `All ${totalRecipients} sends failed. First error: ${failures[0]?.error}` }
+  }
+  return { data: { sent, failed } }
 }
 
 // ── Recipient Count Preview ──

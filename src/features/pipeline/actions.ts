@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
+import { triggerAutomations } from "@/features/automations/engine"
 import type { CreateDealInput, UpdateDealInput } from "./types"
 import type { DealStatus } from "@/types/database"
 
@@ -170,6 +171,14 @@ export async function moveDeal(dealId: string, newStageId: string) {
     content: `Deal moved to ${stage?.name ?? "unknown stage"}`,
     metadata: { new_stage_id: newStageId },
   })
+
+  if (deal?.contact_id) {
+    await triggerAutomations(supabase, { orgId, subAccountId, userId }, {
+      type: "deal_stage_change",
+      contactId: deal.contact_id,
+      stageId: newStageId,
+    })
+  }
 
   revalidatePath("/pipeline")
   revalidatePath("/calendar")

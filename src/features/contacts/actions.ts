@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
+import { triggerAutomations } from "@/features/automations/engine"
 import type { CreateContactInput, UpdateContactInput } from "./types"
 
 // Auto-register any new tags in sub-account settings (with default gray color)
@@ -83,6 +84,11 @@ export async function createContact(input: CreateContactInput) {
     metadata: {},
   })
 
+  await triggerAutomations(supabase, { orgId, subAccountId, userId }, {
+    type: "contact_created",
+    contactId: contact.id,
+  })
+
   revalidatePath("/contacts")
   revalidatePath("/settings")
   return { data: contact }
@@ -93,6 +99,18 @@ export async function updateContact(
   input: UpdateContactInput
 ) {
   const { userId, orgId, subAccountId, supabase } = await getUserContext()
+
+  // Snapshot existing tags so we can detect newly added ones for automations
+  let previousTags: string[] = []
+  if (input.tags) {
+    const { data: existing } = await supabase
+      .from("contacts")
+      .select("tags")
+      .eq("id", id)
+      .eq("sub_account_id", subAccountId)
+      .single()
+    previousTags = (existing?.tags as string[]) ?? []
+  }
 
   const { data: contact, error } = await supabase
     .from("contacts")
@@ -125,6 +143,18 @@ export async function updateContact(
     content: "Contact updated",
     metadata: {},
   })
+
+  if (input.tags) {
+    const previousLower = new Set(previousTags.map((t) => t.toLowerCase()))
+    const addedTags = input.tags.filter((t) => !previousLower.has(t.toLowerCase()))
+    for (const tagName of addedTags) {
+      await triggerAutomations(supabase, { orgId, subAccountId, userId }, {
+        type: "tag_added",
+        contactId: id,
+        tagName,
+      })
+    }
+  }
 
   revalidatePath("/contacts")
   revalidatePath(`/contacts/${id}`)

@@ -248,13 +248,16 @@ export interface Broadcast {
 export interface AutomationRun {
   id: string
   org_id: string
+  sub_account_id: string
   automation_id: string
   contact_id: string | null
   status: AutomationRunStatus
   current_step: number
   started_at: string
   completed_at: string | null
+  resume_at: string | null
   error: string | null
+  log: Array<Record<string, unknown>>
   metadata: Record<string, unknown>
 }
 
