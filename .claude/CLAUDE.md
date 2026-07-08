@@ -102,7 +102,7 @@ tests/
 - **Phase 1** (EXTENDED 2026-06-29 — LeadStack parity): Auth + multi-tenant + contacts (CRUD, CSV import/export, source badges, colored tags) + pipeline (kanban+list, stage/value/source filters, stats row) + tasks (separated select/complete checkboxes) + calendar (month grid) + dashboard (welcome, 6 stats, timezone-aware) + settings (agency + sub-account split) + two-tier sidebar + light/dark/system theme + Cmd+K search + notes with edit/delete + agency home + sub-accounts pages
 - **Phase 2** (2026-06-30): Email sending via Resend (compose dialog, templates, settings) + SMS via Twilio (compose dialog, templates, settings) + Form builder (visual editor, public submission page, auto-create contacts) + Automations (trigger→step sequences, 5 triggers, 6 action types, run history) + Broadcasts (email/SMS campaigns, recipient filtering by tags/source/all, consent enforcement, send/schedule)
 - **Phase 3** (DONE 2026-07-01): Agency collaboration + invite flow + role-based UI + deal map + reporting
-- **Phase 4** (NEXT): AI service layer + lead scoring + draft follow-ups + timeline summaries + NL search
+- **Phase 4** (CORE SHIPPED 2026-07-07): AI service layer (provider-agnostic, Claude API) + lead scoring + draft follow-ups + timeline summaries + NL search in Cmd+K. Requires `ANTHROPIC_API_KEY` env var. Remaining ideas: auto-score on contact change, AI in pipeline/broadcast views.
 - **Phase 5**: Landing page templates (evaluate GrapeJS/Craft.js)
 
 ## Architecture decisions log (2026-06-29)
@@ -148,3 +148,11 @@ tests/
 - **Shared messaging helpers** (`lib/messaging/send.ts`): `sendEmailToContact`/`sendSmsToContact` (send + activity log in one call) and `renderTemplate` with `{{first_name}}`, `{{last_name}}`, `{{full_name}}`, `{{email}}`, `{{phone}}` tokens (whitespace-tolerant, case-insensitive). Used by the engine and broadcasts; single-contact compose dialogs still use their own actions.
 - **Broadcast sends**: real per-recipient loop, batches of 5, personalized via renderTemplate, stats updated after every batch (live progress on refresh). Final status `sent` if ≥1 delivered, `failed` if zero. Runs inside the server action — fine for hundreds of recipients (300s Vercel limit); revisit with a queue for thousands.
 - **Testing**: `npm run test` script added (was missing); jsdom installed (vitest.config referenced it but it was never installed — the suite had never run). First test: `tests/features/messaging/render-template.test.ts`.
+
+## Architecture decisions log (2026-07-07 — Phase 4 AI)
+- **Provider-agnostic AI layer** (`features/ai/provider.ts`): `AIProvider` interface with `complete` (text) and `completeJSON` (structured outputs via `output_config.format` json_schema). Claude implementation via `@anthropic-ai/sdk`, model `claude-opus-4-8`, adaptive thinking. Singleton; `isAIConfigured()` gates every action with a friendly error when `ANTHROPIC_API_KEY` is missing.
+- **Contact context builder**: one text block (profile + deals w/ stages + tasks + last 50 activities) shared by scoring/summaries/drafts — keep prompts fed from this single function.
+- **Lead scoring**: stored in `contacts.metadata.ai_score` JSONB (`{score, tier, reasoning, factors, scored_at}`) — no migration needed. Rendered by `AIPanel` (top of contact-detail right panel).
+- **Follow-up drafts are never auto-sent**: `draftFollowUp` returns a draft; `AIPanel` opens the existing compose dialogs prefilled via new optional `initialSubject`/`initialBody` props. User must click Send.
+- **NL search**: `aiSearch` translates the query to a structured intent (entity + filters) via completeJSON, then runs normal RLS-scoped Supabase queries — the model never sees other tenants' data and never writes SQL. Wired into Cmd+K as an "Ask AI" item (item `value` includes the live query so cmdk's filter always shows it).
+- **Env**: `ANTHROPIC_API_KEY` required (Vercel env var + `.env.local`). Per-tenant keys deliberately deferred.

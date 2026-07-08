@@ -31,6 +31,8 @@ interface ComposeEmailDialogProps {
   contactId: string
   contactEmail: string
   contactName: string
+  initialSubject?: string
+  initialBody?: string
 }
 
 export function ComposeEmailDialog({
@@ -39,6 +41,8 @@ export function ComposeEmailDialog({
   contactId,
   contactEmail,
   contactName,
+  initialSubject,
+  initialBody,
 }: ComposeEmailDialogProps) {
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")
@@ -46,15 +50,19 @@ export function ComposeEmailDialog({
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [loadingTemplates, setLoadingTemplates] = useState(false)
 
-  // Load templates when dialog opens
+  // Load templates when dialog opens; seed fields from an initial draft
+  // (e.g. an AI-generated follow-up)
   useEffect(() => {
     if (open) {
+      if (initialSubject !== undefined) setSubject(initialSubject)
+      if (initialBody !== undefined) setBody(initialBody)
       setLoadingTemplates(true)
       getEmailTemplates().then((result) => {
         if (result.data) setTemplates(result.data)
         setLoadingTemplates(false)
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   function handleTemplateSelect(templateId: string | null) {

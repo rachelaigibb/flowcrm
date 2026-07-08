@@ -40,6 +40,8 @@ import { PriorityBadge, StatusBadge } from "@/components/shared/status-badges"
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
 import { ComposeEmailDialog } from "@/features/email/components/compose-email-dialog"
 import { ComposeSmsDialog } from "@/features/sms/components/compose-sms-dialog"
+import { AIPanel } from "@/features/ai/components/ai-panel"
+import type { LeadScore } from "@/features/ai/actions"
 import { CreateDealDialog } from "@/features/pipeline/components/create-deal-dialog"
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog"
 import { DealDetailSheet } from "@/features/pipeline/components/deal-detail-sheet"
@@ -532,6 +534,18 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
   function RightPanel() {
     return (
       <div className="flex flex-col gap-4">
+        {/* AI Assistant */}
+        <AIPanel
+          contactId={contact.id}
+          contactName={displayName}
+          contactEmail={contact.email}
+          contactPhone={contact.phone}
+          initialScore={
+            ((contact.metadata as Record<string, unknown>)?.ai_score as LeadScore | undefined) ??
+            null
+          }
+        />
+
         {/* Deals */}
         <Card>
           <CardHeader>

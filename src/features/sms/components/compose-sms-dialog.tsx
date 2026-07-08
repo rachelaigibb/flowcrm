@@ -30,6 +30,7 @@ interface ComposeSmsDialogProps {
   contactId: string
   contactPhone: string
   contactName: string
+  initialBody?: string
 }
 
 const SMS_CHAR_LIMIT = 1600 // Twilio concatenates, but show count
@@ -40,6 +41,7 @@ export function ComposeSmsDialog({
   contactId,
   contactPhone,
   contactName,
+  initialBody,
 }: ComposeSmsDialogProps) {
   const [body, setBody] = useState("")
   const [isPending, startTransition] = useTransition()
@@ -48,12 +50,14 @@ export function ComposeSmsDialog({
 
   useEffect(() => {
     if (open) {
+      if (initialBody !== undefined) setBody(initialBody)
       setLoadingTemplates(true)
       getSmsTemplates().then((result) => {
         if (result.data) setTemplates(result.data)
         setLoadingTemplates(false)
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   function handleTemplateSelect(templateId: string | null) {
