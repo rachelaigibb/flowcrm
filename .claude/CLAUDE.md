@@ -1,5 +1,9 @@
 # FlowCRM — CLAUDE.md
 
+## Docs (keep these current)
+- `docs/USER-GUIDE.md` — Rachel-facing: logging in, importing, forms, AI, maintenance.
+- `docs/BUILD-STATUS.md` — build state: shipped phases, pending config, not-started, version history. **Update this whenever a phase ships or a setup task is completed**, and bump `version` in package.json to match.
+
 ## What this is
 A multi-tenant, AI-first CRM and business operating system. Built to replace GoHighLevel. Rachel uses it first, then sells to other agencies.
 
