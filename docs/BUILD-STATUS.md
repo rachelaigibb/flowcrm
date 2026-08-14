@@ -30,6 +30,11 @@ Team invitations with token acceptance · role-based UI (owner/admin/member) · 
 ### Phase 4 — AI (2026-07-07) · `0f39a69`
 Provider-agnostic AI layer (`features/ai/provider.ts`, Claude `claude-opus-4-8`) · lead scoring stored in `contacts.metadata.ai_score` · timeline summaries · follow-up drafts (never auto-sent — prefills the compose dialog) · natural-language search in Cmd+K.
 
+### Branding & install (2026-08-13)
+- **App icon** — white "F" monogram with indigo crossbar on near-black. `src/app/icon.svg` (browser tabs), `src/app/apple-icon.png` (180px, iOS home screen), `public/icon-{192,512}.png` (Android/PWA). Next.js default favicon archived to `_archive/`.
+- **Web manifest** — `src/app/manifest.ts`, `display: standalone` so it launches without browser chrome once added to a home screen.
+- **Middleware fix** — `manifest.webmanifest` was being redirected to `/login` by the auth middleware, which would have blocked Android's "Install app" prompt. Now excluded, along with `.ico`.
+
 ### Fixes shipped alongside
 - **Auth callback** `ae6a583` — `/auth/callback` route; magic links and password resets no longer loop back to login. Added a `/reset-password` page and "Forgot password?" link.
 - **Execution engine** `2b42c5b` — automations and broadcasts previously *recorded* activity without doing anything. Now they genuinely execute and send. Migration `00012` added `automation_runs.sub_account_id` + `log` (columns the code already wrote — manual runs had been failing silently).
@@ -44,9 +49,13 @@ These are done in dashboards, not in the repo. Each one blocks a shipped feature
 | # | Task | Where | Unblocks |
 |---|---|---|---|
 | 1 | Add redirect URLs `http://localhost:3000/**` and `https://crm.getflowplan.app/**` | Supabase → Authentication → URL Configuration | Magic links + password reset |
-| 2 | Add `ANTHROPIC_API_KEY` (Vercel env var **and** `.env.local`), then redeploy | console.anthropic.com → Vercel | All Phase 4 AI features |
-| 3 | Create `crm` CNAME → Vercel; attach domain in Vercel project | Cloudflare DNS + Vercel → Domains | Public live site (currently only reachable via Vercel's SSO-protected URLs) |
+| 2 | Add `ANTHROPIC_API_KEY` to **Vercel** env vars, then redeploy (`.env.local` ✅ done 2026-08-13) | console.anthropic.com → Vercel | All Phase 4 AI features in production |
+| 3 | Set `NEXT_PUBLIC_SITE_URL=https://crm.getflowplan.app` in Vercel, then redeploy | Vercel → Env Vars | Auth emails linking to the live site instead of `localhost:3000` |
 | 4 | Verify `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` are set in Vercel | Vercel → Env Vars | Real email/SMS sending in production |
+
+**✅ Done 2026-08-13 — custom domain live.** `crm.getflowplan.app` → Cloudflare CNAME (DNS-only / grey cloud) → Vercel. Valid Let's Encrypt cert, publicly reachable, no SSO wall. *Cloudflare proxying must stay OFF for this record — orange cloud breaks Vercel's certificate.*
+
+**Unverified from outside the dashboards:** items 2 and 3 above. Test both at once — request a password reset and check the emailed link starts with `https://crm.getflowplan.app`; then click **Score lead** on a contact to confirm the AI key.
 
 ---
 
@@ -82,7 +91,8 @@ Production database cleaned of all test data. Live: 1 login (`rachelaigibb@gmail
 | v0.2 | 2026-06-30 | Phase 2 — email, SMS, forms, automations, broadcasts (UI only) |
 | v0.3 | 2026-07-01 | Phase 3 — collaboration, map, reports |
 | v0.3.1 | 2026-07-07 | Auth callback fix; automations + broadcasts actually execute |
-| **v0.4** | 2026-07-07 | **Phase 4 — AI layer (current)** |
+| v0.4 | 2026-07-07 | Phase 4 — AI layer |
+| **v0.4.1** | 2026-08-13 | **Live domain + app icon, PWA manifest, installable on phone (current)** |
 | v0.5 | planned | Website form wiring + automation scheduler |
 | v1.0 | goal | Ready to sell to other agencies |
 

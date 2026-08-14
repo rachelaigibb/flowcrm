@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="FlowCRM">
+  <rect width="512" height="512" rx="112" fill="#18181B"/>
+  <rect x="148" y="132" width="56" height="248" rx="28" fill="#FFFFFF"/>
+  <rect x="148" y="132" width="216" height="56" rx="28" fill="#FFFFFF"/>
+  <rect x="148" y="228" width="150" height="56" rx="28" fill="#6366F1"/>
+</svg>
