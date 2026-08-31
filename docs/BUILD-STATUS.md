@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.4 "AI"** · Last updated 2026-08-12 · Latest commit `0f39a69`
+**Current version: v0.4.1** · Last updated 2026-08-30 · Latest commit `96bc4ad`
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -46,16 +46,29 @@ Provider-agnostic AI layer (`features/ai/provider.ts`, Claude `claude-opus-4-8`)
 
 These are done in dashboards, not in the repo. Each one blocks a shipped feature from working.
 
-| # | Task | Where | Unblocks |
+| # | Task | Where | Status |
 |---|---|---|---|
-| 1 | Add redirect URLs `http://localhost:3000/**` and `https://crm.getflowplan.app/**` | Supabase → Authentication → URL Configuration | Magic links + password reset |
-| 2 | Add `ANTHROPIC_API_KEY` to **Vercel** env vars, then redeploy (`.env.local` ✅ done 2026-08-13) | console.anthropic.com → Vercel | All Phase 4 AI features in production |
-| 3 | Set `NEXT_PUBLIC_SITE_URL=https://crm.getflowplan.app` in Vercel, then redeploy | Vercel → Env Vars | Auth emails linking to the live site instead of `localhost:3000` |
-| 4 | Verify `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` are set in Vercel | Vercel → Env Vars | Real email/SMS sending in production |
+| 1 | Redirect URLs `http://localhost:3000/**` + `https://crm.getflowplan.app/**` | Supabase → Auth → URL Configuration | ❓ Unverified — not readable via API |
+| 2 | `ANTHROPIC_API_KEY` | Vercel env vars | ✅ Set, applied to live build |
+| 3 | `NEXT_PUBLIC_SITE_URL` | Vercel env vars | ✅ Set, applied to live build (value unread) |
+| 4 | `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Vercel env vars | ✅ Set since 2026-07-01 |
 
-**✅ Done 2026-08-13 — custom domain live.** `crm.getflowplan.app` → Cloudflare CNAME (DNS-only / grey cloud) → Vercel. Valid Let's Encrypt cert, publicly reachable, no SSO wall. *Cloudflare proxying must stay OFF for this record — orange cloud breaks Vercel's certificate.*
+**✅ 2026-08-13 — custom domain live.** `crm.getflowplan.app` → Cloudflare CNAME (DNS-only / grey cloud) → Vercel. Valid Let's Encrypt cert, publicly reachable, no SSO wall. *Cloudflare proxying must stay OFF for this record — orange cloud breaks Vercel's certificate.*
 
-**Unverified from outside the dashboards:** items 2 and 3 above. Test both at once — request a password reset and check the emailed link starts with `https://crm.getflowplan.app`; then click **Score lead** on a contact to confirm the AI key.
+**✅ 2026-08-30 — env vars verified via Vercel CLI.** All 7 present on `rachelaigibbs-projects/flowcrm`. `ANTHROPIC_API_KEY` and `NEXT_PUBLIC_SITE_URL` were created 2026-08-13 20:41:53; the live deployment (`dpl_3b1wd7G6iA5secv8us82ucFJAw8s`) built at 21:34:41 — **53 min later, so both are baked into what's running.** Vercel's API refuses to return env *values*, so a typo in `NEXT_PUBLIC_SITE_URL` would still be invisible; only the password-reset email test proves the value.
+
+### ⚠️ Two Vercel accounts — know which is which
+
+| Account | Contains | Git-connected | Serves the domain |
+|---|---|---|---|
+| `rachelaigibbs-projects` | the **real** `flowcrm` + 8 other projects | ✅ yes | ✅ `crm.getflowplan.app` |
+| `rachelgibb` (**Pro**) | an empty duplicate `flowcrm`, `rachelgibbrealtor.ca` | ❌ no | ❌ |
+
+`.vercel/project.json` pointed at the empty duplicate until 2026-08-30; it is now correctly linked to `prj_ErSFQUwwDcvY8hsvhY6rgmtkQvjB`. **Open question:** the live project sits on the non-Pro account while the Pro subscription sits on the other — worth consolidating, since Vercel's Hobby plan disallows commercial use. Treat as its own migration task.
+
+**Deploy gotcha observed 2026-08-13:** a push to `main` was silently not picked up by Vercel (no build, no check-run). A follow-up push triggered it. If a change doesn't appear live, check that a deployment actually exists for the commit.
+
+**Still to confirm by hand:** item 1, plus the *values* behind items 2–3. One test covers all of it — request a password reset on the live site; if the emailed link starts with `https://crm.getflowplan.app` and logging in works, `NEXT_PUBLIC_SITE_URL` and the Supabase allowlist are both correct. Then click **Score lead** on a contact to confirm the AI key value.
 
 ---
 
@@ -79,9 +92,9 @@ These are done in dashboards, not in the repo. Each one blocks a shipped feature
 
 ---
 
-## Data state (as of 2026-08-12)
+## Data state (as of 2026-08-13)
 
-Production database cleaned of all test data. Live: 1 login (`rachelaigibb@gmail.com`), 1 org (Rachel AI), 2 sub-accounts (Vancouver Real Estate, Dubai Real Estate), 2 real contacts, 1 won deal, 1 disabled automation.
+Production database cleaned of all test data. Live: 1 login (`rachelaigibb@gmail.com`), 1 org (Rachel AI), 2 sub-accounts (Vancouver Real Estate, Dubai Real Estate), 2 real contacts, 1 won deal, 0 tasks, 1 disabled automation. (3 practice deals + 2 orphaned tasks deleted 2026-08-13.)
 
 ## Version history
 
