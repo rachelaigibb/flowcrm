@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.4.1** · Last updated 2026-09-04 · Latest commit `8c948e9`
+**Current version: v0.5.0** · Last updated 2026-09-04 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -29,6 +29,15 @@ Team invitations with token acceptance · role-based UI (owner/admin/member) · 
 
 ### Phase 4 — AI (2026-07-07) · `0f39a69`
 Provider-agnostic AI layer (`features/ai/provider.ts`, Claude `claude-opus-4-8`) · lead scoring stored in `contacts.metadata.ai_score` · timeline summaries · follow-up drafts (never auto-sent — prefills the compose dialog) · natural-language search in Cmd+K.
+
+### Phase 5a — Prospecting (2026-09-04) · v0.5.0
+Rachel's own daily-use layer, built for the Sept 6–7 import.
+- **Contact fields** `last_contact` (date) and `consent_to_display_sale` (yes / no / pending — consent to show a *sold* marker with neighbourhood + street only). Editable on the contact page, shown + sortable in the contact list, importable. Migration `00013`.
+- **Transactions = won deals.** `deals` gained `side`, `city`, `closed_at`, `co_op_agent`, `referrer_contact_id`, **`commission`**, `reference` (user's own ref / transaction no.) and `source`. Future-dated presales import as *open* deals in Negotiation with `expected_close`.
+- **Log a call** — `/features/calls`: one dialog (outcome · note · optional next-step task with quick due dates) writes a `call` activity, stamps `last_contact`, optionally creates the task. Button on every contact page.
+- **Calls page** `/calls` — ten contacts for a chosen tag, never-contacted first then oldest `last_contact`; log inline. Sidebar + Cmd+K entries.
+- **Importer** recognises Google Contacts exports (both header layouts): labels → clean tags (Google's bookkeeping labels dropped), Notes → first timeline note, Address → `metadata.address`, Birthday, dedupe by email (skipped count shown), default-consent picker, "tag every imported contact with …" field.
+- **Data load** — Rachel's 48 Google contacts + 48 transactions (17 co-clients not in Google created as new past-clients) loaded into **Testing** for review via a reviewed SQL script (`scratchpad/import/gen_compact.py`); Vancouver load waits for her go-ahead.
 
 ### Branding & install (2026-08-13)
 - **App icon** — white "F" monogram with indigo crossbar on near-black. `src/app/icon.svg` (browser tabs), `src/app/apple-icon.png` (180px, iOS home screen), `public/icon-{192,512}.png` (Android/PWA). Next.js default favicon archived to `_archive/`.
@@ -85,7 +94,6 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | Item | Notes |
 |---|---|
 | **Website form → FlowCRM wiring** | **`.ca` contact form: DONE** (live since 2026-08-15 — `rachelgibbrealtor.ca/src/lib/crm/leads.ts` inserts into Vancouver via service key; dedupes by email; CASL consent from checkbox). **Remaining:** `deals.rachelgibbrealtor.ca` email-gate form (tag `deal-list`) and both Dubai sites (`rachelgibbrealtor.com`, `buyingindubai.com`) → Dubai workspace, reusing `leads.ts`. Due 2026-09-13. |
-| **Prospecting fields (job 1, due 2026-09-07)** | `contacts.last_contact` (date), `contacts.consent_to_display_sale` (yes/no/pending — consent to show a *sold* marker with neighbourhood + street only, never full details). Transactions = **won deals** with new columns `side`, `city`, `closed_at`, `co_op_agent`, `referrer_contact_id`, **`commission`**. Log-a-call quick action (outcome + note + next-step task; stamps `last_contact`). "Today's calls" view. Google Contacts CSV import mapping + Google Sheet transactions import matched to contacts. |
 | **Unsubscribe link (job 3, due 2026-09-26)** | Per-contact token → public `/u/[token]` sets consent `withdrawn`; `List-Unsubscribe` header on broadcasts. Not built today. |
 | **`.ca` sender for Vancouver** | Rachel wants replies from `info@rachelgibbrealtor.ca` as well as `.com`. `.ca` domain must be verified in Resend first. |
 | **Automation scheduler (cron)** | "Wait" steps currently resume only when someone loads the automations pages. Needs a Vercel cron or queue before selling to other agencies. |
@@ -97,11 +105,17 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 
 ## 🐛 Fixes (short-term intake)
 
-*Rachel: add anything you notice here (or tell Claude and it lands here). Fixed items move to "Fixes shipped alongside" above.*
+*Rachel: add anything you notice here (or tell Claude and it lands here). Fixed items are marked ✅ with the commit.*
 
 | # | What's wrong | Where | Status |
 |---|---|---|---|
-| 1 | Password-reset / magic-link emails fail unless opened in the same browser that requested them ("link has expired") | Auth email flow | ✅ Code shipped 2026-09-04 (`/auth/confirm` token-hash route); ⏳ needs the template edit in Pending setup #5 |
+| 1 | Password-reset / magic-link emails fail unless opened in the same browser that requested them | Auth email flow | ✅ Code `e71575e` (`/auth/confirm` token-hash route); ⏳ needs the template edit in Pending setup #5 |
+| 2 | Accent colour from Settings only coloured the sidebar dot — all buttons stayed black | Theme | ✅ v0.5.0 — accent now drives `--primary`, `--ring`, `--sidebar-primary` app-wide (foreground picked by luminance) |
+| 3 | Tags added on a contact didn't appear in Settings → Tags | Tags | ✅ v0.5.0 — CSV import now registers tags; Settings shows the union of configured tags and tags actually on contacts (`reconcileTagDefinitions`) |
+| 4 | Editing a contact: every keystroke dropped focus | Contact page | ✅ v0.5.0 — panels were nested components (remounted per render); now render helpers |
+| 5 | Deal created from a contact page showed contact = none | Create deal | ✅ v0.5.0 — form reset wiped the default contact; now resets to it and re-syncs on open |
+| 6 | Huge "+ Add Task" button at the bottom of the contact page | Contact page | ✅ v0.5.0 — trigger hidden when the parent controls the dialog |
+| 7 | Reports showed 0 % won with a won deal in the database | Reports | ✅ v0.5.0 — deals are dated by `closed_at` (not created); moving a deal into the Won/Lost stage now sets status + `closed_at` |
 
 ## 🗄️ Deliberately deferred (decided, not forgotten)
 
@@ -111,9 +125,9 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 
 ---
 
-## Data state (as of 2026-09-04)
+## Data state (as of 2026-09-04, evening)
 
-**Vancouver wiped to zero data on 2026-09-04** (Rachel's instruction, ahead of the Google Contacts + transactions import): 0 contacts, 0 deals, 0 tasks, 0 activities. Kept: pipeline stages, tag definitions (now incl. `past-client`, `referrer`, `co-op-agent`, `sphere`, `deal-list`), email sender, the disabled automation. Dubai: empty. **New `Testing` sub-account** created 2026-09-04 for trying features on throwaway rows. 1 login (`rachelaigibb@gmail.com`), 1 org (Rachel AI), 3 sub-accounts.
+**Testing:** 66 contacts (48 Google + 17 new from the transaction sheet + 1 throwaway), 48 deals (46 won, 2 open presales), notes and co-client notes — Rachel's real data, loaded for review. **Vancouver:** empty, awaiting her go-ahead to load the same set. **Dubai:** empty. 1 login, 1 org, 3 sub-accounts.
 
 ## Version history
 
@@ -124,8 +138,10 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | v0.3 | 2026-07-01 | Phase 3 — collaboration, map, reports |
 | v0.3.1 | 2026-07-07 | Auth callback fix; automations + broadcasts actually execute |
 | v0.4 | 2026-07-07 | Phase 4 — AI layer |
-| **v0.4.1** | 2026-08-13 | **Live domain + app icon, PWA manifest, installable on phone (current)** |
-| v0.5 | planned | Website form wiring + automation scheduler |
+| v0.4.1 | 2026-08-13 | Live domain + app icon, PWA manifest, installable on phone |
+| **v0.5.0** | 2026-09-04 | **Phase 5a — prospecting: custom fields, transactions as won deals + commission, log-a-call, Calls page, Google Contacts importer, 6 fixes (current)** |
+| v0.5.1 | planned | Website form wiring (deals. + Dubai) + unsubscribe |
+| v0.6 | planned | Vercel Pro migration + automation scheduler |
 | v1.0 | goal | Ready to sell to other agencies |
 
 *Keep this table updated when a phase ships. Bump `version` in `package.json` to match.*

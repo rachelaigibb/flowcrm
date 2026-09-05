@@ -14,6 +14,7 @@ import { aiSearch, type AISearchResponse } from "@/features/ai/actions"
 import {
   LayoutDashboard,
   Users,
+  PhoneCall,
   Kanban,
   CheckSquare,
   CalendarDays,
@@ -31,6 +32,7 @@ import {
 const pages = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Contacts", href: "/contacts", icon: Users },
+  { name: "Calls", href: "/calls", icon: PhoneCall },
   { name: "Pipeline", href: "/pipeline", icon: Kanban },
   { name: "Calendar", href: "/calendar", icon: CalendarDays },
   { name: "Tasks", href: "/tasks", icon: CheckSquare },

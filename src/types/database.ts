@@ -3,6 +3,8 @@
 
 export type OrgRole = "owner" | "admin" | "member"
 export type SubAccountRole = "admin" | "collaborator"
+export type SaleDisplayConsent = "yes" | "no" | "pending"
+export type DealSide = "buyer" | "seller" | "both" | "tenant" | "landlord" | "referral"
 export type DealStatus = "open" | "won" | "lost" | "closed"
 export type DealPriority = "low" | "medium" | "high"
 export type TaskStatus = "pending" | "completed" | "cancelled"
@@ -67,6 +69,8 @@ export interface Contact {
   tags: string[]
   metadata: Record<string, unknown>
   birthday: string | null
+  last_contact: string | null
+  consent_to_display_sale: SaleDisplayConsent
   consent_status: ConsentStatus
   consent_date: string | null
   created_at: string
@@ -98,6 +102,14 @@ export interface Deal {
   address: string | null
   latitude: number | null
   longitude: number | null
+  side: DealSide | null
+  city: string | null
+  closed_at: string | null
+  co_op_agent: string | null
+  referrer_contact_id: string | null
+  commission: number | null
+  reference: string | null
+  source: string | null
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string

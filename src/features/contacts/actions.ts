@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import { triggerAutomations } from "@/features/automations/engine"
 import type { CreateContactInput, UpdateContactInput } from "./types"
+import type { ConsentStatus } from "@/types/database"
+import { CALL_OUTCOMES, CALL_OUTCOME_LABELS, type CallOutcome } from "@/features/calls/outcomes"
 
 // Auto-register any new tags in sub-account settings (with default gray color)
 async function syncNewTags(
@@ -180,63 +182,203 @@ export async function deleteContact(id: string) {
   return { success: true }
 }
 
+// Google Contacts labels arrive as "** Clients ::: Imported on 8/26 ::: * myContacts". Turn them
+// into clean tags and drop Google's bookkeeping labels.
+function labelsToTags(raw: string): string[] {
+  return raw
+    .split(/:::|,|;/)
+    .map((t) => t.replace(/[*✖︎✓]/g, "").trim())
+    .filter((t) => t && !/^(mycontacts|imported on|import from|starred)/i.test(t))
+    .map((t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""))
+    .filter(Boolean)
+}
+
+function parseDateLoose(v: string | null | undefined): string | null {
+  if (!v) return null
+  const t = v.trim()
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10)
+  const m = t.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/) // M/D/YYYY
+  if (m) return `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`
+  const y = t.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/)
+  if (y) return `${y[1]}-${y[2].padStart(2, "0")}-${y[3].padStart(2, "0")}`
+  return null
+}
+
 export async function importContacts(
-  rows: Record<string, string | null>[]
+  rows: Record<string, string | null>[],
+  options: { defaultConsent?: ConsentStatus; importTag?: string | null } = {}
 ) {
   const { userId, orgId, subAccountId, supabase } = await getUserContext()
+  const defaultConsent: ConsentStatus = options.defaultConsent ?? "none"
+  const importTag = options.importTag?.trim() || null
 
   let imported = 0
+  let skipped = 0
   let failed = 0
   const errors: string[] = []
 
-  // Process in batches of 50
+  // Existing emails in this workspace — rows matching one are skipped, not duplicated
+  const { data: existingRows } = await supabase
+    .from("contacts")
+    .select("email")
+    .eq("sub_account_id", subAccountId)
+    .not("email", "is", null)
+  const seen = new Set((existingRows ?? []).map((r) => (r.email as string).toLowerCase()))
+
   const batchSize = 50
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize)
 
-    const contactInserts = batch.map((row) => ({
-      org_id: orgId,
-      sub_account_id: subAccountId,
-      first_name: row.first_name || null,
-      last_name: row.last_name || null,
-      email: row.email || null,
-      phone: row.phone || null,
-      company: row.company || null,
-      source: row.source || null,
-      tags: row.tags ? row.tags.split(",").map((t) => t.trim()) : [],
-      consent_status: "none" as const,
-      metadata: {},
-    }))
+    const prepared = batch.flatMap((row) => {
+      const email = row.email?.trim().toLowerCase() || null
+      if (email && seen.has(email)) { skipped++; return [] }
+      if (email) seen.add(email)
+      const first = row.first_name?.trim() || null
+      const last = row.last_name?.trim() || null
+      const company = row.company?.trim() || null
+      if (!first && !last && !email && !company) { skipped++; return [] }
+
+      const tags = new Set<string>(row.tags ? labelsToTags(row.tags) : [])
+      if (importTag) tags.add(importTag)
+      const consentRaw = row.consent_status?.trim().toLowerCase()
+      const consent: ConsentStatus = (["explicit", "implied", "none", "withdrawn"] as const).find((c) => c === consentRaw) ?? defaultConsent
+      const displayRaw = row.consent_to_display_sale?.trim().toLowerCase()
+      const display = displayRaw === "yes" || displayRaw === "no" ? displayRaw : "pending"
+
+      return [{
+        insert: {
+          org_id: orgId,
+          sub_account_id: subAccountId,
+          first_name: first ?? (company && !last ? company : null),
+          last_name: last,
+          email,
+          phone: row.phone?.trim() || null,
+          company,
+          source: row.source?.trim() || null,
+          tags: Array.from(tags),
+          birthday: parseDateLoose(row.birthday),
+          last_contact: parseDateLoose(row.last_contact),
+          consent_status: consent,
+          consent_to_display_sale: display,
+          metadata: row.address?.trim() ? { address: { formatted: row.address.trim() } } : {},
+        },
+        notes: row.notes?.trim() || null,
+      }]
+    })
+    if (prepared.length === 0) continue
 
     const { data: contacts, error } = await supabase
       .from("contacts")
-      .insert(contactInserts)
+      .insert(prepared.map((p) => p.insert))
       .select("id")
 
     if (error) {
-      failed += batch.length
+      failed += prepared.length
       errors.push(`Batch starting at row ${i + 1}: ${error.message}`)
       continue
     }
 
     imported += contacts.length
 
-    // Create system activities for imported contacts
-    const activityInserts = contacts.map((c) => ({
-      org_id: orgId,
-      sub_account_id: subAccountId,
-      contact_id: c.id,
-      user_id: userId,
-      type: "system" as const,
-      content: "Contact imported via CSV",
-      metadata: {},
-    }))
+    // Register any new tags so they appear in Settings (same as create/update)
+    await syncNewTags(supabase, orgId, subAccountId, Array.from(new Set(prepared.flatMap((p) => p.insert.tags))))
 
+    const activityInserts = contacts.flatMap((c, idx) => {
+      const base = { org_id: orgId, sub_account_id: subAccountId, contact_id: c.id, user_id: userId }
+      const list: Array<Record<string, unknown>> = [
+        { ...base, type: "system", content: "Contact imported via CSV", metadata: importTag ? { import: importTag } : {} },
+      ]
+      const note = prepared[idx]?.notes
+      if (note) list.push({ ...base, type: "note", content: note, metadata: { import: "notes" } })
+      return list
+    })
     await supabase.from("activities").insert(activityInserts)
   }
 
   revalidatePath("/contacts")
-  return { imported, failed, errors }
+  revalidatePath("/settings")
+  return { imported, skipped, failed, errors }
+}
+
+// One-tap call logging for the daily call block: writes a `call` activity,
+// stamps last_contact = today, and optionally creates the next-step task.
+export async function logCall(
+  contactId: string,
+  input: {
+    outcome: CallOutcome
+    note?: string
+    nextStep?: { title: string; due_date: string | null }
+  }
+) {
+  const { userId, orgId, subAccountId, supabase } = await getUserContext()
+
+  if (!CALL_OUTCOMES.includes(input.outcome)) {
+    return { error: "Unknown call outcome" }
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+  const summary = CALL_OUTCOME_LABELS[input.outcome]
+  const content = input.note?.trim() ? `${summary} — ${input.note.trim()}` : summary
+
+  const { error: actError } = await supabase.from("activities").insert({
+    org_id: orgId,
+    sub_account_id: subAccountId,
+    contact_id: contactId,
+    user_id: userId,
+    type: "call",
+    content,
+    metadata: { outcome: input.outcome, logged_on: today },
+  })
+  if (actError) return { error: actError.message }
+
+  const { error: upError } = await supabase
+    .from("contacts")
+    .update({ last_contact: today, updated_at: new Date().toISOString() })
+    .eq("id", contactId)
+    .eq("sub_account_id", subAccountId)
+  if (upError) return { error: upError.message }
+
+  if (input.nextStep?.title.trim()) {
+    const { error: taskError } = await supabase.from("tasks").insert({
+      org_id: orgId,
+      sub_account_id: subAccountId,
+      assigned_to: userId,
+      title: input.nextStep.title.trim(),
+      description: null,
+      due_date: input.nextStep.due_date,
+      priority: "medium",
+      contact_id: contactId,
+      deal_id: null,
+      status: "pending",
+    })
+    if (taskError) return { error: `Call logged, but the task failed: ${taskError.message}` }
+  }
+
+  revalidatePath(`/contacts/${contactId}`)
+  revalidatePath("/contacts")
+  revalidatePath("/calls")
+  revalidatePath("/tasks")
+  return { success: true }
+}
+
+// Today's call queue: contacts carrying a tag, never-contacted first, then longest since last contact.
+export async function getCallQueue(tag: string | null, limit = 10) {
+  const { orgId, subAccountId, supabase } = await getUserContext()
+
+  let q = supabase
+    .from("contacts")
+    .select("id, first_name, last_name, email, phone, company, tags, last_contact, source")
+    .eq("org_id", orgId)
+    .eq("sub_account_id", subAccountId)
+    .not("phone", "is", null)
+    .order("last_contact", { ascending: true, nullsFirst: true })
+    .order("created_at", { ascending: true })
+    .limit(limit)
+  if (tag) q = q.contains("tags", [tag])
+
+  const { data, error } = await q
+  if (error) return { error: error.message }
+  return { data: data ?? [] }
 }
 
 export async function addNote(contactId: string, content: string) {

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import type { ContactWithRelations } from "../types"
-import type { ConsentStatus, Deal, Task, Activity } from "@/types/database"
+import type { ConsentStatus, Deal, Task, Activity, SaleDisplayConsent } from "@/types/database"
 import { updateContact, deleteContact, addNote, editNote, deleteNote } from "../actions"
 import { updateDealStatus } from "@/features/pipeline/actions"
 import type { DealStatus } from "@/types/database"
@@ -41,6 +41,7 @@ import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
 import { ComposeEmailDialog } from "@/features/email/components/compose-email-dialog"
 import { ComposeSmsDialog } from "@/features/sms/components/compose-sms-dialog"
 import { AIPanel } from "@/features/ai/components/ai-panel"
+import { LogCallDialog } from "@/features/calls/components/log-call-dialog"
 import type { LeadScore } from "@/features/ai/actions"
 import { CreateDealDialog } from "@/features/pipeline/components/create-deal-dialog"
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog"
@@ -126,6 +127,8 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
   const [tags, setTags] = useState(contact.tags?.join(", ") ?? "")
   const [birthday, setBirthday] = useState(contact.birthday ?? "")
   const [consentStatus, setConsentStatus] = useState<ConsentStatus>(contact.consent_status)
+  const [lastContact, setLastContact] = useState(contact.last_contact ?? "")
+  const [displayConsent, setDisplayConsent] = useState<SaleDisplayConsent>(contact.consent_to_display_sale ?? "pending")
 
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -149,6 +152,9 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
 
   // Create deal dialog
   const [createDealOpen, setCreateDealOpen] = useState(false)
+
+  // Log call dialog
+  const [logCallOpen, setLogCallOpen] = useState(false)
 
   // Create task dialog
   const [createTaskOpen, setCreateTaskOpen] = useState(false)
@@ -180,6 +186,8 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         birthday: birthday || null,
         consent_status: consentStatus,
+        last_contact: lastContact || null,
+        consent_to_display_sale: displayConsent,
       })
       if (result.error) {
         toast.error(result.error)
@@ -200,6 +208,8 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
     setTags(contact.tags?.join(", ") ?? "")
     setBirthday(contact.birthday ?? "")
     setConsentStatus(contact.consent_status)
+    setLastContact(contact.last_contact ?? "")
+    setDisplayConsent(contact.consent_to_display_sale ?? "pending")
     setEditing(false)
   }
 
@@ -280,7 +290,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
         </div>
 
         {editing ? (
-          <EditProfileForm />
+          EditProfileForm()
         ) : (
           <ProfileReadView />
         )}
@@ -372,6 +382,18 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
               <span>{formatDateShort(contact.birthday)}</span>
             </div>
           )}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Phone className="size-3" /> Last contact
+            </span>
+            <span>{contact.last_contact ? formatDateShort(contact.last_contact) : <span className="text-muted-foreground">Never</span>}</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Shield className="size-3" /> OK to show sale
+            </span>
+            <span className="capitalize">{contact.consent_to_display_sale ?? "pending"}</span>
+          </div>
         </div>
 
         {/* Tags */}
@@ -460,6 +482,39 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
           <Input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} className="h-8 text-sm" />
         </div>
         <div className="flex flex-col gap-1">
+
+          <Label className="text-xs">Last contact</Label>
+
+          <Input type="date" value={lastContact} onChange={(e) => setLastContact(e.target.value)} className="h-8 text-sm" />
+
+        </div>
+
+        <div className="flex flex-col gap-1">
+
+          <Label className="text-xs">OK to show sale on website</Label>
+
+          <Select value={displayConsent} onValueChange={(v) => setDisplayConsent((v as SaleDisplayConsent) ?? "pending")}>
+
+            <SelectTrigger className="h-8 text-sm w-full">
+
+              <SelectValue>{displayConsent}</SelectValue>
+
+            </SelectTrigger>
+
+            <SelectContent>
+
+              <SelectItem value="pending">Pending — not asked yet</SelectItem>
+
+              <SelectItem value="yes">Yes — neighbourhood + street only</SelectItem>
+
+              <SelectItem value="no">No</SelectItem>
+
+            </SelectContent>
+
+          </Select>
+
+        </div>
+        <div className="flex flex-col gap-1">
           <Label className="text-xs">Tags</Label>
           <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Comma-separated" className="h-8 text-sm" />
         </div>
@@ -477,6 +532,10 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
           <Button size="sm" onClick={openAddNote}>
             <MessageSquare className="size-3.5" />
             Log Note
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setLogCallOpen(true)}>
+            <Phone className="size-3.5" />
+            Log call
           </Button>
           {contact.email && (
             <Button variant="outline" size="sm" onClick={() => setEmailDialogOpen(true)}>
@@ -689,25 +748,25 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
         <div className="hidden lg:grid lg:grid-cols-[280px_1fr_300px] lg:gap-6 h-full">
           {/* Left panel — fixed scroll */}
           <div className="overflow-y-auto pr-2 border-r border-border/50 pt-1">
-            <LeftPanel />
+            {LeftPanel()}
           </div>
 
           {/* Center panel — scrollable feed */}
           <div className="overflow-y-auto pt-1">
-            <CenterPanel />
+            {CenterPanel()}
           </div>
 
           {/* Right panel — fixed scroll */}
           <div className="overflow-y-auto pl-2 border-l border-border/50 pt-1">
-            <RightPanel />
+            {RightPanel()}
           </div>
         </div>
 
         {/* Mobile: single panel */}
         <div className="lg:hidden pt-4">
-          {mobileTab === "profile" && <LeftPanel />}
-          {mobileTab === "activity" && <CenterPanel />}
-          {mobileTab === "context" && <RightPanel />}
+          {mobileTab === "profile" && LeftPanel()}
+          {mobileTab === "activity" && CenterPanel()}
+          {mobileTab === "context" && RightPanel()}
         </div>
       </div>
 
@@ -753,6 +812,14 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
         description={`Are you sure you want to delete ${displayName}? This action cannot be undone.`}
         onConfirm={handleDelete}
         isPending={isPending}
+      />
+
+      <LogCallDialog
+        open={logCallOpen}
+        onOpenChange={setLogCallOpen}
+        contactId={contact.id}
+        contactName={displayName}
+        contactPhone={contact.phone}
       />
 
       {contact.email && (

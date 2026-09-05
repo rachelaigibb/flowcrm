@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import {
   Dialog,
   DialogContent,
@@ -84,12 +84,21 @@ export function CreateDealDialog({
     setStageId(stages[0]?.id ?? "")
     setPriority("medium")
     setExpectedClose(undefined)
-    setContactId(null)
+    setContactId(defaultContactId)
     setContactSearch("")
     setContacts([])
-    setSelectedContactLabel("")
+    setSelectedContactLabel(defaultContactLabel)
     setAddress("")
   }
+
+  // Keep the pre-selected contact in sync when the dialog is opened from a contact page
+  useEffect(() => {
+    if (open) {
+      setContactId(defaultContactId)
+      setSelectedContactLabel(defaultContactLabel)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultContactId])
 
   async function handleContactSearch(q: string) {
     setContactSearch(q)

@@ -160,3 +160,13 @@ tests/
 - **Follow-up drafts are never auto-sent**: `draftFollowUp` returns a draft; `AIPanel` opens the existing compose dialogs prefilled via new optional `initialSubject`/`initialBody` props. User must click Send.
 - **NL search**: `aiSearch` translates the query to a structured intent (entity + filters) via completeJSON, then runs normal RLS-scoped Supabase queries — the model never sees other tenants' data and never writes SQL. Wired into Cmd+K as an "Ask AI" item (item `value` includes the live query so cmdk's filter always shows it).
 - **Env**: `ANTHROPIC_API_KEY` required (Vercel env var + `.env.local`). Per-tenant keys deliberately deferred.
+
+## Architecture decisions log (2026-09-04 — Phase 5a prospecting)
+- **Transactions are won deals**, not a separate table: `deals.side/city/closed_at/co_op_agent/referrer_contact_id/commission/reference/source` (migration `00013`). Future-dated presales import as `open` in Negotiation with `expected_close`. Reports date deals by `closed_at ?? created_at`; `moveDeal` into a stage named Won/Lost sets `status` (+`closed_at`).
+- **Contact prospecting fields**: `last_contact` (stamped by `logCall`), `consent_to_display_sale` yes/no/pending = consent to a *sold* marker with neighbourhood + street only. Calls page = `getCallQueue(tag, 10)` ordered `last_contact NULLS FIRST`.
+- **Never export non-functions from a `"use server"` file** — Next 16 fails the build ("can only export async functions"). Shared constants live in plain modules (`features/calls/outcomes.ts`).
+- **Never define components inside a component** — `contact-detail-page.tsx` panels are plain render helpers called as `{Panel()}`; nested `<Panel />` remounted on every keystroke (fix #4).
+- **Accent colour** is applied by setting `--primary/--ring/--sidebar-primary` (+ luminance-picked foreground) on `SidebarProvider` in the dashboard layout — one place, whole app.
+- **Tags**: `syncNewTags` on create/update/import; `reconcileTagDefinitions()` at Settings load unions in tags that arrived via service-key inserts (website pipe).
+- **Auth emails use the token-hash flow** (`/auth/confirm` + `verifyOtp`); PKCE (`/auth/callback`) stays for same-browser links. Supabase templates must use `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=…`.
+- **Bulk data loads** (Rachel's Google contacts + transactions) are done with a reviewed generated SQL script into **Testing** first, then Vancouver on approval — contacts carry `metadata.import_key` so deals/activities resolve ids server-side in one transaction. The in-app importer handles the generic Google case; the sheet's messy names needed bespoke matching (email → org → surname+first/nick → surname+DOB → prefix → near-spelling → partner relation).

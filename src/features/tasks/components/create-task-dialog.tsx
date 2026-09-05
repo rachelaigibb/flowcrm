@@ -126,18 +126,21 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          children ? (
-            <>{children}</>
-          ) : (
-            <Button size="sm">
-              <PlusIcon className="size-4" />
-              Add Task
-            </Button>
-          )
-        }
-      />
+      {/* When a parent controls `open` (e.g. the contact page's own "+ Task" button) render no trigger */}
+      {externalOpen === undefined && (
+        <DialogTrigger
+          render={
+            children ? (
+              <>{children}</>
+            ) : (
+              <Button size="sm">
+                <PlusIcon className="size-4" />
+                Add Task
+              </Button>
+            )
+          }
+        />
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>

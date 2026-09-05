@@ -144,9 +144,17 @@ export async function moveDeal(dealId: string, newStageId: string) {
     .eq("id", newStageId)
     .single()
 
+  // Landing in a stage named Won / Lost is a status change too — otherwise the pipeline shows
+  // the deal as won while Reports (which read `status`) still count it as open.
+  const stageName = (stage?.name ?? "").trim().toLowerCase()
+  const statusPatch =
+    stageName === "won" ? { status: "won" as const, closed_at: new Date().toISOString().slice(0, 10) }
+    : stageName === "lost" ? { status: "lost" as const }
+    : {}
+
   const { error } = await supabase
     .from("deals")
-    .update({ stage_id: newStageId })
+    .update({ stage_id: newStageId, ...statusPatch })
     .eq("id", dealId)
     .eq("sub_account_id", subAccountId)
 

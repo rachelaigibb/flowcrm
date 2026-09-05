@@ -586,7 +586,7 @@ export function SubAccountSettingsPage({
           <div className="flex flex-col gap-1.5">
             <Label>Theme Color</Label>
             <p className="text-xs text-muted-foreground">
-              Sets the accent color for this sub-account in the sidebar and header
+              Sets the accent color for this sub-account — buttons, focus rings, sidebar and header
             </p>
             <div className="flex flex-wrap gap-2 mt-1">
               {ACCENT_COLORS.map((color) => (

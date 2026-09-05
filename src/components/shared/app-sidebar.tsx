@@ -22,6 +22,7 @@ import {
   Home,
   List,
   Lock,
+  PhoneCall,
 } from "lucide-react"
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const agencyNavItems = [
 const subAccountNavItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Contacts", href: "/contacts", icon: Users },
+  { title: "Calls", href: "/calls", icon: PhoneCall },
   { title: "Pipeline", href: "/pipeline", icon: Kanban },
   { title: "Calendar", href: "/calendar", icon: CalendarDays },
   { title: "Tasks", href: "/tasks", icon: CheckSquare },

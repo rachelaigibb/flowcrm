@@ -41,7 +41,7 @@ import { SOURCE_COLORS } from "@/lib/constants/colors"
 import { toast } from "sonner"
 import { deleteContact } from "../actions"
 
-type SortField = "name" | "email" | "company" | "created_at"
+type SortField = "name" | "email" | "company" | "created_at" | "last_contact"
 type SortOrder = "asc" | "desc"
 
 interface TagColor {
@@ -125,6 +125,11 @@ export function ContactsPage({ contacts, tagColors }: ContactsPageProps) {
         case "company":
           aVal = (a.company ?? "").toLowerCase()
           bVal = (b.company ?? "").toLowerCase()
+          break
+        case "last_contact":
+          // never-contacted first when ascending, matching the Calls page
+          aVal = a.last_contact ?? ""
+          bVal = b.last_contact ?? ""
           break
         case "created_at":
           aVal = a.created_at
@@ -397,6 +402,12 @@ export function ContactsPage({ contacts, tagColors }: ContactsPageProps) {
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">Source</TableHead>
                 <TableHead className="hidden md:table-cell">Tags</TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  <button type="button" className="flex items-center hover:text-foreground transition-colors" onClick={() => handleSort("last_contact")}>
+                    Last contact
+                    <SortIndicator field="last_contact" />
+                  </button>
+                </TableHead>
                 <TableHead className="hidden sm:table-cell">
                   <button
                     type="button"
@@ -505,6 +516,9 @@ export function ContactsPage({ contacts, tagColors }: ContactsPageProps) {
                         </span>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                    {contact.last_contact ? formatDateShort(contact.last_contact) : "—"}
                   </TableCell>
                   <TableCell
                     className={cn("hidden sm:table-cell text-muted-foreground")}

@@ -1,3 +1,4 @@
+import { reconcileTagDefinitions } from "@/features/settings/actions"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { getSubAccountId } from "@/lib/supabase/get-sub-account"
@@ -58,7 +59,8 @@ export default async function SettingsRoute() {
   })) as (SubAccountMembership & { email?: string })[]
 
   const subAccountData = subAccountResult.data as SubAccount & { settings?: Record<string, unknown> }
-  const tags = (subAccountData.settings?.tags as Array<{ id: string; name: string; color: string }>) ?? []
+  // Union of configured tags and tags actually present on contacts (see reconcileTagDefinitions)
+  const tags = (await reconcileTagDefinitions()).data ?? []
 
   return (
     <SubAccountSettingsPage

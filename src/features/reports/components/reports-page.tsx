@@ -111,7 +111,12 @@ export function ReportsPage({
 }: ReportsPageProps) {
   const [dateRange, setDateRange] = useState<DateRange>("month")
 
-  const filteredDeals = useMemo(() => filterByDateRange(deals, dateRange), [deals, dateRange])
+  // Deals count in the period they CLOSED (won/lost), not the period they were created —
+  // a deal opened in June and won in September belongs to September.
+  const filteredDeals = useMemo(
+    () => filterByDateRange(deals.map((d) => ({ ...d, created_at: d.closed_at ?? d.created_at })), dateRange),
+    [deals, dateRange]
+  )
   const filteredContacts = useMemo(
     () => filterByDateRange(contacts, dateRange),
     [contacts, dateRange]

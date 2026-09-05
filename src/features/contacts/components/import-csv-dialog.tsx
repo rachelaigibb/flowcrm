@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -59,9 +60,12 @@ export function ImportCSVDialog({ open, onOpenChange }: ImportCSVDialogProps) {
   const [isPending, startTransition] = useTransition()
   const [importResult, setImportResult] = useState<{
     imported: number
+    skipped?: number
     failed: number
     errors: string[]
   } | null>(null)
+  const [defaultConsent, setDefaultConsent] = useState<"none" | "implied" | "explicit">("none")
+  const [importTag, setImportTag] = useState(`import-${new Date().toISOString().slice(0, 7)}`)
   const [dragOver, setDragOver] = useState(false)
 
   function reset() {
@@ -137,7 +141,7 @@ export function ImportCSVDialog({ open, onOpenChange }: ImportCSVDialogProps) {
 
     startTransition(async () => {
       setStep("importing")
-      const result = await importContacts(mappedRows)
+      const result = await importContacts(mappedRows, { defaultConsent, importTag })
       setImportResult(result)
       setStep("done")
     })
@@ -213,6 +217,24 @@ export function ImportCSVDialog({ open, onOpenChange }: ImportCSVDialogProps) {
 
         {/* Step 2: Field Mapping */}
         {step === "mapping" && (
+          <>
+          <div className="grid gap-3 sm:grid-cols-2 rounded-md border p-3 mb-3">
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs">Consent for rows without a consent column</Label>
+              <Select value={defaultConsent} onValueChange={(v) => setDefaultConsent((v as "none" | "implied" | "explicit") ?? "none")}>
+                <SelectTrigger className="h-8 text-sm w-full"><SelectValue>{defaultConsent}</SelectValue></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">none — unknown</SelectItem>
+                  <SelectItem value="implied">implied — existing business relationship (CASL)</SelectItem>
+                  <SelectItem value="explicit">explicit — they opted in (you have a record)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs">Tag every imported contact with</Label>
+              <Input value={importTag} onChange={(e) => setImportTag(e.target.value)} className="h-8 text-sm" placeholder="e.g. import-2026-09" />
+            </div>
+          </div>
           <div className="flex flex-col gap-4 max-h-80 overflow-y-auto">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <FileSpreadsheet className="size-3.5" />
@@ -251,6 +273,7 @@ export function ImportCSVDialog({ open, onOpenChange }: ImportCSVDialogProps) {
               </div>
             ))}
           </div>
+          </>
         )}
 
         {/* Step 3: Preview */}
@@ -309,7 +332,7 @@ export function ImportCSVDialog({ open, onOpenChange }: ImportCSVDialogProps) {
               </div>
               <div>
                 <p className="text-sm font-medium">
-                  {importResult.imported} contacts imported
+                  {importResult.imported} contacts imported{importResult.skipped ? `, ${importResult.skipped} skipped (duplicate email or empty row)` : ""}
                 </p>
                 {importResult.failed > 0 && (
                   <p className="text-xs text-destructive">

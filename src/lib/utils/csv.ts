@@ -41,6 +41,24 @@ const FIELD_MAPPINGS: Record<string, string> = {
   organization: "company",
   source: "source",
   tags: "tags",
+  // Google Contacts export — current layout (headers are lower-cased, spaces → underscores by parseCSV)
+  given_name: "first_name",
+  family_name: "last_name",
+  "e-mail_1_-_value": "email",
+  "phone_1_-_value": "phone",
+  organization_name: "company",
+  "organization_1_-_name": "company",
+  labels: "tags",
+  group_membership: "tags",
+  birthday: "birthday",
+  notes: "notes",
+  "address_1_-_formatted": "address",
+  // FlowCRM's own export / other CRMs
+  last_contact: "last_contact",
+  consent_status: "consent_status",
+  consent: "consent_status",
+  consent_to_display_sale: "consent_to_display_sale",
+  address: "address",
 }
 
 export function mapCSVFields(

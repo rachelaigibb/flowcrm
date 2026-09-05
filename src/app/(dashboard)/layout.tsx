@@ -77,8 +77,27 @@ export default async function DashboardLayout({
     currentSubAccountId = typedSubAccounts[0].id
   }
 
+  // Sub-account accent colour → shadcn primary/ring/sidebar-primary, so every primary button and
+  // focus ring follows the colour chosen in Settings (not just the sidebar dot). Foreground picked
+  // by luminance so light accents still get readable text.
+  const currentSaForAccent = typedSubAccounts.find((sa) => sa.id === currentSubAccountId) as (SubAccount & { accent_color?: string }) | undefined
+  const accent = currentSaForAccent?.accent_color ?? "#6366f1"
+  const accentFg = (() => {
+    const hex = accent.replace("#", "")
+    const n = hex.length === 3 ? hex.split("").map((c) => c + c).join("") : hex
+    const r = parseInt(n.slice(0, 2), 16), g = parseInt(n.slice(2, 4), 16), b = parseInt(n.slice(4, 6), 16)
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#111111" : "#ffffff"
+  })()
+  const accentStyle = {
+    "--primary": accent,
+    "--primary-foreground": accentFg,
+    "--ring": accent,
+    "--sidebar-primary": accent,
+    "--sidebar-primary-foreground": accentFg,
+  } as React.CSSProperties
+
   return (
-    <SidebarProvider>
+    <SidebarProvider style={accentStyle}>
       <AppSidebar
         org={org as Organization}
         subAccounts={typedSubAccounts}

@@ -31,7 +31,7 @@ Rachel AI (your agency)
 ```
 
 - Each **sub-account** is a separate workspace with its own contacts, pipeline, tasks, forms, and settings.
-- Switch between them with the switcher in the sidebar.
+- Switch between them with the switcher in the sidebar. The **accent colour** you pick in a workspace's Settings colours its buttons and focus rings, so you always know which workspace you're in.
 - Vancouver clients live in Vancouver; Dubai investors live in Dubai. They never mix.
 - **Try new things in Testing first** — import a sample file there, click around, delete it. Nothing in Testing touches your real workspaces.
 - Later, when you sell FlowCRM to other agencies, each agency gets its own org just like yours — they can never see your data (enforced at the database level, not just the app).
@@ -43,20 +43,33 @@ Rachel AI (your agency)
 1. **Log in** at the live site (or localhost) with `rachelaigibb@gmail.com`.
 2. **Pick a workspace** (Vancouver or Dubai) in the sidebar.
 3. **Add contacts** — Contacts → **Add Contact** (top right), or import in bulk (next section).
-4. **Set up your pipeline** — Pipeline page; drag deals between stages. Stages are editable in Settings.
+4. **Set up your pipeline** — Pipeline page; drag deals between stages. Stages are editable in Settings. Dropping a deal into **Won** or **Lost** sets its status and close date, so Reports agree with the board.
 5. **Tasks & Calendar** — tasks can attach to contacts/deals; the calendar shows due dates.
 6. **Cmd+K** (Ctrl+K on Windows) — jump anywhere, or type a plain-English question and pick **Ask AI** ("contacts from Instagram with no deals").
 
-## 4. Importing your contacts
+## 4. Your daily call block
 
-1. Export your contacts from GoHighLevel / spreadsheet as a **CSV** file.
-2. In FlowCRM: **Contacts → Import CSV**.
-3. Match the columns (first name, last name, email, phone, tags…) and import.
-4. Do this once per workspace — Vancouver contacts into Vancouver, Dubai into Dubai.
+1. **Calls** in the sidebar → pick a tag (default `past-client`). You get ten people: never-contacted first, then whoever it's been longest since you spoke to.
+2. Tap **Call** (dials on your phone) then **Log call**: pick the outcome, add a note, optionally type a next step and pick "3 days" / "1 week" / a date — that becomes a task.
+3. Logging stamps **Last contact** = today, so the person drops down the list and the next one rises. Every logged call shows on the contact's timeline.
+
+You can also log a call from any contact page (**Log call** next to **Log Note**).
+
+**Transactions and commission.** A completed sale is a **won deal** on the contact: address, city, side (buyer/seller/tenant), completion date, price, commission, your reference / transaction number, and a note with MLS and listing details. Co-buyers get a note on their own timeline pointing at the deal. Two firm presales that haven't completed are *open* deals in Negotiation with their completion date — they move to Won when they complete.
+
+**Two fields you asked for:** *Last contact* (kept current by the call logger) and *OK to show sale* — yes / no / pending — your record of whether the client agreed to a "sold" marker with neighbourhood and street only on your website.
+
+## 5. Importing your contacts
+
+1. Export from **Google Contacts** (Export → Google CSV) or any spreadsheet as a **CSV**.
+2. In FlowCRM: **Contacts → Import CSV**. Google's columns are recognised automatically: names, first email and phone, organisation, birthday, notes (become the first note), address, and **labels → tags** (Google's own "myContacts / Imported on…" labels are dropped).
+3. Choose the **consent** to apply to rows without a consent column (past clients = *implied*, an existing business relationship under CASL; never pick *explicit* unless you have their opt-in), and the **tag every imported contact gets** (default `import-YYYY-MM`) so you can find or undo a batch.
+4. Rows whose email already exists are **skipped**, not duplicated.
+5. Do this once per workspace — and try it in **Testing** first.
 
 **Consent matters (CASL):** every contact has a consent status. Broadcasts only go to contacts marked **explicit** or **implied** consent. Set it correctly at import time and you'll never accidentally email someone you shouldn't.
 
-## 5. Getting website leads into FlowCRM
+## 6. Getting website leads into FlowCRM
 
 FlowCRM has a **form builder** with public forms that automatically create contacts:
 
@@ -72,7 +85,7 @@ FlowCRM has a **form builder** with public forms that automatically create conta
 
 Each submission creates the contact in the right workspace (or updates it if the email already exists) and can kick off an automation (e.g. instant follow-up email).
 
-## 6. Sending email & SMS
+## 7. Sending email & SMS
 
 - **Per-workspace settings**: Settings → Email (your from-name/from-email via Resend) and Settings → SMS (your Twilio number).
 - **One-off messages**: from any contact page — Email / SMS buttons.
@@ -81,7 +94,7 @@ Each submission creates the contact in the right workspace (or updates it if the
 - **Automations**: trigger → steps (send email/SMS, wait, add/remove tag, create task). Triggers: contact created, tag added, deal stage change, form submission, manual.
   - ⚠️ **"Wait" steps resume when someone uses the app**, not on a clock. A "wait 1 day" step fires the next time you open the Automations pages after the day has passed. Fine for solo use; needs a scheduler before selling to agencies.
 
-## 7. AI features
+## 8. AI features
 
 The API key is set. On any contact page:
 
@@ -94,7 +107,7 @@ Each click costs roughly a cent or two of API usage.
 
 ---
 
-## 8. Maintenance & gotchas
+## 9. Maintenance & gotchas
 
 | Thing | What to know |
 |---|---|
@@ -104,6 +117,6 @@ Each click costs roughly a cent or two of API usage.
 | **Secrets** | API keys live in Vercel env vars and `.env.local` — never in code. All seven are set in Vercel (Supabase ×2, Resend, Twilio ×2, Anthropic, site URL). |
 | **Backups** | Supabase free tier keeps daily backups for 7 days. Export important data periodically (Contacts → Export CSV). |
 
-## 9. Where to get help
+## 10. Where to get help
 
 Open the project in Claude Code (`~/Projects/flowcrm`) and describe what you want — the project's `.claude/CLAUDE.md` carries the full architecture memory, and this guide plus BUILD-STATUS.md keep the current state.

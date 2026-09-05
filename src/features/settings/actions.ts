@@ -355,3 +355,31 @@ export async function deleteTag(subAccountId: string, tagId: string) {
   revalidatePath(`/settings/sub-accounts/${subAccountId}`)
   return { success: true }
 }
+
+
+// Tags can reach contacts without passing through the app (CSV import used to, and the website
+// lead pipe still writes with a service key). Make the Settings list the union of what is
+// configured and what is actually in use, persisting any newcomers with the default grey.
+export async function reconcileTagDefinitions() {
+  const { orgId, subAccountId, supabase } = await getUserContext()
+
+  const [{ data: subAccount }, { data: rows }] = await Promise.all([
+    supabase.from("sub_accounts").select("settings").eq("id", subAccountId).single(),
+    supabase.from("contacts").select("tags").eq("sub_account_id", subAccountId),
+  ])
+
+  const settings = (subAccount?.settings ?? {}) as Record<string, unknown>
+  const existing = (settings.tags as Array<{ id: string; name: string; color: string }>) ?? []
+  const known = new Set(existing.map((t) => t.name.toLowerCase()))
+  const inUse = new Set<string>()
+  for (const r of rows ?? []) for (const t of (r.tags as string[]) ?? []) if (t && !known.has(t.toLowerCase())) inUse.add(t)
+  if (inUse.size === 0) return { data: existing }
+
+  const merged = [...existing, ...Array.from(inUse).map((name) => ({ id: crypto.randomUUID(), name, color: "#6b7280" }))]
+  await supabase
+    .from("sub_accounts")
+    .update({ settings: { ...settings, tags: merged }, updated_at: new Date().toISOString() })
+    .eq("id", subAccountId)
+    .eq("org_id", orgId)
+  return { data: merged }
+}
