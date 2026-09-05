@@ -12,7 +12,7 @@ There are two doors:
 
 | Door | Address | When to use it |
 |---|---|---|
-| **Live site** | `https://crm.getflowplan.app` *(once DNS is set up — see BUILD-STATUS)* | Everyday use, phone, anywhere |
+| **Live site** | `https://crm.getflowplan.app` | Everyday use, phone, anywhere. Add it to your phone's home screen from Safari → Share → Add to Home Screen. |
 | **Local dev** | `http://localhost:3000` (after running `npm run dev` in the project) | Only for developing/testing on the Mac |
 
 **Nothing is "per device."** Adding a contact on your laptop shows up on your phone instantly, because both are reading the same cloud database.
@@ -25,13 +25,15 @@ There are two doors:
 
 ```
 Rachel AI (your agency)
-├── Vancouver Real Estate   (sub-account / workspace)
-└── Dubai Real Estate       (sub-account / workspace)
+├── Vancouver Real Estate   (sub-account / workspace — your real Vancouver data)
+├── Dubai Real Estate       (sub-account / workspace — your real Dubai data)
+└── Testing                 (sub-account / workspace — throwaway rows for trying things out)
 ```
 
 - Each **sub-account** is a separate workspace with its own contacts, pipeline, tasks, forms, and settings.
 - Switch between them with the switcher in the sidebar.
 - Vancouver clients live in Vancouver; Dubai investors live in Dubai. They never mix.
+- **Try new things in Testing first** — import a sample file there, click around, delete it. Nothing in Testing touches your real workspaces.
 - Later, when you sell FlowCRM to other agencies, each agency gets its own org just like yours — they can never see your data (enforced at the database level, not just the app).
 
 ---
@@ -64,10 +66,11 @@ FlowCRM has a **form builder** with public forms that automatically create conta
 4. Put that form on your website — either link to it, or embed it, or (best) have the website's existing contact form submit to it.
 
 **Your routing plan:**
-- `rachelgibbrealtor.ca` contact form → a form created in the **Vancouver Real Estate** workspace
-- `buyingindubai.com` / `.com` site → a form created in the **Dubai Real Estate** workspace
+- `rachelgibbrealtor.ca` contact form → **Vancouver Real Estate** — *already live*: the site inserts leads directly (tags `website`, `contact-form`; CASL consent from the form checkbox)
+- `deals.rachelgibbrealtor.ca` email-gate form → **Vancouver Real Estate**, tag `deal-list` — *being built*
+- `rachelgibbrealtor.com` and `buyingindubai.com` forms → **Dubai Real Estate** — *being built*, same code as the `.ca` pipe
 
-Each submission creates the contact in the right workspace, tagged `source: form`, and can kick off an automation (e.g. instant follow-up email). *Wiring the actual website forms to FlowCRM is a small build task — see BUILD-STATUS → Not started.*
+Each submission creates the contact in the right workspace (or updates it if the email already exists) and can kick off an automation (e.g. instant follow-up email).
 
 ## 6. Sending email & SMS
 
@@ -78,9 +81,9 @@ Each submission creates the contact in the right workspace, tagged `source: form
 - **Automations**: trigger → steps (send email/SMS, wait, add/remove tag, create task). Triggers: contact created, tag added, deal stage change, form submission, manual.
   - ⚠️ **"Wait" steps resume when someone uses the app**, not on a clock. A "wait 1 day" step fires the next time you open the Automations pages after the day has passed. Fine for solo use; needs a scheduler before selling to agencies.
 
-## 7. AI features (need the API key first)
+## 7. AI features
 
-Once `ANTHROPIC_API_KEY` is set (see BUILD-STATUS → Pending setup):
+The API key is set. On any contact page:
 
 - **Score lead** (contact page) — 0–100 conversion likelihood with reasoning.
 - **Summarize** — the whole relationship in a paragraph.
@@ -96,9 +99,9 @@ Each click costs roughly a cent or two of API usage.
 | Thing | What to know |
 |---|---|
 | **Supabase free tier pauses** | If nobody touches the app for ~a week, Supabase pauses the database. It wakes automatically but the first load is slow, and it once scrambled admin credentials (fixed by Dashboard → Project Settings → Database → Reset database password). Using the CRM regularly prevents this; upgrading to Supabase Pro removes it entirely. |
-| **Forgot password** | Login page → **Forgot password?** → email link → set a new one. (Requires the Supabase redirect allowlist — see BUILD-STATUS.) |
+| **Forgot password** | Login page → **Forgot password?** → email link → set a new one. |
 | **Deploys** | Any push to `main` on GitHub auto-deploys the live site via Vercel in ~2 minutes. |
-| **Secrets** | API keys live in Vercel env vars and `.env.local` — never in code. Current keys: Supabase (set), `RESEND_API_KEY` / Twilio (check Vercel), `ANTHROPIC_API_KEY` (pending). |
+| **Secrets** | API keys live in Vercel env vars and `.env.local` — never in code. All seven are set in Vercel (Supabase ×2, Resend, Twilio ×2, Anthropic, site URL). |
 | **Backups** | Supabase free tier keeps daily backups for 7 days. Export important data periodically (Contacts → Export CSV). |
 
 ## 9. Where to get help

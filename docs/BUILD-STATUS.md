@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.4.1** · Last updated 2026-08-30 · Latest commit `96bc4ad`
+**Current version: v0.4.1** · Last updated 2026-09-04 · Latest commit `8c948e9`
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -68,7 +68,7 @@ These are done in dashboards, not in the repo. Each one blocks a shipped feature
 
 **Deploy gotcha observed 2026-08-13:** a push to `main` was silently not picked up by Vercel (no build, no check-run). A follow-up push triggered it. If a change doesn't appear live, check that a deployment actually exists for the commit.
 
-**Still to confirm by hand:** item 1, plus the *values* behind items 2–3. One test covers all of it — request a password reset on the live site; if the emailed link starts with `https://crm.getflowplan.app` and logging in works, `NEXT_PUBLIC_SITE_URL` and the Supabase allowlist are both correct. Then click **Score lead** on a contact to confirm the AI key value.
+**Still to confirm by hand (Rachel, ~3 min):** item 1, plus the *values* behind items 2–3. The reset email goes to `rachelaigibb@gmail.com`, which Claude cannot read, so these two tests stay manual. One test covers all of it — request a password reset on the live site; if the emailed link starts with `https://crm.getflowplan.app` and logging in works, `NEXT_PUBLIC_SITE_URL` and the Supabase allowlist are both correct. Then click **Score lead** on a contact to confirm the AI key value.
 
 ---
 
@@ -76,13 +76,24 @@ These are done in dashboards, not in the repo. Each one blocks a shipped feature
 
 | Item | Notes |
 |---|---|
-| **Website form → FlowCRM wiring** | Point `rachelgibbrealtor.ca` contact form at a Vancouver-workspace form, and the `.com`/Dubai site at a Dubai-workspace form. Form builder already exists; this is connecting the sites to it. **Highest practical value for daily use.** |
+| **Website form → FlowCRM wiring** | **`.ca` contact form: DONE** (live since 2026-08-15 — `rachelgibbrealtor.ca/src/lib/crm/leads.ts` inserts into Vancouver via service key; dedupes by email; CASL consent from checkbox). **Remaining:** `deals.rachelgibbrealtor.ca` email-gate form (tag `deal-list`) and both Dubai sites (`rachelgibbrealtor.com`, `buyingindubai.com`) → Dubai workspace, reusing `leads.ts`. Due 2026-09-13. |
+| **Prospecting fields (job 1, due 2026-09-07)** | `contacts.last_contact` (date), `contacts.consent_to_display_sale` (yes/no/pending — consent to show a *sold* marker with neighbourhood + street only, never full details). Transactions = **won deals** with new columns `side`, `city`, `closed_at`, `co_op_agent`, `referrer_contact_id`, **`commission`**. Log-a-call quick action (outcome + note + next-step task; stamps `last_contact`). "Today's calls" view. Google Contacts CSV import mapping + Google Sheet transactions import matched to contacts. |
+| **Unsubscribe link (job 3, due 2026-09-26)** | Per-contact token → public `/u/[token]` sets consent `withdrawn`; `List-Unsubscribe` header on broadcasts. Not built today. |
+| **`.ca` sender for Vancouver** | Rachel wants replies from `info@rachelgibbrealtor.ca` as well as `.com`. `.ca` domain must be verified in Resend first. |
 | **Automation scheduler (cron)** | "Wait" steps currently resume only when someone loads the automations pages. Needs a Vercel cron or queue before selling to other agencies. |
 | **Auto-score on contact change** | Phase 4 leftover — scoring is manual (button click) today. |
 | **AI in pipeline / broadcast views** | Phase 4 leftover — AI is contact-page + Cmd+K only. |
 | **Phase 5 — landing page builder** | Evaluate GrapeJS vs Craft.js. The last "Coming Soon" item in the sidebar ("Website"). |
 | **Broadcast queue** | Current send loop runs inside the server action — fine for hundreds of recipients (300s Vercel limit), needs a queue for thousands. |
 | **Supabase Pro** | Free tier auto-pauses after ~a week idle (this bit us once). ~$25/mo removes it and improves backups. |
+
+## 🐛 Fixes (short-term intake)
+
+*Rachel: add anything you notice here (or tell Claude and it lands here). Fixed items move to "Fixes shipped alongside" above.*
+
+| # | What's wrong | Where | Status |
+|---|---|---|---|
+| — | *(none logged yet)* | | |
 
 ## 🗄️ Deliberately deferred (decided, not forgotten)
 
@@ -92,9 +103,9 @@ These are done in dashboards, not in the repo. Each one blocks a shipped feature
 
 ---
 
-## Data state (as of 2026-08-13)
+## Data state (as of 2026-09-04)
 
-Production database cleaned of all test data. Live: 1 login (`rachelaigibb@gmail.com`), 1 org (Rachel AI), 2 sub-accounts (Vancouver Real Estate, Dubai Real Estate), 2 real contacts, 1 won deal, 0 tasks, 1 disabled automation. (3 practice deals + 2 orphaned tasks deleted 2026-08-13.)
+**Vancouver wiped to zero data on 2026-09-04** (Rachel's instruction, ahead of the Google Contacts + transactions import): 0 contacts, 0 deals, 0 tasks, 0 activities. Kept: pipeline stages, tag definitions (now incl. `past-client`, `referrer`, `co-op-agent`, `sphere`, `deal-list`), email sender, the disabled automation. Dubai: empty. **New `Testing` sub-account** created 2026-09-04 for trying features on throwaway rows. 1 login (`rachelaigibb@gmail.com`), 1 org (Rachel AI), 3 sub-accounts.
 
 ## Version history
 

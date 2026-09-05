@@ -2,7 +2,7 @@
 
 A multi-tenant, AI-first CRM and business operating system. Built to replace GoHighLevel — Rachel uses it first, then it's sold to other agencies.
 
-**Live:** https://crm.getflowplan.app · **Version:** v0.4 "AI"
+**Live:** https://crm.getflowplan.app · **Version:** v0.4.1
 
 ---
 
