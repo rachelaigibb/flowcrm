@@ -48,10 +48,18 @@ These are done in dashboards, not in the repo. Each one blocks a shipped feature
 
 | # | Task | Where | Status |
 |---|---|---|---|
-| 1 | Redirect URLs `http://localhost:3000/**` + `https://crm.getflowplan.app/**` | Supabase → Auth → URL Configuration | ❓ Unverified — not readable via API |
-| 2 | `ANTHROPIC_API_KEY` | Vercel env vars | ✅ Set, applied to live build |
-| 3 | `NEXT_PUBLIC_SITE_URL` | Vercel env vars | ✅ Set, applied to live build (value unread) |
+| 1 | Redirect URLs `http://localhost:3000/**` + `https://crm.getflowplan.app/**` | Supabase → Auth → URL Configuration | ✅ Verified 2026-09-04 — reset link redirected to our callback |
+| 2 | `ANTHROPIC_API_KEY` | Vercel env vars | ✅ Verified 2026-09-04 — Score lead returned a score in production |
+| 3 | `NEXT_PUBLIC_SITE_URL` | Vercel env vars | ✅ Verified 2026-09-04 — reset email carried `redirect_to=https://crm.getflowplan.app/auth/…` |
 | 4 | `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Vercel env vars | ✅ Set since 2026-07-01 |
+| 5 | **Switch the two Supabase email templates to the token-hash link** (see below) | Supabase → Authentication → Email Templates | ⏳ Rachel — 2 min. Until done, reset/magic links only work when opened in the same browser that requested them |
+
+**Email template change (item 5).** In Supabase → Authentication → Email Templates, edit these two templates so the button/link `href` reads exactly:
+
+- **Reset Password:** `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery`
+- **Magic Link:** `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=magiclink`
+
+Leave everything else in the template as is. The app already sends `redirect_to=…/auth/confirm?next=…`, so the `&` continues that query string. Why: the default `{{ .ConfirmationURL }}` uses a PKCE code that only the *requesting* browser can redeem; `token_hash` is verified server-side by `/auth/confirm` and works from any device. Verified 2026-09-04 via Supabase auth logs: the first click on a reset link verified fine at Supabase, but our callback never exchanged the code (no `grant_type=pkce` request) — the verifier cookie wasn't present in the browser that opened the email.
 
 **✅ 2026-08-13 — custom domain live.** `crm.getflowplan.app` → Cloudflare CNAME (DNS-only / grey cloud) → Vercel. Valid Let's Encrypt cert, publicly reachable, no SSO wall. *Cloudflare proxying must stay OFF for this record — orange cloud breaks Vercel's certificate.*
 
@@ -93,7 +101,7 @@ These are done in dashboards, not in the repo. Each one blocks a shipped feature
 
 | # | What's wrong | Where | Status |
 |---|---|---|---|
-| — | *(none logged yet)* | | |
+| 1 | Password-reset / magic-link emails fail unless opened in the same browser that requested them ("link has expired") | Auth email flow | ✅ Code shipped 2026-09-04 (`/auth/confirm` token-hash route); ⏳ needs the template edit in Pending setup #5 |
 
 ## 🗄️ Deliberately deferred (decided, not forgotten)
 

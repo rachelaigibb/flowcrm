@@ -20,6 +20,12 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(`${origin}${safeNext}`)
     }
+    // Most common cause: link opened in a different browser than the one that
+    // requested it (PKCE verifier cookie absent). Email links should use
+    // /auth/confirm (token_hash) instead — see that route.
+    console.error(`[auth/callback] exchangeCodeForSession failed: ${error.message}`)
+  } else {
+    console.error("[auth/callback] no code param on request")
   }
 
   // No code, or the exchange failed (expired/reused link).

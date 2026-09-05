@@ -80,7 +80,7 @@ export async function signInWithMagicLink(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback?next=/`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/confirm?next=/`,
     },
   })
 
@@ -102,7 +102,7 @@ export async function requestPasswordReset(formData: FormData) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+    redirectTo: `${siteUrl}/auth/confirm?next=/reset-password`,
   })
 
   if (error) {
@@ -121,7 +121,7 @@ export async function updatePassword(formData: FormData) {
     return { error: "Password must be at least 6 characters." }
   }
 
-  // Requires an active session — set by the recovery link via /auth/callback.
+  // Requires an active session — set by the recovery link via /auth/confirm.
   const {
     data: { user },
   } = await supabase.auth.getUser()
