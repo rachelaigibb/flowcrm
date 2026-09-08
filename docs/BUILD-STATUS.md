@@ -61,7 +61,7 @@ These are done in dashboards, not in the repo. Each one blocks a shipped feature
 | 2 | `ANTHROPIC_API_KEY` | Vercel env vars | ✅ Verified 2026-09-04 — Score lead returned a score in production |
 | 3 | `NEXT_PUBLIC_SITE_URL` | Vercel env vars | ✅ Verified 2026-09-04 — reset email carried `redirect_to=https://crm.getflowplan.app/auth/…` |
 | 4 | `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Vercel env vars | ✅ Set since 2026-07-01 |
-| 5 | **Switch the two Supabase email templates to the token-hash link** (see below) | Supabase → Authentication → Email Templates | ⏳ Rachel — 2 min. Until done, reset/magic links only work when opened in the same browser that requested them |
+| 5 | **Switch the two Supabase email templates to the token-hash link** (see below) | Supabase → Authentication → Emails | ✅ Done 2026-09-07. Required custom SMTP first (Supabase no longer lets you edit templates on the built-in mailer): Resend SMTP, sender `FlowCRM <flowcrm@rachelgibbrealtor.com>`, host `smtp.resend.com:465`, user `resend`, password = a Resend API key named `supabase-smtp`. Auth email rate limit rose from 2/h to 30/h as a side effect. Verified: reset requested on laptop, link opened on phone, password changed. |
 
 **Email template change (item 5).** In Supabase → Authentication → Email Templates, edit these two templates so the button/link `href` reads exactly:
 
@@ -109,7 +109,7 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 
 | # | What's wrong | Where | Status |
 |---|---|---|---|
-| 1 | Password-reset / magic-link emails fail unless opened in the same browser that requested them | Auth email flow | ✅ Code `e71575e` (`/auth/confirm` token-hash route); ⏳ needs the template edit in Pending setup #5 |
+| 1 | Password-reset / magic-link emails fail unless opened in the same browser that requested them | Auth email flow | ✅ Code `e71575e` (`/auth/confirm` token-hash route) + templates switched 2026-09-07; verified cross-device |
 | 2 | Accent colour from Settings only coloured the sidebar dot — all buttons stayed black | Theme | ✅ v0.5.0 — accent now drives `--primary`, `--ring`, `--sidebar-primary` app-wide (foreground picked by luminance) |
 | 3 | Tags added on a contact didn't appear in Settings → Tags | Tags | ✅ v0.5.0 — CSV import now registers tags; Settings shows the union of configured tags and tags actually on contacts (`reconcileTagDefinitions`) |
 | 4 | Editing a contact: every keystroke dropped focus | Contact page | ✅ v0.5.0 — panels were nested components (remounted per render); now render helpers |

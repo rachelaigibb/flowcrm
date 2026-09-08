@@ -111,6 +111,7 @@ Each click costs roughly a cent or two of API usage.
 
 | Thing | What to know |
 |---|---|
+| **Auth emails (reset / magic link)** | Come from `FlowCRM <flowcrm@rachelgibbrealtor.com>` via Resend. Links work on any device. If one doesn't arrive, check Spam/Promotions in the account you log in with (`rachelaigibb@gmail.com`), then Resend → Emails shows whether it was delivered. |
 | **Supabase free tier pauses** | If nobody touches the app for ~a week, Supabase pauses the database. It wakes automatically but the first load is slow, and it once scrambled admin credentials (fixed by Dashboard → Project Settings → Database → Reset database password). Using the CRM regularly prevents this; upgrading to Supabase Pro removes it entirely. |
 | **Forgot password** | Login page → **Forgot password?** → email link → set a new one. |
 | **Deploys** | Any push to `main` on GitHub auto-deploys the live site via Vercel in ~2 minutes. |

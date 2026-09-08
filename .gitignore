@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local reference material (assets, screenshots, PII-adjacent) — not for git
 references/
+
+# personal client data used for imports — never commit
+references/import/
