@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.5.1** · Last updated 2026-09-04 · Latest commit *(see git log)*
+**Current version: v0.5.2** · Last updated 2026-09-04 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -120,6 +120,10 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | 9 | Tags auto-added from imports were all grey | Settings | ✅ v0.5.1 — `reconcileTagDefinitions` assigns least-used palette colours; Testing recoloured in place |
 | 10 | Contacts header shows only the grand total when a filter is active | Contacts | ✅ v0.5.1 — shows "8 of 156 contacts" while filtered |
 | 11 | Reports: no per-year view, revenue chart ignored the range | Reports | ✅ v0.5.1 — range picker lists every year with data; charts bucket by month for a year/quarter and by year for All Time; deals dated by `closed_at` |
+| 12 | Do-not-contact people appeared in the Calls queue | Calls | ✅ v0.5.2 — queue excludes the `do-not-contact` tag |
+| 13 | Reports "Revenue" was sold volume, not income; no commission view; year list skipped empty years | Reports | ✅ v0.5.2 — renamed Sales Over Time; new Commission Over Time chart with range total; year picker lists every year from first record to now |
+| 14 | Pipeline showed all-time totals with no way to focus on a period; cards/list in arbitrary order; won deals showed no close date | Pipeline | ✅ v0.5.2 — period picker (week/month/quarter/year/all/any year) applies to closed deals only, open deals always show; Won stat follows it; cards and list sorted newest first; list column is Close Date (actual for won/lost, expected for open) |
+| 15 | Dashboard "Won This Month" summed all time; tiles had no period; Open Deals tile dumped you on the full board | Dashboard | ✅ v0.5.2 — period picker saved per workspace (`settings.dashboard_range`, default This Month); Won / New Contacts / Activities follow it, Open Deals / Pipeline Value / Tasks stay all-time; Open Deals and Won tiles deep-link to the pipeline list pre-filtered |
 
 ## 🗄️ Deliberately deferred (decided, not forgotten)
 

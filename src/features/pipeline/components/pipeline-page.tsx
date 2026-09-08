@@ -49,25 +49,30 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import type { DealWithContact, StageWithDeals } from "../types"
 import type { PipelineStage, DealPriority, DealStatus } from "@/types/database"
+import { DATE_RANGE_OPTIONS, getPeriod, labelFor, yearsFrom, type DateRange } from "@/lib/utils/date-range"
 
 type ViewMode = "kanban" | "list"
 
 interface PipelinePageProps {
   stages: PipelineStage[]
   deals: DealWithContact[]
+  initialView?: ViewMode
+  initialStatus?: DealStatus | "all"
+  initialRange?: DateRange
 }
 
-export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps) {
+export function PipelinePage({ stages, deals: initialDeals, initialView = "kanban", initialStatus = "all", initialRange = "all" }: PipelinePageProps) {
   const router = useRouter()
   const [deals, setDeals] = useState<DealWithContact[]>(initialDeals)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [priorityFilter, setPriorityFilter] = useState<DealPriority | "all">("all")
-  const [statusFilter, setStatusFilter] = useState<DealStatus | "all">("all")
+  const [statusFilter, setStatusFilter] = useState<DealStatus | "all">(initialStatus)
+  const [rangeFilter, setRangeFilter] = useState<DateRange>(initialRange)
   const [selectedDeal, setSelectedDeal] = useState<DealWithContact | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>("kanban")
+  const [viewMode, setViewMode] = useState<ViewMode>(initialView)
 
   // New filter state
   const [excludedStageIds, setExcludedStageIds] = useState<Set<string>>(new Set())
@@ -97,9 +102,23 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
     return Array.from(sources).sort()
   }, [deals])
 
+  const period = useMemo(() => getPeriod(rangeFilter), [rangeFilter])
+  const years = useMemo(() => {
+    const ts = deals.map((d) => new Date(d.closed_at ?? d.created_at).getTime()).filter((n) => !Number.isNaN(n))
+    return yearsFrom(ts.length ? new Date(Math.min(...ts)) : null)
+  }, [deals])
+  // Newest first: closed deals by close date, open deals by expected close, else created
+  const dealTime = (d: DealWithContact) =>
+    new Date(d.closed_at ?? d.expected_close ?? d.created_at).getTime() || 0
+
   // Filter deals
   const filteredDeals = useMemo(() => {
     return deals.filter((deal) => {
+      // Period applies to closed (won/lost) deals only — open deals are always current work
+      if (deal.status !== "open" && rangeFilter !== "all") {
+        const closed = new Date(deal.closed_at ?? deal.updated_at ?? deal.created_at)
+        if ((period.start && closed < period.start) || closed > period.end) return false
+      }
       if (
         searchQuery &&
         !deal.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -133,8 +152,8 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
         }
       }
       return true
-    })
-  }, [deals, searchQuery, priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter])
+    }).sort((a, b) => dealTime(b) - dealTime(a))
+  }, [deals, searchQuery, priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter, rangeFilter, period])
 
   // Stats computed from filtered deals
   const stats = useMemo(() => {
@@ -159,8 +178,9 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
     if (excludedStageIds.size > 0) count++
     if (valueMin || valueMax) count++
     if (sourceFilter !== "all") count++
+    if (rangeFilter !== "all") count++
     return count
-  }, [priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter])
+  }, [priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter, rangeFilter])
 
   // Group deals by stage
   const stagesWithDeals: StageWithDeals[] = useMemo(() => {
@@ -351,7 +371,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
         <div className="rounded-lg border bg-card p-3">
           <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <Trophy className="size-3.5" />
-            Won This View
+            Won · {labelFor(rangeFilter)}
           </div>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-green-400">
             {formatCurrency(stats.wonValue, stats.currency)}
@@ -447,9 +467,31 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
           </div>
         </div>
 
-        {/* Row 2: Stage toggle chips */}
+        {/* Row 2: Period + stage toggle chips */}
         {stages.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
+            <Select
+              value={rangeFilter}
+              onValueChange={(val: string | null) => {
+                if (val) setRangeFilter(val as DateRange)
+              }}
+            >
+              <SelectTrigger className="h-7 w-[140px] text-xs mr-2">
+                <SelectValue>{labelFor(rangeFilter)}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_RANGE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+                {years.map((y) => (
+                  <SelectItem key={y} value={`y:${y}`}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <span className="text-xs font-medium text-muted-foreground mr-1">Stages:</span>
             {stages.map((stage) => {
               const isActive = !excludedStageIds.has(stage.id)
@@ -545,7 +587,7 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Expected Close</TableHead>
+                  <TableHead>Close Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -584,9 +626,10 @@ export function PipelinePage({ stages, deals: initialDeals }: PipelinePageProps)
                         )}
                       </TableCell>
                       <TableCell>
-                        {deal.expected_close
-                          ? formatDateShort(deal.expected_close)
-                          : <span className="text-muted-foreground">--</span>}
+                        {(() => {
+                          const date = deal.status === "open" ? deal.expected_close : (deal.closed_at ?? deal.expected_close)
+                          return date ? formatDateShort(date) : <span className="text-muted-foreground">--</span>
+                        })()}
                       </TableCell>
                     </TableRow>
                   )

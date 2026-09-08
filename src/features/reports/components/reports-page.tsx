@@ -155,11 +155,12 @@ export function ReportsPage({
 
   // Years that actually have data, for the range picker
   const dealDate = (d: Deal) => new Date(d.closed_at ?? d.created_at)
+  // Every calendar year from the first record to now — including years with no sales
   const years = useMemo(() => {
-    const ys = new Set<number>()
-    deals.forEach((d) => ys.add(dealDate(d).getFullYear()))
-    contacts.forEach((c) => ys.add(new Date(c.created_at).getFullYear()))
-    return Array.from(ys).sort((a, b) => b - a)
+    const ys = [...deals.map((d) => dealDate(d).getFullYear()), ...contacts.map((c) => new Date(c.created_at).getFullYear())]
+    const now = new Date().getFullYear()
+    const first = ys.length ? Math.min(...ys) : now
+    return Array.from({ length: now - first + 1 }, (_, i) => now - i)
   }, [deals, contacts])
   const earliest = useMemo(() => {
     const ts = [...deals.map((d) => dealDate(d).getTime()), ...contacts.map((c) => new Date(c.created_at).getTime())]
@@ -198,12 +199,23 @@ export function ReportsPage({
       return {
         ...m,
         value: monthDeals.reduce((sum, d) => sum + (d.value ?? 0), 0),
+        commission: monthDeals.reduce((sum, d) => sum + (Number(d.commission) || 0), 0),
         count: monthDeals.length,
       }
     })
   }, [deals, months])
 
   const maxRevenue = Math.max(...revenueByMonth.map((m) => m.value), 1)
+  const maxCommission = Math.max(...revenueByMonth.map((m) => m.commission), 1)
+  // Totals for the selected range (won deals only)
+  const rangeTotals = useMemo(() => {
+    const won = filteredDeals.filter((d) => d.status === "won")
+    return {
+      sales: won.reduce((s, d) => s + (d.value ?? 0), 0),
+      commission: won.reduce((s, d) => s + (Number(d.commission) || 0), 0),
+      count: won.length,
+    }
+  }, [filteredDeals])
 
   // ---------------------------------------------------------------
   // Conversion Rate
@@ -289,13 +301,15 @@ export function ReportsPage({
         formatCurrencyCompact(s.value, currency),
       ]),
       [],
-      ["Revenue Over Time"],
-      ["Period", "Deals Won", "Revenue"],
+      ["Sales Over Time"],
+      ["Period", "Deals Won", "Sales", "Commission"],
       ...revenueByMonth.map((m) => [
         m.label,
         String(m.count),
         formatCurrencyCompact(m.value, currency),
+        formatCurrencyCompact(m.commission, currency),
       ]),
+      ["Total", String(rangeTotals.count), formatCurrencyCompact(rangeTotals.sales, currency), formatCurrencyCompact(rangeTotals.commission, currency)],
       [],
       ["Conversion Rate"],
       ["Status", "Count", "Percentage"],
@@ -434,9 +448,11 @@ export function ReportsPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
               <DollarSign className="size-4 text-muted-foreground" />
-              Revenue Over Time
+              Sales Over Time
             </CardTitle>
-            <CardDescription>Won deal values by {bucketUnit} · {labelFor(dateRange)}</CardDescription>
+            <CardDescription>
+              Sold value by {bucketUnit} · {labelFor(dateRange)} · total {formatCurrencyCompact(rangeTotals.sales, currency)} across {rangeTotals.count} deal{rangeTotals.count !== 1 ? "s" : ""}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-2 h-40">
@@ -464,6 +480,40 @@ export function ReportsPage({
                     <span className="text-[10px] text-muted-foreground">
                       {m.short}
                     </span>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 2b. Commission Over Time */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <DollarSign className="size-4 text-muted-foreground" />
+              Commission Over Time
+            </CardTitle>
+            <CardDescription>
+              Your commission by {bucketUnit} · {labelFor(dateRange)} · total {formatCurrencyCompact(rangeTotals.commission, currency)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-2 h-40">
+              {revenueByMonth.map((m) => {
+                const heightPct = maxCommission > 0 ? (m.commission / maxCommission) * 100 : 0
+                return (
+                  <div key={m.key} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">
+                      {m.commission > 0 ? formatCurrencyCompact(m.commission, currency) : ""}
+                    </span>
+                    <div className="w-full flex items-end" style={{ height: "120px" }}>
+                      <div
+                        className={cn("w-full rounded-t transition-all duration-500", m.commission > 0 ? "bg-primary" : "bg-muted")}
+                        style={{ height: `${Math.max(heightPct, m.commission > 0 ? 4 : 2)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{m.short}</span>
                   </div>
                 )
               })}

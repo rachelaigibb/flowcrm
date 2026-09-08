@@ -371,6 +371,7 @@ export async function getCallQueue(tag: string | null, limit = 10) {
     .eq("org_id", orgId)
     .eq("sub_account_id", subAccountId)
     .not("phone", "is", null)
+    .not("tags", "cs", "{do-not-contact}")
     .order("last_contact", { ascending: true, nullsFirst: true })
     .order("created_at", { ascending: true })
     .limit(limit)

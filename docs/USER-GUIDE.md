@@ -124,3 +124,9 @@ Open the project in Claude Code (`~/Projects/flowcrm`) and describe what you wan
 
 ## Reports by year (v0.5.1)
 The range picker at the top of Reports lists This Week / Month / Quarter / Year, All Time, and then every year that has data. Pick a year to see that year's deals month by month; All Time shows one bar per year. Deals are dated by their completion (closed) date. On Contacts, the header shows "8 of 156 contacts" while a search or tag filter is active.
+
+## Period pickers (v0.5.2)
+- **Dashboard**: the picker at the top right sets the period for Won, New Contacts and Activities. Open Deals, Pipeline Value and Tasks are always all-time. Your choice is remembered for the workspace. Clicking Open Deals opens the pipeline list showing only open deals; clicking Won opens the list of deals won in that period.
+- **Pipeline**: the picker beside "Stages:" limits closed (won/lost) deals to the period; open deals always show because they are current work. The Won total follows the picker. Cards and the list are newest first, and the list's Close Date column is the actual completion date for won deals.
+- **Stage chips** (New, Qualified, Won…): clicking one hides that stage from the board, list and totals so you can focus on the rest. Click again to bring it back. They are a view toggle, not a status change.
+- **Reports**: "Sales Over Time" is sold volume; "Commission Over Time" is your income, with the total for the chosen range in its subtitle.

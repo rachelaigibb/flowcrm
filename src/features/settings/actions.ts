@@ -393,3 +393,20 @@ export async function reconcileTagDefinitions() {
     .eq("org_id", orgId)
   return { data: merged }
 }
+
+// Dashboard period (week / month / quarter / year / all / y:YYYY), stored per workspace.
+export async function setDashboardRange(range: string) {
+  const { orgId, subAccountId, supabase } = await getUserContext()
+  const ok = ["week", "month", "quarter", "year", "all"].includes(range) || /^y:\d{4}$/.test(range)
+  if (!ok) return { error: "Invalid range" }
+  const { data: subAccount } = await supabase.from("sub_accounts").select("settings").eq("id", subAccountId).single()
+  const settings = (subAccount?.settings ?? {}) as Record<string, unknown>
+  const { error } = await supabase
+    .from("sub_accounts")
+    .update({ settings: { ...settings, dashboard_range: range }, updated_at: new Date().toISOString() })
+    .eq("id", subAccountId)
+    .eq("org_id", orgId)
+  if (error) return { error: error.message }
+  revalidatePath("/dashboard")
+  return { data: range }
+}

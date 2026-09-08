@@ -2,9 +2,15 @@ import { createClient } from "@/lib/supabase/server"
 import { getSubAccountId } from "@/lib/supabase/get-sub-account"
 import { PipelinePage } from "@/features/pipeline/components/pipeline-page"
 import type { DealWithContact } from "@/features/pipeline/types"
-import type { PipelineStage } from "@/types/database"
+import type { PipelineStage, DealStatus } from "@/types/database"
+import { parseDateRange } from "@/lib/utils/date-range"
 
-export default async function PipelineRoute() {
+export default async function PipelineRoute({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>
+}) {
+  const sp = await searchParams
   const subAccountId = await getSubAccountId()
 
   if (!subAccountId) {
@@ -33,6 +39,9 @@ export default async function PipelineRoute() {
     <PipelinePage
       stages={(stages as PipelineStage[]) ?? []}
       deals={(deals as DealWithContact[]) ?? []}
+      initialView={sp.view === "list" ? "list" : "kanban"}
+      initialStatus={["open", "won", "lost"].includes(sp.status ?? "") ? (sp.status as DealStatus) : "all"}
+      initialRange={parseDateRange(sp.range, "all")}
     />
   )
 }

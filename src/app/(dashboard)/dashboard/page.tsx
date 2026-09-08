@@ -19,12 +19,19 @@ import {
   TrendingUp,
 } from "lucide-react"
 import type { Activity, PipelineStage, SubAccount } from "@/types/database"
+import { DashboardRangeSelect } from "@/features/dashboard/components/dashboard-range-select"
+import { getPeriod, labelFor, parseDateRange, yearsFrom, type DateRange } from "@/lib/utils/date-range"
 
 export const metadata = {
   title: "Dashboard | FlowCRM",
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>
+}) {
+  const sp = await searchParams
   const supabase = await createClient()
 
   const subAccountId = await getSubAccountId()
@@ -54,11 +61,40 @@ export default async function DashboardPage() {
   const user = userResult.data.user
 
   // Get account contact from sub-account settings
-  const accountContact = (subAccount?.settings as Record<string, unknown> | null)?.account_contact as
+  const settings = (subAccount?.settings as Record<string, unknown> | null) ?? {}
+  const accountContact = settings.account_contact as
     | { name?: string; email?: string; phone?: string }
     | undefined
 
+  // Period for the tiles: URL param wins, then the saved workspace choice, then this month
+  const savedRange = typeof settings.dashboard_range === "string" ? settings.dashboard_range : undefined
+  const range: DateRange = parseDateRange(sp.range, parseDateRange(savedRange, "month"))
+  const period = getPeriod(range)
+  const startISO = period.start?.toISOString()
+  const endISO = period.end.toISOString()
+
   // Parallel fetches for dashboard stats
+  // Period-scoped: won deals (by close date), new contacts, activities. All-time: open deals, pipeline value, tasks.
+  let wonQuery = supabase
+    .from("deals")
+    .select("value, commission")
+    .eq("sub_account_id", subAccountId)
+    .eq("status", "won")
+    .lte("closed_at", endISO)
+  if (startISO) wonQuery = wonQuery.gte("closed_at", startISO)
+  let newContactsQuery = supabase
+    .from("contacts")
+    .select("id", { count: "exact", head: true })
+    .eq("sub_account_id", subAccountId)
+    .lte("created_at", endISO)
+  if (startISO) newContactsQuery = newContactsQuery.gte("created_at", startISO)
+  let activitiesCountQuery = supabase
+    .from("activities")
+    .select("id", { count: "exact", head: true })
+    .eq("sub_account_id", subAccountId)
+    .lte("created_at", endISO)
+  if (startISO) activitiesCountQuery = activitiesCountQuery.gte("created_at", startISO)
+
   const [
     contactsResult,
     openDealsResult,
@@ -67,6 +103,9 @@ export default async function DashboardPage() {
     pendingTasksResult,
     recentActivitiesResult,
     pipelineResult,
+    newContactsResult,
+    activitiesCountResult,
+    earliestDealResult,
   ] = await Promise.all([
     supabase
       .from("contacts")
@@ -77,19 +116,7 @@ export default async function DashboardPage() {
       .select("value")
       .eq("sub_account_id", subAccountId)
       .eq("status", "open"),
-    supabase
-      .from("deals")
-      .select("value")
-      .eq("sub_account_id", subAccountId)
-      .eq("status", "won")
-      .gte(
-        "updated_at",
-        new Date(
-          new Date().getFullYear(),
-          new Date().getMonth(),
-          1
-        ).toISOString()
-      ),
+    wonQuery,
     supabase
       .from("tasks")
       .select("id", { count: "exact", head: true })
@@ -112,9 +139,22 @@ export default async function DashboardPage() {
       .select("*")
       .eq("sub_account_id", subAccountId)
       .order("position"),
+    newContactsQuery,
+    activitiesCountQuery,
+    supabase
+      .from("deals")
+      .select("closed_at")
+      .eq("sub_account_id", subAccountId)
+      .not("closed_at", "is", null)
+      .order("closed_at", { ascending: true })
+      .limit(1),
   ])
 
   const totalContacts = contactsResult.count ?? 0
+  const newContactsCount = newContactsResult.count ?? 0
+  const activitiesCount = activitiesCountResult.count ?? 0
+  const years = yearsFrom(earliestDealResult.data?.[0]?.closed_at ?? null)
+  const periodLabel = labelFor(range)
 
   const openDeals = openDealsResult.data ?? []
   const openDealsCount = openDeals.length
@@ -129,6 +169,7 @@ export default async function DashboardPage() {
     (sum, d) => sum + (d.value ?? 0),
     0
   )
+  const wonCommission = wonDeals.reduce((sum, d) => sum + (Number(d.commission) || 0), 0)
 
   const overdueTasksCount = overdueTasksResult.count ?? 0
   const pendingTasksCount = pendingTasksResult.count ?? 0
@@ -178,27 +219,27 @@ export default async function DashboardPage() {
       title: "Open Deals",
       value: `${openDealsCount}`,
       icon: TrendingUp,
-      description: openDealsCount > 0 ? `${openDealsCount} active` : "No active deals",
-      href: "/pipeline",
+      description: openDealsCount > 0 ? `${openDealsCount} active · all time` : "No active deals",
+      href: "/pipeline?view=list&status=open",
     },
     {
       title: "Pipeline Value",
       value: formatCurrency(openDealsValue, currency),
       icon: DollarSign,
-      description: "Across open stages",
-      href: "/pipeline",
+      description: "Across open stages · all time",
+      href: "/pipeline?view=list&status=open",
     },
     {
-      title: "Won This Month",
+      title: `Won · ${periodLabel}`,
       value: formatCurrency(wonDealsValue, currency),
       icon: Trophy,
-      description: `${wonDealsCount} deal${wonDealsCount !== 1 ? "s" : ""} closed`,
-      href: "/pipeline",
+      description: `${wonDealsCount} deal${wonDealsCount !== 1 ? "s" : ""} closed · ${formatCurrency(wonCommission, currency)} commission`,
+      href: `/pipeline?view=list&status=won&range=${encodeURIComponent(range)}`,
       accent: true,
     },
     {
-      title: "New Contacts",
-      value: `${totalContacts}`,
+      title: `New Contacts · ${periodLabel}`,
+      value: `${newContactsCount}`,
       icon: Users,
       description: `${totalContacts} total`,
       href: "/contacts",
@@ -212,10 +253,10 @@ export default async function DashboardPage() {
       warning: overdueTasksCount > 0,
     },
     {
-      title: "Activities",
-      value: `${recentActivities.length}`,
+      title: `Activities · ${periodLabel}`,
+      value: `${activitiesCount}`,
       icon: ActivityIcon,
-      description: "Recent actions",
+      description: "Notes, calls, emails, updates",
       href: "/contacts",
     },
   ]
@@ -244,17 +285,20 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Welcome Message */}
-      <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">
-          {dayOfWeek}, {dateStr}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight mt-1">
-          Welcome back, <span className="italic">{displayName}</span>
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Here&apos;s what&apos;s moving in your pipeline
-        </p>
+      {/* Welcome Message + period picker */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            {dayOfWeek}, {dateStr}
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight mt-1">
+            Welcome back, <span className="italic">{displayName}</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Here&apos;s what&apos;s moving in your pipeline
+          </p>
+        </div>
+        <DashboardRangeSelect value={range} years={years} />
       </div>
 
       {/* Stat cards — 6 grid */}
