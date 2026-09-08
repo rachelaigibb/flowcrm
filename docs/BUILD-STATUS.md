@@ -139,6 +139,8 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 
 ## Data state (as of 2026-09-04, evening)
 
+- **2026-09-08 — Vancouver loaded** (job 1 of the 90-day plan): 155 contacts (59 past clients, 62 leads, 92 sphere, 37 friends & family), 52 deals (51 won / 1 open presale, all typed, $265,332 commission), 308 notes/activities, 23 tag definitions with colours. Same set as Testing; loader = `references/import/` CSVs → `vancouver_load.sql` via psql in one transaction, idempotent on the `import-2026-09` tag. Dubai workspace holds the 7 event leads. Still to come for contacts: `last_contact` from eXp email (needs the Gmail connector on rachel.gibb@exprealty.com) and any gibbrealestate.ca mail found in the 2024 sparsebundle.
+
 **Testing:** 66 contacts (48 Google + 17 new from the transaction sheet + 1 throwaway), 48 deals (46 won, 2 open presales), notes and co-client notes — Rachel's real data, loaded for review. **Vancouver:** empty, awaiting her go-ahead to load the same set. **Dubai:** empty. 1 login, 1 org, 3 sub-accounts.
 
 ## Version history
