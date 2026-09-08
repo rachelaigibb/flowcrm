@@ -33,6 +33,7 @@ import {
 import { cn } from "@/lib/utils"
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency"
 import { TIMEZONES, ACCENT_COLORS, TAG_COLORS } from "@/lib/constants/colors"
+import { getDealTypes } from "@/features/pipeline/deal-types"
 import { DeleteConfirmDialog } from "@/components/shared/delete-confirm-dialog"
 import {
   PlusIcon,
@@ -113,6 +114,7 @@ export function SubAccountSettingsPage({
   const [tags, setTags] = React.useState(initialTags)
   const [addTagOpen, setAddTagOpen] = React.useState(false)
   const [newTagName, setNewTagName] = React.useState("")
+  const [dealTypesText, setDealTypesText] = React.useState<string>(getDealTypes((subAccount.settings as Record<string, unknown> | null) ?? null).join(", "))
   const [newTagColor, setNewTagColor] = React.useState<string>(TAG_COLORS[8].value) // indigo default
   const [addingTag, setAddingTag] = React.useState(false)
   const [editingTag, setEditingTag] = React.useState<Tag | null>(null)
@@ -191,11 +193,13 @@ export function SubAccountSettingsPage({
       return
     }
     setSaving(true)
+    const dealTypeList = Array.from(new Set(dealTypesText.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)))
     const result = await updateSubAccount(subAccount.id, {
       name: name.trim(),
       currency,
       timezone,
       accent_color: accentColor,
+      settings: { ...((subAccount.settings as Record<string, unknown> | null) ?? {}), deal_types: dealTypeList },
     })
     setSaving(false)
     if (result.error) {
@@ -563,6 +567,30 @@ export function SubAccountSettingsPage({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-1.5">
+
+              <Label htmlFor="deal-types">Deal types</Label>
+
+              <Input
+
+                id="deal-types"
+
+                value={dealTypesText}
+
+                onChange={(e) => setDealTypesText(e.target.value)}
+
+                placeholder="buyer, seller, tenant, landlord, referral"
+
+              />
+
+              <p className="text-xs text-muted-foreground">
+
+                Comma-separated. Offered as the “Deal type” pick-list on every deal — use whatever fits this business.
+
+              </p>
+
             </div>
 
             <div className="flex flex-col gap-1.5">

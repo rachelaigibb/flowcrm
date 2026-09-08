@@ -102,7 +102,7 @@ export interface Deal {
   address: string | null
   latitude: number | null
   longitude: number | null
-  side: DealSide | null
+  side: string | null
   city: string | null
   closed_at: string | null
   co_op_agent: string | null

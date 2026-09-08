@@ -40,6 +40,7 @@ import { ChevronsUpDown, Check } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "sonner"
 import { createDeal, searchContacts } from "../actions"
+import { DEFAULT_DEAL_TYPES, dealTypeLabel } from "../deal-types"
 import type { PipelineStage, Contact, DealPriority } from "@/types/database"
 
 interface CreateDealDialogProps {
@@ -50,6 +51,7 @@ interface CreateDealDialogProps {
   defaultCurrency?: string
   defaultContactId?: string | null
   defaultContactLabel?: string
+  dealTypes?: string[]
 }
 
 type ContactResult = Pick<Contact, "id" | "first_name" | "last_name" | "email" | "company">
@@ -62,6 +64,7 @@ export function CreateDealDialog({
   defaultCurrency = "USD",
   defaultContactId = null,
   defaultContactLabel = "",
+  dealTypes = DEFAULT_DEAL_TYPES,
 }: CreateDealDialogProps) {
   const [isPending, startTransition] = useTransition()
   const [title, setTitle] = useState("")
@@ -74,10 +77,12 @@ export function CreateDealDialog({
   const [contactSearch, setContactSearch] = useState("")
   const [contacts, setContacts] = useState<ContactResult[]>([])
   const [address, setAddress] = useState("")
+  const [side, setSide] = useState<string>("none")
   const [contactPopoverOpen, setContactPopoverOpen] = useState(false)
   const [selectedContactLabel, setSelectedContactLabel] = useState(defaultContactLabel)
 
   function resetForm() {
+    setSide("none")
     setTitle("")
     setValue("")
     setCurrency(defaultCurrency)
@@ -132,6 +137,7 @@ export function CreateDealDialog({
           expected_close: expectedClose ? format(expectedClose, "yyyy-MM-dd") : null,
           contact_id: contactId,
           address: address.trim() || null,
+          side: side === "none" ? null : side,
         })
         toast.success("Deal created")
         resetForm()
@@ -318,6 +324,23 @@ export function CreateDealDialog({
                 </Command>
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Deal type</Label>
+            <Select value={side} onValueChange={(val: string | null) => setSide(val ?? "none")}>
+              <SelectTrigger className="w-full">
+                <SelectValue>{side === "none" ? "None" : dealTypeLabel(side)}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {dealTypes.map((dt) => (
+                  <SelectItem key={dt} value={dt}>
+                    {dealTypeLabel(dt)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">

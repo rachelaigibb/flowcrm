@@ -55,6 +55,7 @@ export async function createDeal(input: CreateDealInput) {
       expected_close: input.expected_close,
       contact_id: input.contact_id,
       address: input.address?.trim() || null,
+      side: input.side ?? null,
       latitude,
       longitude,
       metadata: {},

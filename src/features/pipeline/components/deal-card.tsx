@@ -5,6 +5,8 @@ import { CSS } from "@dnd-kit/utilities"
 import { cn } from "@/lib/utils"
 import { PRIORITY_COLORS, STATUS_COLORS } from "@/lib/constants/colors"
 import { PriorityBadge, StatusBadge } from "@/components/shared/status-badges"
+import { Badge } from "@/components/ui/badge"
+import { dealTypeLabel } from "@/features/pipeline/deal-types"
 import { formatCurrencyCompact } from "@/lib/utils/currency"
 import { formatDateShort } from "@/lib/utils/dates"
 import { GripVertical, Calendar, User } from "lucide-react"
@@ -71,6 +73,9 @@ export function DealCard({ deal, onClick }: DealCardProps) {
             {formatCurrencyCompact(deal.value, deal.currency)}
           </p>
           <div className="flex flex-wrap items-center gap-1.5">
+            {deal.side && (
+              <Badge variant="outline" className="text-[10px] px-1.5 h-4 font-medium">{dealTypeLabel(deal.side)}</Badge>
+            )}
             <PriorityBadge priority={deal.priority} className="text-[10px] px-1.5 h-4" />
             {deal.status !== "open" && (
               <StatusBadge status={deal.status} className="text-[10px] px-1.5 h-4" />

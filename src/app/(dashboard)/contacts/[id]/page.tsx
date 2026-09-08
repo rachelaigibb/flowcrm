@@ -3,6 +3,7 @@ import { getSubAccountId } from "@/lib/supabase/get-sub-account"
 import { redirect, notFound } from "next/navigation"
 import { ContactDetailPage } from "@/features/contacts/components/contact-detail-page"
 import type { ContactWithRelations } from "@/features/contacts/types"
+import { getDealTypes } from "@/features/pipeline/deal-types"
 
 export default async function ContactDetailRoute({
   params,
@@ -87,6 +88,7 @@ export default async function ContactDetailRoute({
   }
 
   const tagColors = ((subAccount?.settings as Record<string, unknown>)?.tags as Array<{ id: string; name: string; color: string }>) ?? []
+  const dealTypes = getDealTypes(subAccount?.settings as Record<string, unknown> | null)
   const currency = (subAccount as { currency?: string } | null)?.currency ?? "USD"
 
   // Prev/next contact navigation
@@ -113,6 +115,7 @@ export default async function ContactDetailRoute({
 
   return (
     <ContactDetailPage
+      dealTypes={dealTypes}
       contact={contactWithRelations}
       tagColors={tagColors}
       stages={(stages ?? []) as import("@/types/database").PipelineStage[]}

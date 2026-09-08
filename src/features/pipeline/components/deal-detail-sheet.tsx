@@ -33,6 +33,10 @@ import {
   fetchDealActivities,
 } from "../actions"
 import type { DealWithContact, UpdateDealInput } from "../types"
+import { searchContacts } from "../actions"
+import { DEFAULT_DEAL_TYPES, dealTypeLabel } from "../deal-types"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import type { PipelineStage, Activity, DealStatus, DealPriority } from "@/types/database"
 import {
   Lock,
@@ -48,6 +52,7 @@ import { useRouter } from "next/navigation"
 interface DealDetailSheetProps {
   deal: DealWithContact | null
   stages: PipelineStage[]
+  dealTypes?: string[]
   open: boolean
   onOpenChange: (open: boolean) => void
   onDealUpdated: () => void
@@ -59,12 +64,26 @@ export function DealDetailSheet({
   open,
   onOpenChange,
   onDealUpdated,
+  dealTypes = DEFAULT_DEAL_TYPES,
 }: DealDetailSheetProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState<UpdateDealInput>({})
   const [activities, setActivities] = useState<Activity[]>([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  // Contact picker (edit mode)
+  const [contactLabel, setContactLabel] = useState<string>("")
+  const [contactQuery, setContactQuery] = useState("")
+  const [contactResults, setContactResults] = useState<{ id: string; first_name: string | null; last_name: string | null; email: string | null; company: string | null }[]>([])
+  const [contactPopoverOpen, setContactPopoverOpen] = useState(false)
+  useEffect(() => {
+    if (!contactPopoverOpen) return
+    const handle = setTimeout(async () => {
+      const results = await searchContacts(contactQuery)
+      setContactResults(results)
+    }, 200)
+    return () => clearTimeout(handle)
+  }, [contactQuery, contactPopoverOpen])
   const [isPending, startTransition] = useTransition()
 
   const dealId = deal?.id ?? null
@@ -118,7 +137,16 @@ export function DealDetailSheet({
       status: currentDeal.status,
       priority: currentDeal.priority,
       expected_close: currentDeal.expected_close,
+      closed_at: currentDeal.closed_at,
+      side: currentDeal.side,
+      address: currentDeal.address,
+      contact_id: currentDeal.contact_id,
+      commission: currentDeal.commission == null ? null : Number(currentDeal.commission),
+      reference: currentDeal.reference,
+      co_op_agent: currentDeal.co_op_agent,
     })
+    setContactLabel(contactName ?? "")
+    setContactQuery("")
   }
 
   function cancelEditing() {
@@ -384,6 +412,126 @@ export function DealDetailSheet({
                       />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Deal type</Label>
+                      <Select
+                        value={editData.side ?? "none"}
+                        onValueChange={(val: string | null) =>
+                          setEditData((prev) => ({ ...prev, side: !val || val === "none" ? null : val }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue>{editData.side ? dealTypeLabel(editData.side) : "None"}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {Array.from(new Set([...dealTypes, ...(editData.side ? [editData.side] : [])])).map((dt) => (
+                            <SelectItem key={dt} value={dt}>
+                              {dealTypeLabel(dt)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Close date</Label>
+                      <Input
+                        type="date"
+                        value={toDateInputValue(editData.closed_at)}
+                        onChange={(e) =>
+                          setEditData((prev) => ({ ...prev, closed_at: e.target.value || null }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Contact</Label>
+                    <Popover open={contactPopoverOpen} onOpenChange={setContactPopoverOpen}>
+                      <PopoverTrigger
+                        render={<Button type="button" variant="outline" className="w-full justify-between font-normal" />}
+                      >
+                        <span className="truncate">{contactLabel || "No contact"}</span>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--anchor-width] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput placeholder="Search contacts…" value={contactQuery} onValueChange={setContactQuery} />
+                          <CommandList>
+                            <CommandEmpty>No contacts found</CommandEmpty>
+                            <CommandGroup>
+                              {editData.contact_id && (
+                                <CommandItem
+                                  value="__clear"
+                                  onSelect={() => {
+                                    setEditData((prev) => ({ ...prev, contact_id: null }))
+                                    setContactLabel("")
+                                    setContactPopoverOpen(false)
+                                  }}
+                                >
+                                  Remove contact
+                                </CommandItem>
+                              )}
+                              {contactResults.map((c) => {
+                                const label = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.company || c.email || "Unnamed"
+                                return (
+                                  <CommandItem
+                                    key={c.id}
+                                    value={c.id}
+                                    onSelect={() => {
+                                      setEditData((prev) => ({ ...prev, contact_id: c.id }))
+                                      setContactLabel(label)
+                                      setContactPopoverOpen(false)
+                                    }}
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm">{label}</p>
+                                      {c.email && <p className="truncate text-xs text-muted-foreground">{c.email}</p>}
+                                    </div>
+                                  </CommandItem>
+                                )
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Address</Label>
+                    <Input
+                      value={editData.address ?? ""}
+                      placeholder="Property or site address"
+                      onChange={(e) => setEditData((prev) => ({ ...prev, address: e.target.value || null }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Commission</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={editData.commission ?? ""}
+                        onChange={(e) =>
+                          setEditData((prev) => ({ ...prev, commission: e.target.value === "" ? null : parseFloat(e.target.value) }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Reference</Label>
+                      <Input
+                        value={editData.reference ?? ""}
+                        placeholder="Transaction / file no."
+                        onChange={(e) => setEditData((prev) => ({ ...prev, reference: e.target.value || null }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Co-op / other-side agent</Label>
+                    <Input
+                      value={editData.co_op_agent ?? ""}
+                      onChange={(e) => setEditData((prev) => ({ ...prev, co_op_agent: e.target.value || null }))}
+                    />
+                  </div>
                 </>
               ) : (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
@@ -417,17 +565,44 @@ export function DealDetailSheet({
                     )}
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Expected Close</p>
+                    <p className="text-muted-foreground">{currentDeal.status === "open" ? "Expected Close" : "Close Date"}</p>
                     <p className="font-medium">
-                      {currentDeal.expected_close
-                        ? new Date(currentDeal.expected_close).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })
-                        : "Not set"}
+                      {(() => {
+                        const d = currentDeal.status === "open" ? currentDeal.expected_close : (currentDeal.closed_at ?? currentDeal.expected_close)
+                        return d
+                          ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                          : "Not set"
+                      })()}
                     </p>
                   </div>
+                  <div>
+                    <p className="text-muted-foreground">Deal type</p>
+                    <p className="font-medium">{currentDeal.side ? dealTypeLabel(currentDeal.side) : "—"}</p>
+                  </div>
+                  {currentDeal.address && (
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Address</p>
+                      <p className="font-medium">{currentDeal.address}</p>
+                    </div>
+                  )}
+                  {currentDeal.commission != null && (
+                    <div>
+                      <p className="text-muted-foreground">Commission</p>
+                      <p className="font-medium">{formatCurrency(Number(currentDeal.commission), currentDeal.currency)}</p>
+                    </div>
+                  )}
+                  {currentDeal.reference && (
+                    <div>
+                      <p className="text-muted-foreground">Reference</p>
+                      <p className="font-medium">{currentDeal.reference}</p>
+                    </div>
+                  )}
+                  {currentDeal.co_op_agent && (
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Co-op / other-side agent</p>
+                      <p className="font-medium">{currentDeal.co_op_agent}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

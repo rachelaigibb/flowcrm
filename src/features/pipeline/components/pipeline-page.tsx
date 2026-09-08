@@ -50,6 +50,7 @@ import { useRouter } from "next/navigation"
 import type { DealWithContact, StageWithDeals } from "../types"
 import type { PipelineStage, DealPriority, DealStatus } from "@/types/database"
 import { DATE_RANGE_OPTIONS, getPeriod, labelFor, yearsFrom, type DateRange } from "@/lib/utils/date-range"
+import { DEFAULT_DEAL_TYPES, dealTypeLabel } from "@/features/pipeline/deal-types"
 
 type ViewMode = "kanban" | "list"
 
@@ -59,9 +60,10 @@ interface PipelinePageProps {
   initialView?: ViewMode
   initialStatus?: DealStatus | "all"
   initialRange?: DateRange
+  dealTypes?: string[]
 }
 
-export function PipelinePage({ stages, deals: initialDeals, initialView = "kanban", initialStatus = "all", initialRange = "all" }: PipelinePageProps) {
+export function PipelinePage({ stages, deals: initialDeals, initialView = "kanban", initialStatus = "all", initialRange = "all", dealTypes = DEFAULT_DEAL_TYPES }: PipelinePageProps) {
   const router = useRouter()
   const [deals, setDeals] = useState<DealWithContact[]>(initialDeals)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -79,6 +81,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
   const [valueMin, setValueMin] = useState("")
   const [valueMax, setValueMax] = useState("")
   const [sourceFilter, setSourceFilter] = useState<string>("all")
+  const [typeFilter, setTypeFilter] = useState<string>("all")
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -144,6 +147,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
       if (maxVal !== null && !isNaN(maxVal) && deal.value > maxVal) {
         return false
       }
+      if (typeFilter !== "all" && (deal.side ?? "none") !== typeFilter) return false
       // Source filter
       if (sourceFilter !== "all") {
         const dealSource = deal.contact?.source ?? null
@@ -153,7 +157,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
       }
       return true
     }).sort((a, b) => dealTime(b) - dealTime(a))
-  }, [deals, searchQuery, priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter, rangeFilter, period])
+  }, [deals, searchQuery, priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter, rangeFilter, period, typeFilter])
 
   // Stats computed from filtered deals
   const stats = useMemo(() => {
@@ -179,8 +183,9 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
     if (valueMin || valueMax) count++
     if (sourceFilter !== "all") count++
     if (rangeFilter !== "all") count++
+    if (typeFilter !== "all") count++
     return count
-  }, [priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter, rangeFilter])
+  }, [priorityFilter, statusFilter, excludedStageIds, valueMin, valueMax, sourceFilter, rangeFilter, typeFilter])
 
   // Group deals by stage
   const stagesWithDeals: StageWithDeals[] = useMemo(() => {
@@ -427,6 +432,19 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
                 <SelectItem value="lost">Lost</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? "all")}>
+              <SelectTrigger size="sm" className="w-auto gap-1">
+                <SelectValue placeholder="Type">{typeFilter === "all" ? "All Types" : dealTypeLabel(typeFilter)}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {Array.from(new Set([...dealTypes, ...deals.map((d) => d.side).filter((s): s is string => !!s)])).map((dt) => (
+                  <SelectItem key={dt} value={dt}>
+                    {dealTypeLabel(dt)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {/* Source filter */}
             {uniqueSources.length > 0 && (
               <Select
@@ -583,6 +601,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Value</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
@@ -603,6 +622,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
                     >
                       <TableCell className="font-medium">{deal.title}</TableCell>
                       <TableCell>{formatCurrencyCompact(deal.value, deal.currency)}</TableCell>
+                      <TableCell>{deal.side ? dealTypeLabel(deal.side) : <span className="text-muted-foreground">--</span>}</TableCell>
                       <TableCell>{stageNameMap[deal.stage_id] ?? "Unknown"}</TableCell>
                       <TableCell>
                         <PriorityBadge priority={deal.priority} />
@@ -644,6 +664,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
       <DealDetailSheet
         deal={selectedDeal}
         stages={stages}
+        dealTypes={dealTypes}
         open={detailSheetOpen}
         onOpenChange={setDetailSheetOpen}
         onDealUpdated={handleDealUpdated}
@@ -652,6 +673,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
       {/* Create dialog */}
       <CreateDealDialog
         stages={stages}
+        dealTypes={dealTypes}
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onDealCreated={handleDealUpdated}

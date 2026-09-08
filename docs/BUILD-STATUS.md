@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.5.3** · Last updated 2026-09-04 · Latest commit *(see git log)*
+**Current version: v0.5.4** · Last updated 2026-09-04 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -126,6 +126,8 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | 15 | Dashboard "Won This Month" summed all time; tiles had no period; Open Deals tile dumped you on the full board | Dashboard | ✅ v0.5.2 — period picker saved per workspace (`settings.dashboard_range`, default This Month); Won / New Contacts / Activities follow it, Open Deals / Pipeline Value / Tasks stay all-time; Open Deals and Won tiles deep-link to the pipeline list pre-filtered |
 | 16 | Tags on add/edit contact were a comma-separated text box | Contacts | ✅ v0.5.3 — tag picker: selected tags as coloured pills with ×, "Add tag" opens a searchable list of every workspace tag, with "Create …" for new ones; new tags get a palette colour automatically |
 | 17 | Contact source shown as plain grey text | Contacts | ✅ v0.5.3 — every source gets a stable colour (known sources keep their set colour; others are derived from the name) in the list and on the detail page |
+| 18 | Opening a deal from a contact's profile showed "No contact" | Contacts | ✅ v0.5.4 — the contact page attaches the contact to the deal when opening the sheet |
+| 19 | Deal edit could not change contact, address or close date; no way to mark listings vs buyers | Pipeline | ✅ v0.5.4 — **Deal type** field (per-workspace pick-list in Settings → Sub-account, default buyer/seller/both/tenant/landlord/referral; migration `00014` drops the fixed CHECK); edit sheet now covers contact (search), address, deal type, close date, commission, reference, co-op agent; type badge on cards, Type column and filter in the pipeline |
 
 ## 🗄️ Deliberately deferred (decided, not forgotten)
 

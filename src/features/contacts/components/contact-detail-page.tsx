@@ -95,6 +95,7 @@ interface ContactDetailPageProps {
   nextContactId: string | null
   allContacts: { id: string; first_name: string | null; last_name: string | null }[]
   allDeals: { id: string; title: string }[]
+  dealTypes?: string[]
 }
 
 function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined {
@@ -113,7 +114,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 
 // ── Main Component ──
 
-export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency, prevContactId, nextContactId, allContacts, allDeals }: ContactDetailPageProps) {
+export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency, prevContactId, nextContactId, allContacts, allDeals, dealTypes }: ContactDetailPageProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -852,6 +853,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
           defaultCurrency={defaultCurrency}
           defaultContactId={contact.id}
           defaultContactLabel={displayName}
+          dealTypes={dealTypes}
         />
       )}
 
@@ -865,8 +867,9 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
 
       {selectedDeal && (
         <DealDetailSheet
-          deal={selectedDeal}
+          deal={{ ...selectedDeal, contact: selectedDeal.contact ?? contact }}
           stages={stages}
+          dealTypes={dealTypes}
           open={dealSheetOpen}
           onOpenChange={setDealSheetOpen}
           onDealUpdated={() => router.refresh()}

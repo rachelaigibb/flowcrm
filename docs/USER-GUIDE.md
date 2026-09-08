@@ -133,3 +133,6 @@ The range picker at the top of Reports lists This Week / Month / Quarter / Year,
 
 ## Tag picker (v0.5.3)
 On Add Contact and in Edit Profile, tags are pills. Click × on a pill to remove it. "Add tag" opens the list of every tag in the workspace (with its colour) — click to add, and if you type something that doesn't exist yet, choose "Create" to add it. New tags are coloured automatically and appear in Settings → Tags where you can recolour or rename them. Sources are colour-coded in the contact list and on the profile.
+
+## Deal types (v0.5.4)
+Every deal has a **Deal type** (Buyer, Seller, Both, Tenant, Landlord, Referral by default). It shows as a badge on pipeline cards, as a column in the list, and there is a Type filter beside Status. Change the list for a workspace in Settings → Sub-account → Deal types (comma-separated), so a non-real-estate business can use its own, for example "new business, renewal, upsell". Editing a deal (Edit in the deal panel) now lets you change the contact, address, deal type, close date, commission, reference and the other-side agent.

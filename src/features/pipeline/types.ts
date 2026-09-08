@@ -15,6 +15,7 @@ export type StageWithDeals = PipelineStage & {
 }
 
 export interface CreateDealInput {
+  side?: string | null
   title: string
   value: number
   currency: string
@@ -26,6 +27,11 @@ export interface CreateDealInput {
 }
 
 export interface UpdateDealInput {
+  side?: string | null
+  closed_at?: string | null
+  commission?: number | null
+  reference?: string | null
+  co_op_agent?: string | null
   title?: string
   value?: number
   currency?: string
