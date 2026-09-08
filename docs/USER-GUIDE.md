@@ -136,3 +136,6 @@ On Add Contact and in Edit Profile, tags are pills. Click × on a pill to remove
 
 ## Deal types (v0.5.4)
 Every deal has a **Deal type** (Buyer, Seller, Both, Tenant, Landlord, Referral by default). It shows as a badge on pipeline cards, as a column in the list, and there is a Type filter beside Status. Change the list for a workspace in Settings → Sub-account → Deal types (comma-separated), so a non-real-estate business can use its own, for example "new business, renewal, upsell". Editing a deal (Edit in the deal panel) now lets you change the contact, address, deal type, close date, commission, reference and the other-side agent.
+
+## App icon (v0.5.5)
+FlowCRM now uses the purple FlowCRM mark for the browser tab and home-screen installs. Phones cache icons, so an app you installed earlier keeps the old "F" until you remove it from the home screen and add it again (Share → Add to Home Screen on iPhone; Install app in Chrome on Android).
