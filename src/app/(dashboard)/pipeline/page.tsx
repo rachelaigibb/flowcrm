@@ -25,7 +25,7 @@ export default async function PipelineRoute() {
 
   const { data: deals } = await supabase
     .from("deals")
-    .select("*, contact:contacts(*)")
+    .select("*, contact:contacts!deals_contact_id_fkey(*)")
     .eq("sub_account_id", subAccountId)
     .order("created_at", { ascending: false })
 

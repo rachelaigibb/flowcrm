@@ -73,7 +73,7 @@ export default async function CalendarPage({
       .select(
         `
         id, title, value, currency, priority, status, expected_close,
-        contact:contacts(id, first_name, last_name)
+        contact:contacts!deals_contact_id_fkey(id, first_name, last_name)
       `
       )
       .eq("sub_account_id", subAccountId)

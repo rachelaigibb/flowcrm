@@ -121,3 +121,6 @@ Each click costs roughly a cent or two of API usage.
 ## 10. Where to get help
 
 Open the project in Claude Code (`~/Projects/flowcrm`) and describe what you want — the project's `.claude/CLAUDE.md` carries the full architecture memory, and this guide plus BUILD-STATUS.md keep the current state.
+
+## Reports by year (v0.5.1)
+The range picker at the top of Reports lists This Week / Month / Quarter / Year, All Time, and then every year that has data. Pick a year to see that year's deals month by month; All Time shows one bar per year. Deals are dated by their completion (closed) date. On Contacts, the header shows "8 of 156 contacts" while a search or tag filter is active.

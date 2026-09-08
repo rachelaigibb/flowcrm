@@ -247,7 +247,9 @@ export function ContactsPage({ contacts, tagColors }: ContactsPageProps) {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Contacts</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {contacts.length} contact{contacts.length !== 1 ? "s" : ""} total
+            {filtered.length !== contacts.length
+              ? `${filtered.length} of ${contacts.length} contacts`
+              : `${contacts.length} contact${contacts.length !== 1 ? "s" : ""} total`}
           </p>
         </div>
         <div className="flex items-center gap-2">

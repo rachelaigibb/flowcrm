@@ -19,7 +19,7 @@ export default async function DealMapRoute() {
   const { data: deals } = await supabase
     .from("deals")
     .select(
-      "*, stage:pipeline_stages(id, name, color), contact:contacts(id, first_name, last_name)"
+      "*, stage:pipeline_stages(id, name, color), contact:contacts!deals_contact_id_fkey(id, first_name, last_name)"
     )
     .eq("org_id", orgId)
     .eq("sub_account_id", subAccountId)

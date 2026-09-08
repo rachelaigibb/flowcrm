@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.5.0** · Last updated 2026-09-04 · Latest commit *(see git log)*
+**Current version: v0.5.1** · Last updated 2026-09-04 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -116,6 +116,10 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | 5 | Deal created from a contact page showed contact = none | Create deal | ✅ v0.5.0 — form reset wiped the default contact; now resets to it and re-syncs on open |
 | 6 | Huge "+ Add Task" button at the bottom of the contact page | Contact page | ✅ v0.5.0 — trigger hidden when the parent controls the dialog |
 | 7 | Reports showed 0 % won with a won deal in the database | Reports | ✅ v0.5.0 — deals are dated by `closed_at` (not created); moving a deal into the Won/Lost stage now sets status + `closed_at` |
+| 8 | Pipeline (and calendar, deal map) showed no deals after migration 00013 | Pipeline | ✅ v0.5.1 — `deals` now has two foreign keys to `contacts` (`contact_id`, `referrer_contact_id`), so the PostgREST embed `contact:contacts(*)` became ambiguous and the query silently returned nothing. All deal→contact embeds now name the key: `contacts!deals_contact_id_fkey` |
+| 9 | Tags auto-added from imports were all grey | Settings | ✅ v0.5.1 — `reconcileTagDefinitions` assigns least-used palette colours; Testing recoloured in place |
+| 10 | Contacts header shows only the grand total when a filter is active | Contacts | ✅ v0.5.1 — shows "8 of 156 contacts" while filtered |
+| 11 | Reports: no per-year view, revenue chart ignored the range | Reports | ✅ v0.5.1 — range picker lists every year with data; charts bucket by month for a year/quarter and by year for All Time; deals dated by `closed_at` |
 
 ## 🗄️ Deliberately deferred (decided, not forgotten)
 

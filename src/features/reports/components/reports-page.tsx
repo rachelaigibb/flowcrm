@@ -7,6 +7,7 @@ import {
   startOfQuarter,
   startOfYear,
   isAfter,
+  isBefore,
   subMonths,
   format,
 } from "date-fns"
@@ -41,9 +42,9 @@ import { formatCurrencyCompact } from "@/lib/utils/currency"
 import { cn } from "@/lib/utils"
 import type { Deal, Contact, Task, PipelineStage } from "@/types/database"
 
-type DateRange = "week" | "month" | "quarter" | "year" | "all"
+type DateRange = "week" | "month" | "quarter" | "year" | "all" | `y:${number}`
 
-const DATE_RANGE_LABELS: Record<DateRange, string> = {
+const DATE_RANGE_LABELS: Record<Exclude<DateRange, `y:${number}`>, string> = {
   week: "This Week",
   month: "This Month",
   quarter: "This Quarter",
@@ -51,47 +52,76 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
   all: "All Time",
 }
 
-function getDateRangeStart(range: DateRange): Date | null {
+function labelFor(range: DateRange): string {
+  return range.startsWith("y:") ? range.slice(2) : DATE_RANGE_LABELS[range as keyof typeof DATE_RANGE_LABELS]
+}
+
+interface Period { start: Date | null; end: Date }
+
+function getPeriod(range: DateRange): Period {
   const now = new Date()
+  if (range.startsWith("y:")) {
+    const y = Number(range.slice(2))
+    return { start: new Date(y, 0, 1), end: new Date(y, 11, 31, 23, 59, 59, 999) }
+  }
   switch (range) {
     case "week":
-      return startOfWeek(now, { weekStartsOn: 1 })
+      return { start: startOfWeek(now, { weekStartsOn: 1 }), end: now }
     case "month":
-      return startOfMonth(now)
+      return { start: startOfMonth(now), end: now }
     case "quarter":
-      return startOfQuarter(now)
+      return { start: startOfQuarter(now), end: now }
     case "year":
-      return startOfYear(now)
-    case "all":
-      return null
+      return { start: startOfYear(now), end: now }
+    default:
+      return { start: null, end: now }
   }
 }
 
-function filterByDateRange<T extends { created_at: string }>(
-  items: T[],
-  range: DateRange
-): T[] {
-  const start = getDateRangeStart(range)
-  if (!start) return items
-  return items.filter((item) => isAfter(new Date(item.created_at), start))
+function filterByDateRange<T extends { created_at: string }>(items: T[], range: DateRange): T[] {
+  const { start, end } = getPeriod(range)
+  return items.filter((item) => {
+    const d = new Date(item.created_at)
+    return (!start || !isBefore(d, start)) && !isAfter(d, end)
+  })
 }
 
-function getLast6Months(): { key: string; label: string; start: Date; end: Date }[] {
+interface Bucket { key: string; label: string; short: string; start: Date; end: Date }
+
+function monthBucket(d: Date, end?: Date): Bucket {
+  const start = startOfMonth(d)
+  return {
+    key: format(d, "yyyy-MM"),
+    label: format(d, "MMM yyyy"),
+    short: format(d, "MMM"),
+    start,
+    end: end ?? new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999),
+  }
+}
+
+// Chart buckets follow the selected range: a year shows its 12 months, a quarter its 3,
+// "All Time" shows one bar per calendar year, and week/month keep the trailing 6 months.
+function getBuckets(range: DateRange, earliest: Date | null): Bucket[] {
   const now = new Date()
-  const months: { key: string; label: string; start: Date; end: Date }[] = []
-  for (let i = 5; i >= 0; i--) {
-    const d = subMonths(now, i)
-    const start = startOfMonth(d)
-    const end =
-      i === 0 ? now : new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59)
-    months.push({
-      key: format(d, "yyyy-MM"),
-      label: format(d, "MMM yyyy"),
-      start,
-      end,
-    })
+  if (range === "all") {
+    const firstYear = (earliest ?? now).getFullYear()
+    const out: Bucket[] = []
+    for (let y = firstYear; y <= now.getFullYear(); y++) {
+      out.push({ key: `y${y}`, label: String(y), short: String(y), start: new Date(y, 0, 1), end: new Date(y, 11, 31, 23, 59, 59, 999) })
+    }
+    return out
   }
-  return months
+  if (range === "year" || range.startsWith("y:")) {
+    const y = range === "year" ? now.getFullYear() : Number(range.slice(2))
+    return Array.from({ length: 12 }, (_, m) => monthBucket(new Date(y, m, 1)))
+  }
+  if (range === "quarter") {
+    const q = startOfQuarter(now)
+    return Array.from({ length: 3 }, (_, i) => monthBucket(new Date(q.getFullYear(), q.getMonth() + i, 1)))
+  }
+  const out: Bucket[] = []
+  for (let i = 5; i >= 0; i--) out.push(monthBucket(subMonths(now, i), i === 0 ? now : undefined))
+  return out
 }
 
 interface ReportsPageProps {
@@ -109,7 +139,7 @@ export function ReportsPage({
   stages,
   currency,
 }: ReportsPageProps) {
-  const [dateRange, setDateRange] = useState<DateRange>("month")
+  const [dateRange, setDateRange] = useState<DateRange>("all")
 
   // Deals count in the period they CLOSED (won/lost), not the period they were created —
   // a deal opened in June and won in September belongs to September.
@@ -123,7 +153,20 @@ export function ReportsPage({
   )
   const filteredTasks = useMemo(() => filterByDateRange(tasks, dateRange), [tasks, dateRange])
 
-  const months = useMemo(() => getLast6Months(), [])
+  // Years that actually have data, for the range picker
+  const dealDate = (d: Deal) => new Date(d.closed_at ?? d.created_at)
+  const years = useMemo(() => {
+    const ys = new Set<number>()
+    deals.forEach((d) => ys.add(dealDate(d).getFullYear()))
+    contacts.forEach((c) => ys.add(new Date(c.created_at).getFullYear()))
+    return Array.from(ys).sort((a, b) => b - a)
+  }, [deals, contacts])
+  const earliest = useMemo(() => {
+    const ts = [...deals.map((d) => dealDate(d).getTime()), ...contacts.map((c) => new Date(c.created_at).getTime())]
+    return ts.length ? new Date(Math.min(...ts)) : null
+  }, [deals, contacts])
+  const months = useMemo(() => getBuckets(dateRange, earliest), [dateRange, earliest])
+  const bucketUnit = dateRange === "all" ? "year" : "month"
 
   // ---------------------------------------------------------------
   // Pipeline Funnel
@@ -149,7 +192,7 @@ export function ReportsPage({
     const wonDeals = deals.filter((d) => d.status === "won")
     return months.map((m) => {
       const monthDeals = wonDeals.filter((d) => {
-        const date = new Date(d.created_at)
+        const date = dealDate(d)
         return date >= m.start && date <= m.end
       })
       return {
@@ -182,7 +225,7 @@ export function ReportsPage({
   }, [filteredDeals])
 
   // ---------------------------------------------------------------
-  // Contact Growth (last 6 months, not filtered by range)
+  // Contact Growth (same buckets as the range)
   // ---------------------------------------------------------------
   const contactGrowth = useMemo(() => {
     return months.map((m) => {
@@ -247,7 +290,7 @@ export function ReportsPage({
       ]),
       [],
       ["Revenue Over Time"],
-      ["Month", "Deals Won", "Revenue"],
+      ["Period", "Deals Won", "Revenue"],
       ...revenueByMonth.map((m) => [
         m.label,
         String(m.count),
@@ -261,7 +304,7 @@ export function ReportsPage({
       ["Open", String(conversionData.open), `${conversionData.openPct}%`],
       [],
       ["Contact Growth"],
-      ["Month", "New Contacts"],
+      ["Period", "New Contacts"],
       ...contactGrowth.map((m) => [m.label, String(m.count)]),
       [],
       ["Top Sources"],
@@ -308,7 +351,7 @@ export function ReportsPage({
           >
             <SelectTrigger className="w-[160px]">
               <Filter className="size-3.5 text-muted-foreground" />
-              <SelectValue>{DATE_RANGE_LABELS[dateRange]}</SelectValue>
+              <SelectValue>{labelFor(dateRange)}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {(Object.entries(DATE_RANGE_LABELS) as [DateRange, string][]).map(
@@ -318,6 +361,12 @@ export function ReportsPage({
                   </SelectItem>
                 )
               )}
+              {years.length > 0 && <Separator className="my-1" />}
+              {years.map((y) => (
+                <SelectItem key={y} value={`y:${y}`}>
+                  {y}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button variant="outline" size="sm" onClick={exportCSV}>
@@ -387,7 +436,7 @@ export function ReportsPage({
               <DollarSign className="size-4 text-muted-foreground" />
               Revenue Over Time
             </CardTitle>
-            <CardDescription>Won deal values by month (last 6 months)</CardDescription>
+            <CardDescription>Won deal values by {bucketUnit} · {labelFor(dateRange)}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-2 h-40">
@@ -413,7 +462,7 @@ export function ReportsPage({
                       />
                     </div>
                     <span className="text-[10px] text-muted-foreground">
-                      {format(m.start, "MMM")}
+                      {m.short}
                     </span>
                   </div>
                 )
@@ -495,7 +544,7 @@ export function ReportsPage({
               <Users className="size-4 text-muted-foreground" />
               Contact Growth
             </CardTitle>
-            <CardDescription>New contacts per month (last 6 months)</CardDescription>
+            <CardDescription>New contacts per {bucketUnit} · {labelFor(dateRange)}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-2 h-40">
@@ -522,7 +571,7 @@ export function ReportsPage({
                       />
                     </div>
                     <span className="text-[10px] text-muted-foreground">
-                      {format(m.start, "MMM")}
+                      {m.short}
                     </span>
                   </div>
                 )

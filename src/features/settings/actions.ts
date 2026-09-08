@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { TAG_COLORS } from "@/lib/constants/colors"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 
 // ── Tag type for settings.tags JSONB array ──
@@ -375,7 +376,16 @@ export async function reconcileTagDefinitions() {
   for (const r of rows ?? []) for (const t of (r.tags as string[]) ?? []) if (t && !known.has(t.toLowerCase())) inUse.add(t)
   if (inUse.size === 0) return { data: existing }
 
-  const merged = [...existing, ...Array.from(inUse).map((name) => ({ id: crypto.randomUUID(), name, color: "#6b7280" }))]
+  // Give each new tag a distinct palette colour (least-used first) rather than grey.
+  const palette: string[] = TAG_COLORS.map((c) => c.value)
+  const usage = new Map<string, number>(palette.map((c) => [c, 0]))
+  for (const t of existing) if (usage.has(t.color)) usage.set(t.color, (usage.get(t.color) ?? 0) + 1)
+  const added = Array.from(inUse).sort().map((name) => {
+    const color = [...usage.entries()].sort((a, b) => a[1] - b[1] || palette.indexOf(a[0]) - palette.indexOf(b[0]))[0][0]
+    usage.set(color, (usage.get(color) ?? 0) + 1)
+    return { id: crypto.randomUUID(), name, color }
+  })
+  const merged = [...existing, ...added]
   await supabase
     .from("sub_accounts")
     .update({ settings: { ...settings, tags: merged }, updated_at: new Date().toISOString() })
