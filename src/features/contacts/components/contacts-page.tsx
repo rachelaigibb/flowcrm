@@ -37,7 +37,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { SOURCE_COLORS } from "@/lib/constants/colors"
+import { getSourceBadge } from "@/lib/constants/colors"
 import { toast } from "sonner"
 import { deleteContact } from "../actions"
 
@@ -473,18 +473,14 @@ export function ContactsPage({ contacts, tagColors }: ContactsPageProps) {
                     onClick={() => router.push(`/contacts/${contact.id}`)}
                   >
                     {contact.source ? (
-                      <Badge
-                        variant="outline"
-                        className={
-                          (SOURCE_COLORS[contact.source.toLowerCase()] ?? {
-                            badge: "bg-muted text-muted-foreground border-border",
-                          }).badge
-                        }
-                      >
-                        {(SOURCE_COLORS[contact.source.toLowerCase()] ?? {
-                          label: contact.source,
-                        }).label}
-                      </Badge>
+                      (() => {
+                        const b = getSourceBadge(contact.source)
+                        return (
+                          <Badge variant="outline" className={b.className} style={b.style}>
+                            {b.label}
+                          </Badge>
+                        )
+                      })()
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}
@@ -558,7 +554,7 @@ export function ContactsPage({ contacts, tagColors }: ContactsPageProps) {
       )}
 
       {/* Dialogs */}
-      <CreateContactDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateContactDialog open={createOpen} onOpenChange={setCreateOpen} tagColors={tagColors} />
       <ImportCSVDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   )

@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.5.2** · Last updated 2026-09-04 · Latest commit *(see git log)*
+**Current version: v0.5.3** · Last updated 2026-09-04 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -124,6 +124,8 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | 13 | Reports "Revenue" was sold volume, not income; no commission view; year list skipped empty years | Reports | ✅ v0.5.2 — renamed Sales Over Time; new Commission Over Time chart with range total; year picker lists every year from first record to now |
 | 14 | Pipeline showed all-time totals with no way to focus on a period; cards/list in arbitrary order; won deals showed no close date | Pipeline | ✅ v0.5.2 — period picker (week/month/quarter/year/all/any year) applies to closed deals only, open deals always show; Won stat follows it; cards and list sorted newest first; list column is Close Date (actual for won/lost, expected for open) |
 | 15 | Dashboard "Won This Month" summed all time; tiles had no period; Open Deals tile dumped you on the full board | Dashboard | ✅ v0.5.2 — period picker saved per workspace (`settings.dashboard_range`, default This Month); Won / New Contacts / Activities follow it, Open Deals / Pipeline Value / Tasks stay all-time; Open Deals and Won tiles deep-link to the pipeline list pre-filtered |
+| 16 | Tags on add/edit contact were a comma-separated text box | Contacts | ✅ v0.5.3 — tag picker: selected tags as coloured pills with ×, "Add tag" opens a searchable list of every workspace tag, with "Create …" for new ones; new tags get a palette colour automatically |
+| 17 | Contact source shown as plain grey text | Contacts | ✅ v0.5.3 — every source gets a stable colour (known sources keep their set colour; others are derived from the name) in the list and on the detail page |
 
 ## 🗄️ Deliberately deferred (decided, not forgotten)
 

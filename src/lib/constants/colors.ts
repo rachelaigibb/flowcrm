@@ -145,3 +145,19 @@ export const SOURCE_COLORS: Record<string, { badge: string; label: string }> = {
 
 export type PriorityKey = keyof typeof PRIORITY_COLORS
 export type StatusKey = keyof typeof STATUS_COLORS
+
+/**
+ * Badge styling for a contact source. Known keys use SOURCE_COLORS; anything else
+ * (e.g. "Referral JJ", "Open House") gets a stable palette colour from its name so the
+ * same source always looks the same across the app.
+ */
+export function getSourceBadge(source: string): { className: string; style?: { backgroundColor: string; color: string; borderColor: string }; label: string } {
+  const key = source.trim().toLowerCase()
+  const known = SOURCE_COLORS[key]
+  if (known) return { className: known.badge, label: known.label }
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  const palette = TAG_COLORS.filter((c) => c.name !== "Gray")
+  const color = palette[h % palette.length].value
+  return { className: "", style: { backgroundColor: `${color}20`, color, borderColor: `${color}40` }, label: source }
+}

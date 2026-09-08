@@ -130,3 +130,6 @@ The range picker at the top of Reports lists This Week / Month / Quarter / Year,
 - **Pipeline**: the picker beside "Stages:" limits closed (won/lost) deals to the period; open deals always show because they are current work. The Won total follows the picker. Cards and the list are newest first, and the list's Close Date column is the actual completion date for won deals.
 - **Stage chips** (New, Qualified, Won…): clicking one hides that stage from the board, list and totals so you can focus on the rest. Click again to bring it back. They are a view toggle, not a status change.
 - **Reports**: "Sales Over Time" is sold volume; "Commission Over Time" is your income, with the total for the chosen range in its subtitle.
+
+## Tag picker (v0.5.3)
+On Add Contact and in Edit Profile, tags are pills. Click × on a pill to remove it. "Add tag" opens the list of every tag in the workspace (with its colour) — click to add, and if you type something that doesn't exist yet, choose "Create" to add it. New tags are coloured automatically and appear in Settings → Tags where you can recolour or rename them. Sources are colour-coded in the contact list and on the profile.

@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { TAG_COLORS } from "@/lib/constants/colors"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import { triggerAutomations } from "@/features/automations/engine"
 import type { CreateContactInput, UpdateContactInput } from "./types"
@@ -8,6 +9,13 @@ import type { ConsentStatus } from "@/types/database"
 import { CALL_OUTCOMES, CALL_OUTCOME_LABELS, type CallOutcome } from "@/features/calls/outcomes"
 
 // Auto-register any new tags in sub-account settings (with default gray color)
+function pickTagColor(existing: Array<{ color: string }>): string {
+  const palette: string[] = TAG_COLORS.map((c) => c.value)
+  const usage = new Map<string, number>(palette.map((c) => [c, 0]))
+  for (const t of existing) if (usage.has(t.color)) usage.set(t.color, (usage.get(t.color) ?? 0) + 1)
+  return [...usage.entries()].sort((a, b) => a[1] - b[1] || palette.indexOf(a[0]) - palette.indexOf(b[0]))[0][0]
+}
+
 async function syncNewTags(
   supabase: Awaited<ReturnType<typeof getUserContext>>["supabase"],
   orgId: string,
@@ -32,7 +40,7 @@ async function syncNewTags(
   const tagsToAdd = newTags.map((name) => ({
     id: crypto.randomUUID(),
     name,
-    color: "#6b7280", // default gray — user can change color in settings
+    color: pickTagColor(existingTags), // least-used palette colour — change in Settings if wanted
   }))
 
   await supabase

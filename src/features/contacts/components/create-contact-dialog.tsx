@@ -24,15 +24,18 @@ import { SOURCE_OPTIONS } from "../types"
 import type { ConsentStatus } from "@/types/database"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
+import { TagPicker } from "@/components/shared/tag-picker"
 
 interface CreateContactDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  tagColors?: { name: string; color: string }[]
 }
 
 export function CreateContactDialog({
   open,
   onOpenChange,
+  tagColors = [],
 }: CreateContactDialogProps) {
   const [isPending, startTransition] = useTransition()
   const [firstName, setFirstName] = useState("")
@@ -41,7 +44,7 @@ export function CreateContactDialog({
   const [phone, setPhone] = useState("")
   const [company, setCompany] = useState("")
   const [source, setSource] = useState("")
-  const [tags, setTags] = useState("")
+  const [tags, setTags] = useState<string[]>([])
   const [consentStatus, setConsentStatus] = useState<ConsentStatus>("none")
 
   function resetForm() {
@@ -51,7 +54,7 @@ export function CreateContactDialog({
     setPhone("")
     setCompany("")
     setSource("")
-    setTags("")
+    setTags([])
     setConsentStatus("none")
   }
 
@@ -71,10 +74,7 @@ export function CreateContactDialog({
         phone: phone.trim() || undefined,
         company: company.trim() || undefined,
         source: source || undefined,
-        tags: tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
+        tags,
         consent_status: consentStatus,
       })
 
@@ -177,13 +177,8 @@ export function CreateContactDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tags">Tags</Label>
-            <Input
-              id="tags"
-              placeholder="investor, dubai, hot (comma-separated)"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-            />
+            <Label>Tags</Label>
+            <TagPicker value={tags} onChange={setTags} options={tagColors} />
           </div>
 
           <div className="flex flex-col gap-1.5">

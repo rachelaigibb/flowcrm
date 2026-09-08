@@ -10,7 +10,7 @@ import { updateDealStatus } from "@/features/pipeline/actions"
 import type { DealStatus } from "@/types/database"
 import { formatSmartDate, formatDateShort } from "@/lib/utils/dates"
 import { formatCurrencyCompact } from "@/lib/utils/currency"
-import { ACTIVITY_TYPE_COLORS, SOURCE_COLORS } from "@/lib/constants/colors"
+import { ACTIVITY_TYPE_COLORS, getSourceBadge } from "@/lib/constants/colors"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -76,6 +76,7 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { SOURCE_OPTIONS } from "../types"
+import { TagPicker } from "@/components/shared/tag-picker"
 
 // ── Types ──
 
@@ -124,7 +125,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
   const [phone, setPhone] = useState(contact.phone ?? "")
   const [company, setCompany] = useState(contact.company ?? "")
   const [source, setSource] = useState(contact.source ?? "")
-  const [tags, setTags] = useState(contact.tags?.join(", ") ?? "")
+  const [tags, setTags] = useState<string[]>(contact.tags ?? [])
   const [birthday, setBirthday] = useState(contact.birthday ?? "")
   const [consentStatus, setConsentStatus] = useState<ConsentStatus>(contact.consent_status)
   const [lastContact, setLastContact] = useState(contact.last_contact ?? "")
@@ -183,7 +184,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
         phone: phone.trim() || null,
         company: company.trim() || null,
         source: source || null,
-        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+        tags,
         birthday: birthday || null,
         consent_status: consentStatus,
         last_contact: lastContact || null,
@@ -205,7 +206,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
     setPhone(contact.phone ?? "")
     setCompany(contact.company ?? "")
     setSource(contact.source ?? "")
-    setTags(contact.tags?.join(", ") ?? "")
+    setTags(contact.tags ?? [])
     setBirthday(contact.birthday ?? "")
     setConsentStatus(contact.consent_status)
     setLastContact(contact.last_contact ?? "")
@@ -355,8 +356,8 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
               <Globe className="size-3" /> Source
             </span>
             {contact.source ? (
-              <Badge variant="outline" className={cn("text-xs", SOURCE_COLORS[contact.source.toLowerCase()]?.badge)}>
-                {contact.source}
+              <Badge variant="outline" className={cn("text-xs", getSourceBadge(contact.source).className)} style={getSourceBadge(contact.source).style}>
+                {getSourceBadge(contact.source).label}
               </Badge>
             ) : (
               <span className="text-muted-foreground">-</span>
@@ -516,7 +517,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
         </div>
         <div className="flex flex-col gap-1">
           <Label className="text-xs">Tags</Label>
-          <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Comma-separated" className="h-8 text-sm" />
+          <TagPicker value={tags} onChange={setTags} options={tagColors} size="sm" />
         </div>
       </div>
     )
