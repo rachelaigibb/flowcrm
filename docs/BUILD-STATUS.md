@@ -39,6 +39,14 @@ Rachel's own daily-use layer, built for the Sept 6–7 import.
 - **Importer** recognises Google Contacts exports (both header layouts): labels → clean tags (Google's bookkeeping labels dropped), Notes → first timeline note, Address → `metadata.address`, Birthday, dedupe by email (skipped count shown), default-consent picker, "tag every imported contact with …" field.
 - **Data load** — Rachel's 48 Google contacts + 48 transactions (17 co-clients not in Google created as new past-clients) loaded into **Testing** for review via a reviewed SQL script (`scratchpad/import/gen_compact.py`); Vancouver load waits for her go-ahead.
 
+### Phase 5b — Website intake (2026-09-09) · v0.7.0
+Job 2 of the 90-day plan (website forms → CRM, due 2026-09-13). Step 1 of 6.
+- **`POST /api/intake`** — public route for external websites. `Authorization: Bearer <workspace key>`; JSON `{name, email, phone?, message?, source?, tags?, meta?, consent: true, consent_text?}`; honeypot field `website`; in-memory rate limit (10/min/IP); always returns JSON. Validation in `features/intake/validate.ts` (unit-tested, 7 tests).
+- **`intake_contact()`** SECURITY DEFINER function (migration `00017`) does the write as `anon`: matches the key by sha256 hash, dedupes by email (case-insensitive) within the workspace, creates the contact as `lead` + `website` + sent tags with explicit consent + date, or merges tags/phone/consent into the existing contact; adds a `note` activity carrying the message and consent wording; queues `contact_created` automation runs for new contacts (paused-and-due, same as public forms); stamps the key's `last_used_at`. **No service-role key anywhere.**
+- **`intake_keys` table** — per-workspace keys (hash + prefix only), RLS: members read, org admins manage. Settings → Sub-account → **Website Intake** card: endpoint, notification email (`settings.intake.notify_email`), create key (secret shown once), revoke.
+- **Email copy** to the notify address (fallback: Email Settings reply-to / from), sent from the workspace's Email Settings sender, reply-to = the lead, with a link to the contact.
+- Verified 2026-09-09 against Testing as `anon` via psql: create → update path → invalid key → anon sees 0 contacts.
+
 ### Branding & install (2026-08-13)
 - **App icon** — white "F" monogram with indigo crossbar on near-black. `src/app/icon.svg` (browser tabs), `src/app/apple-icon.png` (180px, iOS home screen), `public/icon-{192,512}.png` (Android/PWA). Next.js default favicon archived to `_archive/`.
 - **Web manifest** — `src/app/manifest.ts`, `display: standalone` so it launches without browser chrome once added to a home screen.
@@ -93,7 +101,7 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 
 | Item | Notes |
 |---|---|
-| **Website form → FlowCRM wiring** | **`.ca` contact form: DONE** (live since 2026-08-15 — `rachelgibbrealtor.ca/src/lib/crm/leads.ts` inserts into Vancouver via service key; dedupes by email; CASL consent from checkbox). **Remaining:** `deals.rachelgibbrealtor.ca` email-gate form (tag `deal-list`) and both Dubai sites (`rachelgibbrealtor.com`, `buyingindubai.com`) → Dubai workspace, reusing `leads.ts`. Due 2026-09-13. |
+| **Website form → FlowCRM wiring (job 2, due 2026-09-13)** | Step 1 `/api/intake` **shipped v0.7.0**. Step 2: `.ca` site switched to the intake endpoint (needs Rachel to create the key + set `FLOWCRM_INTAKE_URL`/`FLOWCRM_INTAKE_KEY` on the `.ca` Vercel project, then drop the old `FLOWCRM_SUPABASE_*` vars). Step 3: `deals.rachelgibbrealtor.ca` email-gate page (confirmation only; tags `deal-list` + `web-lead`). Step 4: honeypot + rate limit only (Turnstile deferred until spam appears). Step 5: both Dubai sites (`mailto:` forms today) → Dubai workspace, unified consent wording. Step 6: one test submission per form. |
 | **Unsubscribe link (job 3, due 2026-09-26)** | Per-contact token → public `/u/[token]` sets consent `withdrawn`; `List-Unsubscribe` header on broadcasts. Not built today. |
 | **`.ca` sender for Vancouver** | Rachel wants replies from `info@rachelgibbrealtor.ca` as well as `.com`. `.ca` domain must be verified in Resend first. |
 | **Automation scheduler (cron)** | "Wait" steps currently resume only when someone loads the automations pages. Needs a Vercel cron or queue before selling to other agencies. |
@@ -157,7 +165,8 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | v0.4 | 2026-07-07 | Phase 4 — AI layer |
 | v0.4.1 | 2026-08-13 | Live domain + app icon, PWA manifest, installable on phone |
 | **v0.5.0** | 2026-09-04 | **Phase 5a — prospecting: custom fields, transactions as won deals + commission, log-a-call, Calls page, Google Contacts importer, 6 fixes (current)** |
-| v0.5.1 | planned | Website form wiring (deals. + Dubai) + unsubscribe |
+| **v0.7.0** | 2026-09-09 | **Website intake: `/api/intake` + per-workspace keys + Settings card (job 2, step 1)** |
+| v0.7.x | planned | `.ca` switched to intake, deals. page, Dubai sites (job 2 steps 2–6); unsubscribe (job 3) |
 | v0.6 | planned | Vercel Pro migration + automation scheduler |
 | v1.0 | goal | Ready to sell to other agencies |
 

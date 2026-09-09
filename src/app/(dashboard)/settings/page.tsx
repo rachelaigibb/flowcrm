@@ -1,6 +1,9 @@
 import { reconcileTagDefinitions } from "@/features/settings/actions"
+import { listIntakeKeys } from "@/features/intake/actions"
+import { IntakeCard } from "@/features/intake/components/intake-card"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { headers } from "next/headers"
 import { getSubAccountId } from "@/lib/supabase/get-sub-account"
 import { SubAccountSettingsPage } from "@/features/settings/components/sub-account-settings-page"
 import type { SubAccount, PipelineStage, SubAccountMembership } from "@/types/database"
@@ -62,12 +65,27 @@ export default async function SettingsRoute() {
   // Union of configured tags and tags actually present on contacts (see reconcileTagDefinitions)
   const tags = (await reconcileTagDefinitions()).data ?? []
 
+  const intakeKeys = (await listIntakeKeys(subAccountId)).data ?? []
+  const intakeSettings = (subAccountData.settings?.intake ?? {}) as { notify_email?: string | null }
+  const headerList = await headers()
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    `${headerList.get("x-forwarded-proto") ?? "https"}://${headerList.get("host") ?? "crm.getflowplan.app"}`
+
   return (
     <SubAccountSettingsPage
       subAccount={subAccountResult.data as SubAccount}
       stages={(stagesResult.data ?? []) as PipelineStage[]}
       members={enrichedMembers}
       tags={tags}
+      intakeCard={
+        <IntakeCard
+          subAccountId={subAccountId}
+          keys={intakeKeys}
+          notifyEmail={intakeSettings.notify_email ?? ""}
+          endpointUrl={`${origin.replace(/\/$/, "")}/api/intake`}
+        />
+      }
     />
   )
 }

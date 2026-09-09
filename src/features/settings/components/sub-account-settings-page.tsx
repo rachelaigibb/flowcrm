@@ -89,6 +89,7 @@ interface SubAccountSettingsPageProps {
   stages: PipelineStage[]
   members: Array<{ id: string; user_id: string; role: string; email?: string }>
   tags: Tag[]
+  intakeCard?: React.ReactNode
 }
 
 export function SubAccountSettingsPage({
@@ -96,6 +97,7 @@ export function SubAccountSettingsPage({
   stages: initialStages,
   members,
   tags: initialTags,
+  intakeCard,
 }: SubAccountSettingsPageProps) {
   const [name, setName] = React.useState(subAccount.name)
   const [currency, setCurrency] = React.useState(subAccount.currency)
@@ -1361,6 +1363,9 @@ export function SubAccountSettingsPage({
         }}
         isPending={deletingSmsTemplate}
       />
+
+      {/* Website intake (rendered by the route so it can load keys server-side) */}
+      {intakeCard}
 
       {/* Members */}
       <Card>

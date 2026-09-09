@@ -148,6 +148,18 @@ export interface DealContact {
   deal?: Pick<Deal, "id" | "title" | "status" | "stage_id" | "address" | "side"> | null
 }
 
+// Website intake keys (migration 00017). The secret is never stored — only its hash.
+export interface IntakeKey {
+  id: string
+  org_id: string
+  sub_account_id: string
+  label: string
+  key_prefix: string
+  created_at: string
+  last_used_at: string | null
+  revoked_at: string | null
+}
+
 export interface Task {
   id: string
   org_id: string

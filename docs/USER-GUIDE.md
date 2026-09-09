@@ -71,19 +71,24 @@ You can also log a call from any contact page (**Log call** next to **Log Note**
 
 ## 6. Getting website leads into FlowCRM
 
-FlowCRM has a **form builder** with public forms that automatically create contacts:
+There are two ways. **Website Intake** (v0.7.0) is the one your own sites use; the form builder is for a quick standalone form.
 
-1. Switch to the right workspace (e.g. Vancouver).
-2. **Forms → New Form** — add fields (name, email, phone, message).
-3. In form settings, turn on **create contact**, publish, and copy the public link (`/f/your-form`).
-4. Put that form on your website — either link to it, or embed it, or (best) have the website's existing contact form submit to it.
+**Website Intake — one key per website.** Settings → Sub-account → **Website Intake**:
+
+1. Switch to the workspace the leads belong in (Vancouver or Dubai).
+2. Make sure **Email Settings** above it has a From address (that is the sender for your copy of each lead).
+3. Optionally set *Send a copy of each submission to*. If blank, copies go to the Reply-To / From address.
+4. Click **New key**, name it after the website, and **copy the key when it is shown — it is shown once.**
+5. Paste the key into that website's hosting settings (Vercel → project → Settings → Environment Variables) as `FLOWCRM_INTAKE_KEY`, with `FLOWCRM_INTAKE_URL` = the Endpoint shown on the card. Redeploy the site.
+
+What happens on every submission: the person is created in that workspace as a lead with tags `website` + whatever the site sends (or updated, if the email already exists), their consent is recorded as explicit with the date and the exact checkbox wording, the message appears on their timeline as a note, any *contact created* automation is queued, and you get an email copy with a link to the contact. Revoke a key any time; the site then falls back to emailing you the lead until it has a new key.
+
+**Form builder** (standalone forms): **Forms → New Form**, add fields, turn on *create contact*, publish, and share the `/f/your-form` link.
 
 **Your routing plan:**
-- `rachelgibbrealtor.ca` contact form → **Vancouver Real Estate** — *already live*: the site inserts leads directly (tags `website`, `contact-form`; CASL consent from the form checkbox)
-- `deals.rachelgibbrealtor.ca` email-gate form → **Vancouver Real Estate**, tag `deal-list` — *being built*
-- `rachelgibbrealtor.com` and `buyingindubai.com` forms → **Dubai Real Estate** — *being built*, same code as the `.ca` pipe
-
-Each submission creates the contact in the right workspace (or updates it if the email already exists) and can kick off an automation (e.g. instant follow-up email).
+- `rachelgibbrealtor.ca` contact form + valuation report → **Vancouver Real Estate** — live via Website Intake (tags `website`, `contact-form` / `valuation-report`)
+- `deals.rachelgibbrealtor.ca` email-gate form → **Vancouver Real Estate**, tags `deal-list` + `web-lead` — *being built*
+- `rachelgibbrealtor.com` and `buyingindubai.com` forms → **Dubai Real Estate** — *being built*
 
 ## 7. Sending email & SMS
 
