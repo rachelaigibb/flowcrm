@@ -146,3 +146,6 @@ A listing is a deal: contact = the seller, deal type Seller, address filled in, 
 - **Add person** links anyone else with a role: co-seller, co-buyer, the other side's agent, lawyer, lender, referrer. Roles are editable in Settings → Sub-account → People roles.
 - The pipeline card shows "N inquiries", the list view has a People column, and each person's profile shows the deals they're linked to under "Linked to".
 When an inquiry turns into an offer, create their Buyer deal (or change their role to buyer if you double-end). The seller deal moves to Won on completion as usual.
+
+## Deal numbers (v0.6.1)
+Every new deal is numbered automatically per workspace and its title becomes "#N · what you typed" (for example `#53 · 14310 104 Ave, Surrey`). Numbers continue from the last one and are never reused. Type just the address or name in the Title box; the number is added on save.

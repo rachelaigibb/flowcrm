@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.6.0** · Last updated 2026-09-04 · Latest commit *(see git log)*
+**Current version: v0.6.1** · Last updated 2026-09-04 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -130,6 +130,7 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | 19 | Deal edit could not change contact, address or close date; no way to mark listings vs buyers | Pipeline | ✅ v0.5.4 — **Deal type** field (per-workspace pick-list in Settings → Sub-account, default buyer/seller/both/tenant/landlord/referral; migration `00014` drops the fixed CHECK); edit sheet now covers contact (search), address, deal type, close date, commission, reference, co-op agent; type badge on cards, Type column and filter in the pipeline |
 | 20 | App icon was the placeholder "F" monogram | Branding | ✅ v0.5.5 — new FlowCRM mark (`references/flowcrm-newbranding/`): favicon `src/app/icon.png`, iOS `apple-icon.png` and Android maskable icons are full-bleed crops; manifest theme #4F46E5 / background #0B0F2D. Old monogram kept in `references/_archive/` |
 | 21 | No way to link several people to one deal (listing inquiries, co-buyers, other-side agent) | Pipeline | ✅ v0.6.0 — **Deal associations**: `deal_contacts` table (migration `00015`, RLS) with a per-workspace role list (Settings → Sub-account → People roles; default inquiry/buyer/co-buyer/seller/co-seller/co-op agent/lawyer/lender/referrer). Deal panel gets a **People** card with "Add person" (search + role) and **"Log inquiry"** (existing or new person + note + follow-up task, tags `lead`+`inquiry`, source "Listing inquiry"). Contact profile shows "Linked to" deals with the role; pipeline cards show an inquiries badge and the list has a People column. 34 imported co-clients back-filled as co-buyer/co-seller |
+| 22 | New deals had no number; imported ones are "#N · address" | Pipeline | ✅ v0.6.1 — `deals.number` assigned per workspace by a database trigger on insert (migration `00016`, advisory-locked so numbers never collide); the title is prefixed "#N · " unless it already carries one. Works from the dialog, forms and imports. Existing deals back-filled from their import numbers |
 
 ## 🗄️ Deliberately deferred (decided, not forgotten)
 

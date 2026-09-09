@@ -168,6 +168,7 @@ export function CreateDealDialog({
               onChange={(e) => setTitle(e.target.value)}
               required
             />
+            <p className="text-xs text-muted-foreground">Numbered automatically — the title becomes “#N · what you type”.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

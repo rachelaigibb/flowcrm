@@ -102,6 +102,7 @@ export interface Deal {
   address: string | null
   latitude: number | null
   longitude: number | null
+  number: number | null
   side: string | null
   city: string | null
   closed_at: string | null
