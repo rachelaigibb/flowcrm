@@ -96,6 +96,8 @@ interface ContactDetailPageProps {
   allContacts: { id: string; first_name: string | null; last_name: string | null }[]
   allDeals: { id: string; title: string }[]
   dealTypes?: string[]
+  dealRoles?: string[]
+  relatedDeals?: { id: string; role: string; note: string | null; deal: DealWithContact }[]
 }
 
 function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined {
@@ -114,7 +116,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 
 // ── Main Component ──
 
-export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency, prevContactId, nextContactId, allContacts, allDeals, dealTypes }: ContactDetailPageProps) {
+export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency, prevContactId, nextContactId, allContacts, allDeals, dealTypes, dealRoles, relatedDeals = [] }: ContactDetailPageProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -638,6 +640,24 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
                 ))}
               </div>
             )}
+            {relatedDeals.length > 0 && (
+              <div className="mt-3 border-t pt-3">
+                <p className="mb-1.5 text-xs font-medium text-muted-foreground">Linked to</p>
+                <div className="flex flex-col gap-1">
+                  {relatedDeals.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      className="flex items-center gap-2 rounded-md px-2 py-1 text-left text-xs hover:bg-muted"
+                      onClick={() => { setSelectedDeal(r.deal); setDealSheetOpen(true) }}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{r.deal.title}</span>
+                      <Badge variant="outline" className="text-[10px]">{r.role}</Badge>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -870,6 +890,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
           deal={{ ...selectedDeal, contact: selectedDeal.contact ?? contact }}
           stages={stages}
           dealTypes={dealTypes}
+          dealRoles={dealRoles}
           open={dealSheetOpen}
           onOpenChange={setDealSheetOpen}
           onDealUpdated={() => router.refresh()}

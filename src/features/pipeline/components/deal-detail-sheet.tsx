@@ -35,6 +35,7 @@ import {
 import type { DealWithContact, UpdateDealInput } from "../types"
 import { searchContacts } from "../actions"
 import { DEFAULT_DEAL_TYPES, dealTypeLabel } from "../deal-types"
+import { DealPeopleCard } from "./deal-people-card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import type { PipelineStage, Activity, DealStatus, DealPriority } from "@/types/database"
@@ -56,6 +57,7 @@ interface DealDetailSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onDealUpdated: () => void
+  dealRoles?: string[]
 }
 
 export function DealDetailSheet({
@@ -65,6 +67,7 @@ export function DealDetailSheet({
   onOpenChange,
   onDealUpdated,
   dealTypes = DEFAULT_DEAL_TYPES,
+  dealRoles,
 }: DealDetailSheetProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -606,6 +609,11 @@ export function DealDetailSheet({
                 </div>
               )}
             </div>
+
+            <Separator />
+
+            {/* People linked to this deal (inquiries, co-buyers, the other side's agent…) */}
+            <DealPeopleCard dealId={currentDeal.id} dealTitle={currentDeal.title} dealRoles={dealRoles} onChanged={() => { void loadActivities(); onDealUpdated() }} />
 
             <Separator />
 

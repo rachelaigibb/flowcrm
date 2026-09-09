@@ -15,9 +15,13 @@ interface StageColumnProps {
   stage: PipelineStage
   deals: DealWithContact[]
   onDealClick: (deal: DealWithContact) => void
+  peopleCounts?: Record<string, { people: number; inquiries: number }>
 }
 
-export function StageColumn({ stage, deals, onDealClick }: StageColumnProps) {
+export function StageColumn({
+ stage, deals, onDealClick,
+  peopleCounts,
+}: StageColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `stage-${stage.id}`,
     data: {
@@ -68,6 +72,7 @@ export function StageColumn({ stage, deals, onDealClick }: StageColumnProps) {
           {deals.length > 0 ? (
             deals.map((deal) => (
               <DealCard
+                people={peopleCounts?.[deal.id]}
                 key={deal.id}
                 deal={deal}
                 onClick={() => onDealClick(deal)}

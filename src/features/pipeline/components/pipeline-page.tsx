@@ -61,9 +61,11 @@ interface PipelinePageProps {
   initialStatus?: DealStatus | "all"
   initialRange?: DateRange
   dealTypes?: string[]
+  dealRoles?: string[]
+  peopleCounts?: Record<string, { people: number; inquiries: number }>
 }
 
-export function PipelinePage({ stages, deals: initialDeals, initialView = "kanban", initialStatus = "all", initialRange = "all", dealTypes = DEFAULT_DEAL_TYPES }: PipelinePageProps) {
+export function PipelinePage({ stages, deals: initialDeals, initialView = "kanban", initialStatus = "all", initialRange = "all", dealTypes = DEFAULT_DEAL_TYPES, dealRoles, peopleCounts = {} }: PipelinePageProps) {
   const router = useRouter()
   const [deals, setDeals] = useState<DealWithContact[]>(initialDeals)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -566,6 +568,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
             <div className="flex h-full gap-4 pb-4">
               {stagesWithDeals.map((stage) => (
                 <StageColumn
+                  peopleCounts={peopleCounts}
                   key={stage.id}
                   stage={stage}
                   deals={stage.deals}
@@ -602,6 +605,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
                   <TableHead>Title</TableHead>
                   <TableHead>Value</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>People</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
@@ -623,6 +627,11 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
                       <TableCell className="font-medium">{deal.title}</TableCell>
                       <TableCell>{formatCurrencyCompact(deal.value, deal.currency)}</TableCell>
                       <TableCell>{deal.side ? dealTypeLabel(deal.side) : <span className="text-muted-foreground">--</span>}</TableCell>
+                      <TableCell>
+                        {peopleCounts[deal.id]?.people ? (
+                          <span className="text-xs">{peopleCounts[deal.id].people}{peopleCounts[deal.id].inquiries ? ` · ${peopleCounts[deal.id].inquiries} inq.` : ""}</span>
+                        ) : <span className="text-muted-foreground">--</span>}
+                      </TableCell>
                       <TableCell>{stageNameMap[deal.stage_id] ?? "Unknown"}</TableCell>
                       <TableCell>
                         <PriorityBadge priority={deal.priority} />
@@ -665,6 +674,7 @@ export function PipelinePage({ stages, deals: initialDeals, initialView = "kanba
         deal={selectedDeal}
         stages={stages}
         dealTypes={dealTypes}
+        dealRoles={dealRoles}
         open={detailSheetOpen}
         onOpenChange={setDetailSheetOpen}
         onDealUpdated={handleDealUpdated}

@@ -5,6 +5,7 @@ import type { DealWithContact } from "@/features/pipeline/types"
 import type { PipelineStage, DealStatus } from "@/types/database"
 import { parseDateRange } from "@/lib/utils/date-range"
 import { getDealTypes } from "@/features/pipeline/deal-types"
+import { getDealRoles } from "@/features/pipeline/deal-roles"
 
 export default async function PipelineRoute({
   searchParams,
@@ -30,6 +31,14 @@ export default async function PipelineRoute({
     .eq("id", subAccountId)
     .single()
   const dealTypes = getDealTypes(subAccount?.settings as Record<string, unknown> | null)
+  const dealRoles = getDealRoles(subAccount?.settings as Record<string, unknown> | null)
+  const { data: links } = await supabase.from("deal_contacts").select("deal_id, role").eq("sub_account_id", subAccountId)
+  const peopleCounts: Record<string, { people: number; inquiries: number }> = {}
+  for (const l of links ?? []) {
+    const c = (peopleCounts[l.deal_id] ??= { people: 0, inquiries: 0 })
+    c.people++
+    if (l.role === "inquiry") c.inquiries++
+  }
 
   const { data: stages } = await supabase
     .from("pipeline_stages")
@@ -51,6 +60,8 @@ export default async function PipelineRoute({
       initialStatus={["open", "won", "lost"].includes(sp.status ?? "") ? (sp.status as DealStatus) : "all"}
       initialRange={parseDateRange(sp.range, "all")}
       dealTypes={dealTypes}
+      dealRoles={dealRoles}
+      peopleCounts={peopleCounts}
     />
   )
 }

@@ -4,6 +4,8 @@ import { redirect, notFound } from "next/navigation"
 import { ContactDetailPage } from "@/features/contacts/components/contact-detail-page"
 import type { ContactWithRelations } from "@/features/contacts/types"
 import { getDealTypes } from "@/features/pipeline/deal-types"
+import { getDealRoles } from "@/features/pipeline/deal-roles"
+import type { DealWithContact } from "@/features/pipeline/types"
 
 export default async function ContactDetailRoute({
   params,
@@ -89,6 +91,17 @@ export default async function ContactDetailRoute({
 
   const tagColors = ((subAccount?.settings as Record<string, unknown>)?.tags as Array<{ id: string; name: string; color: string }>) ?? []
   const dealTypes = getDealTypes(subAccount?.settings as Record<string, unknown> | null)
+  const dealRoles = getDealRoles(subAccount?.settings as Record<string, unknown> | null)
+  // Deals this person is linked to as an inquiry / co-buyer / agent… (not their own deals)
+  const { data: links } = await supabase
+    .from("deal_contacts")
+    .select("id, role, note, deal:deals(*, contact:contacts!deals_contact_id_fkey(*))")
+    .eq("contact_id", id)
+    .eq("sub_account_id", subAccountId)
+    .order("created_at", { ascending: false })
+  const relatedDeals = ((links ?? []) as unknown as { id: string; role: string; note: string | null; deal: DealWithContact | null }[])
+    .filter((l) => l.deal)
+    .map((l) => ({ id: l.id, role: l.role, note: l.note, deal: l.deal as DealWithContact }))
   const currency = (subAccount as { currency?: string } | null)?.currency ?? "USD"
 
   // Prev/next contact navigation
@@ -116,6 +129,8 @@ export default async function ContactDetailRoute({
   return (
     <ContactDetailPage
       dealTypes={dealTypes}
+      dealRoles={dealRoles}
+      relatedDeals={relatedDeals}
       contact={contactWithRelations}
       tagColors={tagColors}
       stages={(stages ?? []) as import("@/types/database").PipelineStage[]}

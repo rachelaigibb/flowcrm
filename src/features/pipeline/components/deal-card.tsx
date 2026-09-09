@@ -16,9 +16,13 @@ import type { DealWithContact } from "../types"
 interface DealCardProps {
   deal: DealWithContact
   onClick: () => void
+  people?: { people: number; inquiries: number }
 }
 
-export function DealCard({ deal, onClick }: DealCardProps) {
+export function DealCard({
+ deal, onClick,
+  people,
+}: DealCardProps) {
   const router = useRouter()
   const {
     attributes,
@@ -79,6 +83,9 @@ export function DealCard({ deal, onClick }: DealCardProps) {
             <PriorityBadge priority={deal.priority} className="text-[10px] px-1.5 h-4" />
             {deal.status !== "open" && (
               <StatusBadge status={deal.status} className="text-[10px] px-1.5 h-4" />
+            )}
+            {people && people.inquiries > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 h-4">{people.inquiries} inquir{people.inquiries === 1 ? "y" : "ies"}</Badge>
             )}
           </div>
           <div className="space-y-1">

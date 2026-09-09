@@ -132,6 +132,21 @@ export interface Activity {
   created_at: string
 }
 
+export interface DealContact {
+  id: string
+  org_id: string
+  sub_account_id: string
+  deal_id: string
+  contact_id: string
+  role: string
+  note: string | null
+  created_by: string | null
+  created_at: string
+  // Joined fields
+  contact?: Pick<Contact, "id" | "first_name" | "last_name" | "email" | "phone" | "company"> | null
+  deal?: Pick<Deal, "id" | "title" | "status" | "stage_id" | "address" | "side"> | null
+}
+
 export interface Task {
   id: string
   org_id: string

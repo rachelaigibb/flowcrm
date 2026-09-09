@@ -139,3 +139,10 @@ Every deal has a **Deal type** (Buyer, Seller, Both, Tenant, Landlord, Referral 
 
 ## App icon (v0.5.5)
 FlowCRM now uses the purple FlowCRM mark for the browser tab and home-screen installs. Phones cache icons, so an app you installed earlier keeps the old "F" until you remove it from the home screen and add it again (Share → Add to Home Screen on iPhone; Install app in Chrome on Android).
+
+## Listings and inquiries (v0.6.0)
+A listing is a deal: contact = the seller, deal type Seller, address filled in, value = list price. Open the deal and use the **People** card:
+- **Log inquiry** when someone asks about the property. Pick an existing contact or type a new name, add what they asked, and set a follow-up in days. It links them to the deal as *inquiry*, creates the lead if new (tagged `lead` and `inquiry`, source "Listing inquiry"), saves the note on both records, and books the task.
+- **Add person** links anyone else with a role: co-seller, co-buyer, the other side's agent, lawyer, lender, referrer. Roles are editable in Settings → Sub-account → People roles.
+- The pipeline card shows "N inquiries", the list view has a People column, and each person's profile shows the deals they're linked to under "Linked to".
+When an inquiry turns into an offer, create their Buyer deal (or change their role to buyer if you double-end). The seller deal moves to Won on completion as usual.

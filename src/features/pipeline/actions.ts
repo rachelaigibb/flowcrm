@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import { triggerAutomations } from "@/features/automations/engine"
 import type { CreateDealInput, UpdateDealInput } from "./types"
-import type { DealStatus } from "@/types/database"
+import type { DealStatus, DealContact } from "@/types/database"
 
 async function getContext() {
   return getUserContext()
@@ -298,4 +298,111 @@ export async function searchContacts(query: string) {
     .limit(10)
 
   return data ?? []
+}
+
+// ── Deal associations (deal_contacts) ──
+
+export async function listDealContacts(dealId: string) {
+  const { supabase, subAccountId } = await getContext()
+  const { data, error } = await supabase
+    .from("deal_contacts")
+    .select("*, contact:contacts(id, first_name, last_name, email, phone, company)")
+    .eq("deal_id", dealId)
+    .eq("sub_account_id", subAccountId)
+    .order("created_at", { ascending: true })
+  if (error) return { error: error.message, data: [] as DealContact[] }
+  return { data: (data ?? []) as DealContact[] }
+}
+
+export async function addDealContact(dealId: string, contactId: string, role: string, note?: string) {
+  const { supabase, userId, orgId, subAccountId } = await getContext()
+  const cleanRole = role.trim().toLowerCase() || "contact"
+  const { data: deal } = await supabase.from("deals").select("id, title").eq("id", dealId).eq("sub_account_id", subAccountId).single()
+  if (!deal) return { error: "Deal not found" }
+  const { data, error } = await supabase
+    .from("deal_contacts")
+    .insert({ org_id: orgId, sub_account_id: subAccountId, deal_id: dealId, contact_id: contactId, role: cleanRole, note: note?.trim() || null, created_by: userId })
+    .select("*, contact:contacts(id, first_name, last_name, email, phone, company)")
+    .single()
+  if (error) return { error: error.code === "23505" ? "Already linked with that role" : error.message }
+  await supabase.from("activities").insert({
+    org_id: orgId, sub_account_id: subAccountId, contact_id: contactId, deal_id: dealId, user_id: userId,
+    type: "system", content: `Linked to ${deal.title} as ${cleanRole}${note?.trim() ? ` — ${note.trim()}` : ""}`, metadata: { deal_contact_id: data.id, role: cleanRole },
+  })
+  revalidatePath("/pipeline"); revalidatePath(`/contacts/${contactId}`)
+  return { data: data as DealContact }
+}
+
+export async function removeDealContact(id: string) {
+  const { supabase, subAccountId } = await getContext()
+  const { data: row } = await supabase.from("deal_contacts").select("contact_id").eq("id", id).eq("sub_account_id", subAccountId).single()
+  const { error } = await supabase.from("deal_contacts").delete().eq("id", id).eq("sub_account_id", subAccountId)
+  if (error) return { error: error.message }
+  revalidatePath("/pipeline"); if (row?.contact_id) revalidatePath(`/contacts/${row.contact_id}`)
+  return { success: true }
+}
+
+/**
+ * Log an inquiry on a deal (e.g. a buyer asking about a listing): links an existing contact or
+ * creates a new lead, records the note on both, and books a follow-up task.
+ */
+export async function logInquiry(dealId: string, input: {
+  contactId?: string | null
+  newContact?: { first_name: string; last_name?: string; email?: string; phone?: string }
+  note?: string
+  followUpDays?: number | null
+  role?: string
+}) {
+  const { supabase, userId, orgId, subAccountId } = await getContext()
+  const { data: deal } = await supabase.from("deals").select("id, title, address").eq("id", dealId).eq("sub_account_id", subAccountId).single()
+  if (!deal) return { error: "Deal not found" }
+  let contactId = input.contactId ?? null
+  if (!contactId) {
+    const nc = input.newContact
+    if (!nc || !nc.first_name.trim()) return { error: "Choose a contact or enter a name" }
+    const { data: created, error: cErr } = await supabase
+      .from("contacts")
+      .insert({
+        org_id: orgId, sub_account_id: subAccountId, first_name: nc.first_name.trim(), last_name: nc.last_name?.trim() || null,
+        email: nc.email?.trim() || null, phone: nc.phone?.trim() || null, source: "Listing inquiry",
+        tags: ["lead", "inquiry"], consent_status: "implied", consent_to_display_sale: "pending", last_contact: new Date().toISOString().slice(0, 10), metadata: {},
+      })
+      .select("id")
+      .single()
+    if (cErr || !created) return { error: cErr?.message ?? "Could not create contact" }
+    contactId = created.id
+    await supabase.from("activities").insert({ org_id: orgId, sub_account_id: subAccountId, contact_id: contactId, user_id: userId, type: "system", content: "Contact created from a deal inquiry", metadata: {} })
+  } else {
+    await supabase.from("contacts").update({ last_contact: new Date().toISOString().slice(0, 10) }).eq("id", contactId).eq("sub_account_id", subAccountId)
+  }
+  if (!contactId) return { error: "No contact" }
+  const role = (input.role ?? "inquiry").trim().toLowerCase()
+  const link = await addDealContact(dealId, contactId, role, input.note)
+  if ("error" in link && link.error && link.error !== "Already linked with that role") return { error: link.error }
+  if (input.note?.trim()) {
+    await supabase.from("activities").insert({ org_id: orgId, sub_account_id: subAccountId, contact_id: contactId, deal_id: dealId, user_id: userId, type: "note", content: input.note.trim(), metadata: { inquiry: true } })
+  }
+  if (input.followUpDays != null && input.followUpDays >= 0) {
+    const due = new Date(); due.setDate(due.getDate() + input.followUpDays)
+    const { data: c } = await supabase.from("contacts").select("first_name, last_name").eq("id", contactId).single()
+    const who = [c?.first_name, c?.last_name].filter(Boolean).join(" ") || "contact"
+    await supabase.from("tasks").insert({
+      org_id: orgId, sub_account_id: subAccountId, assigned_to: userId, title: `Follow up with ${who} re ${deal.title}`,
+      due_date: due.toISOString().slice(0, 10), priority: "medium", contact_id: contactId, deal_id: dealId, status: "pending",
+    })
+  }
+  revalidatePath("/pipeline"); revalidatePath("/tasks"); revalidatePath(`/contacts/${contactId}`)
+  return { data: { contactId } }
+}
+
+/** Inquiry counts per deal for the pipeline board. */
+export async function getDealPeopleCounts() {
+  const { supabase, subAccountId } = await getContext()
+  const { data } = await supabase.from("deal_contacts").select("deal_id, role").eq("sub_account_id", subAccountId)
+  const counts: Record<string, { people: number; inquiries: number }> = {}
+  for (const r of data ?? []) {
+    const c = (counts[r.deal_id] ??= { people: 0, inquiries: 0 })
+    c.people++; if (r.role === "inquiry") c.inquiries++
+  }
+  return counts
 }
