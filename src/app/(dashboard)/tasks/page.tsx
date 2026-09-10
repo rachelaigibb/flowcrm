@@ -24,7 +24,7 @@ export default async function TasksRoute() {
     .select(
       `
       *,
-      contact:contacts(id, first_name, last_name),
+      contact:contacts(id, first_name, last_name, phone, email),
       deal:deals(id, title)
     `
     )

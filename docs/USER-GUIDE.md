@@ -154,3 +154,6 @@ When an inquiry turns into an offer, create their Buyer deal (or change their ro
 
 ## Deal numbers (v0.6.1)
 Every new deal is numbered automatically per workspace and its title becomes "#N · what you typed" (for example `#53 · 14310 104 Ave, Surrey`). Numbers continue from the last one and are never reused. Type just the address or name in the Title box; the number is added on save.
+
+## Inquiries on a listing (v0.7.1)
+Log inquiry now does everything in one step: the person is linked to the deal as an inquiry, tagged with the listing (for example `listing-53`), the note is saved on both, and a follow-up task is booked. On the deal's People card each person shows as a link to their profile with phone and email beside the name (tap the phone icon to call), and the note sits underneath in full. To see everyone who asked about a property, open Contacts and filter by that listing tag, or run a call block on it from the Calls page. Add person is for anyone else on the deal (co-op agent, appraiser, lawyer). Linking someone twice in the same role is blocked; pick another role or remove the first link.

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Check, MessageSquarePlus, Plus, Users, X } from "lucide-react"
+import { Check, Mail, MessageSquarePlus, Phone, Plus, Users, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -167,15 +167,34 @@ export function DealPeopleCard({ dealId, dealTitle, dealRoles = DEFAULT_DEAL_ROL
       ) : (
         <ul className="divide-y rounded-md border">
           {rows.map((r) => (
-            <li key={r.id} className="flex items-center gap-2 px-3 py-2 text-sm">
-              <button type="button" className="min-w-0 flex-1 truncate text-left text-primary hover:underline" onClick={() => router.push(`/contacts/${r.contact_id}`)}>
-                {nameOf(r.contact)}
-              </button>
-              <Badge variant="outline" className="text-[10px]">{dealRoleLabel(r.role)}</Badge>
-              {r.note && <span className="hidden truncate text-xs text-muted-foreground sm:inline" title={r.note}>{r.note}</span>}
-              <button type="button" aria-label="Unlink" className="text-muted-foreground hover:text-destructive" onClick={() => unlink(r.id)} disabled={isPending}>
-                <X className="size-3.5" />
-              </button>
+            <li key={r.id} className="flex flex-col gap-1 px-3 py-2 text-sm">
+              <div className="flex items-center gap-2">
+                <button type="button" className="min-w-0 shrink truncate text-left font-medium text-primary hover:underline" onClick={() => router.push(`/contacts/${r.contact_id}`)}>
+                  {nameOf(r.contact)}
+                </button>
+                <Badge variant="outline" className="shrink-0 text-[10px]">{dealRoleLabel(r.role)}</Badge>
+                <span className="ml-auto flex shrink-0 items-center gap-1">
+                  {r.contact?.phone && (
+                    <a href={`tel:${r.contact.phone}`} aria-label={`Call ${nameOf(r.contact)}`} title={r.contact.phone} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+                      <Phone className="size-3.5" />
+                    </a>
+                  )}
+                  {r.contact?.email && (
+                    <a href={`mailto:${r.contact.email}`} aria-label={`Email ${nameOf(r.contact)}`} title={r.contact.email} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+                      <Mail className="size-3.5" />
+                    </a>
+                  )}
+                  <button type="button" aria-label="Unlink" title="Remove from this deal" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive" onClick={() => unlink(r.id)} disabled={isPending}>
+                    <X className="size-3.5" />
+                  </button>
+                </span>
+              </div>
+              {(r.contact?.phone || r.contact?.email) && (
+                <p className="truncate text-xs text-muted-foreground">
+                  {[r.contact?.phone, r.contact?.email].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              {r.note && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{r.note}</p>}
             </li>
           ))}
         </ul>
@@ -185,7 +204,7 @@ export function DealPeopleCard({ dealId, dealTitle, dealRoles = DEFAULT_DEAL_ROL
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Log inquiry</DialogTitle>
-            <DialogDescription>Someone asked about {dealTitle}. Links them to the deal, saves the note and books a follow-up.</DialogDescription>
+            <DialogDescription>Someone asked about {dealTitle}. Links them to the deal as an inquiry, tags them with this listing, saves the note and books a follow-up.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="flex gap-1 rounded-md border p-0.5 text-xs">

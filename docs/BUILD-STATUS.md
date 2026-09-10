@@ -139,6 +139,7 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | 20 | App icon was the placeholder "F" monogram | Branding | ✅ v0.5.5 — new FlowCRM mark (`references/flowcrm-newbranding/`): favicon `src/app/icon.png`, iOS `apple-icon.png` and Android maskable icons are full-bleed crops; manifest theme #4F46E5 / background #0B0F2D. Old monogram kept in `references/_archive/` |
 | 21 | No way to link several people to one deal (listing inquiries, co-buyers, other-side agent) | Pipeline | ✅ v0.6.0 — **Deal associations**: `deal_contacts` table (migration `00015`, RLS) with a per-workspace role list (Settings → Sub-account → People roles; default inquiry/buyer/co-buyer/seller/co-seller/co-op agent/lawyer/lender/referrer). Deal panel gets a **People** card with "Add person" (search + role) and **"Log inquiry"** (existing or new person + note + follow-up task, tags `lead`+`inquiry`, source "Listing inquiry"). Contact profile shows "Linked to" deals with the role; pipeline cards show an inquiries badge and the list has a People column. 34 imported co-clients back-filled as co-buyer/co-seller |
 | 22 | New deals had no number; imported ones are "#N · address" | Pipeline | ✅ v0.6.1 — `deals.number` assigned per workspace by a database trigger on insert (migration `00016`, advisory-locked so numbers never collide); the title is prefixed "#N · " unless it already carries one. Works from the dialog, forms and imports. Existing deals back-filled from their import numbers |
+| 23 | Inquiry on a listing showed only the note; the person's name was squeezed to zero width and there was no way back to the contact | Pipeline | ✅ v0.7.1 — People card rows are two lines (name link + phone/email actions + role, note underneath); every inquiry tags the person `listing-N`; clearer duplicate-link message; tasks show the contact's phone as a tap-to-call link; `listing-53` back-filled on the three existing inquiries |
 
 ## 🗄️ Deliberately deferred (decided, not forgotten)
 
@@ -165,7 +166,8 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | v0.4 | 2026-07-07 | Phase 4 — AI layer |
 | v0.4.1 | 2026-08-13 | Live domain + app icon, PWA manifest, installable on phone |
 | **v0.5.0** | 2026-09-04 | **Phase 5a — prospecting: custom fields, transactions as won deals + commission, log-a-call, Calls page, Google Contacts importer, 6 fixes (current)** |
-| **v0.7.0** | 2026-09-09 | **Website intake: `/api/intake` + per-workspace keys + Settings card (job 2, step 1)** |
+| v0.7.0 | 2026-09-09 | Website intake: `/api/intake` + per-workspace keys + Settings card (job 2, step 1) |
+| **v0.7.1** | 2026-09-09 | **Inquiry workflow fix #23: People card layout, listing tags, phone on tasks (current)** |
 | v0.7.x | planned | `.ca` switched to intake, deals. page, Dubai sites (job 2 steps 2–6); unsubscribe (job 3) |
 | v0.6 | planned | Vercel Pro migration + automation scheduler |
 | v1.0 | goal | Ready to sell to other agencies |

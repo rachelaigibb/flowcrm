@@ -16,7 +16,7 @@ function pickTagColor(existing: Array<{ color: string }>): string {
   return [...usage.entries()].sort((a, b) => a[1] - b[1] || palette.indexOf(a[0]) - palette.indexOf(b[0]))[0][0]
 }
 
-async function syncNewTags(
+export async function syncNewTags(
   supabase: Awaited<ReturnType<typeof getUserContext>>["supabase"],
   orgId: string,
   subAccountId: string,

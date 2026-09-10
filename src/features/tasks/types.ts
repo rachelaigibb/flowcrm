@@ -1,7 +1,7 @@
 import type { Task, Contact, Deal, DealPriority, TaskStatus } from "@/types/database"
 
 export interface TaskWithRelations extends Omit<Task, "contact" | "deal"> {
-  contact: Pick<Contact, "id" | "first_name" | "last_name"> | null
+  contact: Pick<Contact, "id" | "first_name" | "last_name" | "phone" | "email"> | null
   deal: Pick<Deal, "id" | "title"> | null
 }
 

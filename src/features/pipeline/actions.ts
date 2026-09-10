@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { syncNewTags } from "@/features/contacts/actions"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import { triggerAutomations } from "@/features/automations/engine"
 import type { CreateDealInput, UpdateDealInput } from "./types"
@@ -324,7 +325,14 @@ export async function addDealContact(dealId: string, contactId: string, role: st
     .insert({ org_id: orgId, sub_account_id: subAccountId, deal_id: dealId, contact_id: contactId, role: cleanRole, note: note?.trim() || null, created_by: userId })
     .select("*, contact:contacts(id, first_name, last_name, email, phone, company)")
     .single()
-  if (error) return { error: error.code === "23505" ? "Already linked with that role" : error.message }
+  if (error) {
+    if (error.code === "23505") {
+      const { data: c } = await supabase.from("contacts").select("first_name, last_name").eq("id", contactId).single()
+      const who = [c?.first_name, c?.last_name].filter(Boolean).join(" ") || "This person"
+      return { error: `${who} is already linked as ${cleanRole}. Choose another role, or remove that link first.`, code: "duplicate" as const }
+    }
+    return { error: error.message }
+  }
   await supabase.from("activities").insert({
     org_id: orgId, sub_account_id: subAccountId, contact_id: contactId, deal_id: dealId, user_id: userId,
     type: "system", content: `Linked to ${deal.title} as ${cleanRole}${note?.trim() ? ` — ${note.trim()}` : ""}`, metadata: { deal_contact_id: data.id, role: cleanRole },
@@ -354,8 +362,10 @@ export async function logInquiry(dealId: string, input: {
   role?: string
 }) {
   const { supabase, userId, orgId, subAccountId } = await getContext()
-  const { data: deal } = await supabase.from("deals").select("id, title, address").eq("id", dealId).eq("sub_account_id", subAccountId).single()
+  const { data: deal } = await supabase.from("deals").select("id, title, address, number").eq("id", dealId).eq("sub_account_id", subAccountId).single()
   if (!deal) return { error: "Deal not found" }
+  // Every inquiry tags the person with the listing (e.g. listing-53) so Contacts and Calls can filter by property.
+  const listingTag = deal.number != null ? `listing-${deal.number}` : null
   let contactId = input.contactId ?? null
   if (!contactId) {
     const nc = input.newContact
@@ -365,7 +375,7 @@ export async function logInquiry(dealId: string, input: {
       .insert({
         org_id: orgId, sub_account_id: subAccountId, first_name: nc.first_name.trim(), last_name: nc.last_name?.trim() || null,
         email: nc.email?.trim() || null, phone: nc.phone?.trim() || null, source: "Listing inquiry",
-        tags: ["lead", "inquiry"], consent_status: "implied", consent_to_display_sale: "pending", last_contact: new Date().toISOString().slice(0, 10), metadata: {},
+        tags: listingTag ? ["lead", "inquiry", listingTag] : ["lead", "inquiry"], consent_status: "implied", consent_to_display_sale: "pending", last_contact: new Date().toISOString().slice(0, 10), metadata: {},
       })
       .select("id")
       .single()
@@ -373,12 +383,15 @@ export async function logInquiry(dealId: string, input: {
     contactId = created.id
     await supabase.from("activities").insert({ org_id: orgId, sub_account_id: subAccountId, contact_id: contactId, user_id: userId, type: "system", content: "Contact created from a deal inquiry", metadata: {} })
   } else {
-    await supabase.from("contacts").update({ last_contact: new Date().toISOString().slice(0, 10) }).eq("id", contactId).eq("sub_account_id", subAccountId)
+    const { data: existing } = await supabase.from("contacts").select("tags").eq("id", contactId).eq("sub_account_id", subAccountId).single()
+    const merged = Array.from(new Set([...(existing?.tags ?? []), "inquiry", ...(listingTag ? [listingTag] : [])]))
+    await supabase.from("contacts").update({ last_contact: new Date().toISOString().slice(0, 10), tags: merged }).eq("id", contactId).eq("sub_account_id", subAccountId)
   }
   if (!contactId) return { error: "No contact" }
+  await syncNewTags(supabase, orgId, subAccountId, listingTag ? ["inquiry", listingTag] : ["inquiry"])
   const role = (input.role ?? "inquiry").trim().toLowerCase()
   const link = await addDealContact(dealId, contactId, role, input.note)
-  if ("error" in link && link.error && link.error !== "Already linked with that role") return { error: link.error }
+  if ("error" in link && link.error && link.code !== "duplicate") return { error: link.error }
   if (input.note?.trim()) {
     await supabase.from("activities").insert({ org_id: orgId, sub_account_id: subAccountId, contact_id: contactId, deal_id: dealId, user_id: userId, type: "note", content: input.note.trim(), metadata: { inquiry: true } })
   }

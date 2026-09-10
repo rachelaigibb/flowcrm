@@ -34,6 +34,7 @@ import {
   ListIcon,
   CalendarDaysIcon,
   UserIcon,
+  PhoneIcon,
   BriefcaseIcon,
   SearchIcon,
   ArrowUpDownIcon,
@@ -204,6 +205,18 @@ function TaskItem({
                 <UserIcon className="size-3" />
                 {contactName}
               </Link>
+            )}
+
+            {task.contact?.phone && (
+              <a
+                href={`tel:${task.contact.phone}`}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => e.stopPropagation()}
+                title={`Call ${contactName}`}
+              >
+                <PhoneIcon className="size-3" />
+                {task.contact.phone}
+              </a>
             )}
 
             {task.deal && (
