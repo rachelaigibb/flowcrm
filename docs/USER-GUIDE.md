@@ -88,7 +88,7 @@ What happens on every submission: the person is created in that workspace as a l
 **Your routing plan:**
 - `rachelgibbrealtor.ca` contact form + valuation report → **Vancouver Real Estate** — live via Website Intake (tags `website`, `contact-form` / `valuation-report`)
 - `deals.rachelgibbrealtor.ca` (also rachelgibbrealtor.ca/deals) Deal Sheet sign-up → **Vancouver Real Estate**, tags `website`, `deal-list`, `web-lead` — live; the `deal-list` tag is the Friday broadcast audience
-- `rachelgibbrealtor.com` and `buyingindubai.com` forms → **Dubai Real Estate** — *being built*
+- `rachelgibbrealtor.com` (contact form, eXp profile request, marketing-package request) and `buyingindubai.com` (contact form) → **Dubai Real Estate** — tags `website`, `web-lead`, the form name, the site (`rachelgibbrealtor-com` / `buyingindubai-com`) and any interests ticked (`buying-in-dubai`, `golden-visa`…)
 
 ## 7. Sending email & SMS
 
