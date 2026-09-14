@@ -46,6 +46,8 @@ import type { LeadScore } from "@/features/ai/actions"
 import { CreateDealDialog } from "@/features/pipeline/components/create-deal-dialog"
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog"
 import { DealDetailSheet } from "@/features/pipeline/components/deal-detail-sheet"
+import { DocumentsCard } from "@/features/documents/components/documents-card"
+import type { Document } from "@/types/database"
 import type { DealWithContact } from "@/features/pipeline/types"
 import type { PipelineStage } from "@/types/database"
 
@@ -59,6 +61,7 @@ import {
   CheckSquare,
   MessageSquare,
   Mail,
+  Paperclip,
   Phone,
   Send,
   Calendar,
@@ -98,6 +101,7 @@ interface ContactDetailPageProps {
   dealTypes?: string[]
   dealRoles?: string[]
   relatedDeals?: { id: string; role: string; note: string | null; deal: DealWithContact }[]
+  documents?: Document[]
 }
 
 function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined {
@@ -116,7 +120,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 
 // ── Main Component ──
 
-export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency, prevContactId, nextContactId, allContacts, allDeals, dealTypes, dealRoles, relatedDeals = [] }: ContactDetailPageProps) {
+export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency, prevContactId, nextContactId, allContacts, allDeals, dealTypes, dealRoles, relatedDeals = [], documents = [] }: ContactDetailPageProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -708,6 +712,9 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
             )}
           </CardContent>
         </Card>
+
+        {/* Documents */}
+        <DocumentsCard contactId={contact.id} initial={documents} />
       </div>
     )
   }
@@ -1004,7 +1011,34 @@ function ActivityRow({
             {activity.content}
           </p>
         )}
+        <ActivityAttachments metadata={activity.metadata} />
       </div>
+    </div>
+  )
+}
+
+// Files sent with an email, plus where the copy went. Links open a signed URL.
+function ActivityAttachments({ metadata }: { metadata: Record<string, unknown> | null }) {
+  const attachments = (metadata?.attachments as { id: string; name: string }[] | undefined) ?? []
+  const bcc = metadata?.bcc as string[] | undefined
+  if (attachments.length === 0 && !bcc?.length) return null
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      {attachments.map((a) => (
+        <a
+          key={a.id}
+          href={`/api/documents/${a.id}`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex max-w-full items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs hover:bg-muted"
+        >
+          <Paperclip className="size-3 shrink-0 text-muted-foreground" />
+          <span className="truncate">{a.name}</span>
+        </a>
+      ))}
+      {bcc && bcc.length > 0 && (
+        <span className="text-xs text-muted-foreground">copy to {bcc.join(", ")}</span>
+      )}
     </div>
   )
 }

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -129,9 +130,10 @@ export function SubAccountSettingsPage({
 
   // Email settings state
   const emailSettings = (subAccount.settings as Record<string, unknown>)?.email as
-    | { from_name?: string; from_email?: string; reply_to?: string }
+    | { from_name?: string; from_email?: string; reply_to?: string; signature?: string }
     | undefined
   const [fromName, setFromName] = React.useState(emailSettings?.from_name ?? "")
+  const [signature, setSignature] = React.useState(emailSettings?.signature ?? "")
   const [fromEmail, setFromEmail] = React.useState(emailSettings?.from_email ?? "")
   const [replyTo, setReplyTo] = React.useState(emailSettings?.reply_to ?? "")
   const [savingEmail, setSavingEmail] = React.useState(false)
@@ -363,6 +365,7 @@ export function SubAccountSettingsPage({
       from_name: fromName.trim() || undefined,
       from_email: fromEmail.trim() || undefined,
       reply_to: replyTo.trim() || undefined,
+      signature: signature.trim() || undefined,
     })
     setSavingEmail(false)
     if (result.error) {
@@ -987,6 +990,19 @@ export function SubAccountSettingsPage({
               onChange={(e) => setReplyTo(e.target.value)}
               placeholder="e.g. rachel@yourdomain.com (optional)"
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="email-signature">Signature</Label>
+            <Textarea
+              id="email-signature"
+              value={signature}
+              onChange={(e) => setSignature(e.target.value)}
+              placeholder={"Rachel Gibb | Luxury Real Estate | eXp Realty\nrachelgibbrealtor.com"}
+              className="min-h-24 text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Added to the end of every email sent from a contact, a template or an automation. Web addresses become links. Broadcasts are sent as written.
+            </p>
           </div>
           <div className="flex justify-end">
             <Button onClick={handleSaveEmailSettings} disabled={savingEmail}>

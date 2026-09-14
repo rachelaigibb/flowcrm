@@ -36,6 +36,7 @@ import type { DealWithContact, UpdateDealInput } from "../types"
 import { searchContacts } from "../actions"
 import { DEFAULT_DEAL_TYPES, dealTypeLabel } from "../deal-types"
 import { DealPeopleCard } from "./deal-people-card"
+import { DocumentsCard } from "@/features/documents/components/documents-card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import type { PipelineStage, Activity, DealStatus, DealPriority } from "@/types/database"
@@ -614,6 +615,11 @@ export function DealDetailSheet({
 
             {/* People linked to this deal (inquiries, co-buyers, the other side's agent…) */}
             <DealPeopleCard dealId={currentDeal.id} dealTitle={currentDeal.title} dealRoles={dealRoles} onChanged={() => { void loadActivities(); onDealUpdated() }} />
+
+            <Separator />
+
+            {/* Files on this deal (agreements, disclosures, photos) */}
+            <DocumentsCard dealId={currentDeal.id} />
 
             <Separator />
 

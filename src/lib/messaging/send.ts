@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { getResendClient } from "@/lib/resend/client"
 import { getTwilioClient } from "@/lib/twilio/client"
+import { buildEmailContent } from "@/lib/messaging/html"
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
@@ -16,6 +17,15 @@ export interface EmailSettings {
   fromName: string
   fromEmail: string
   replyTo: string
+  // Appended to every one-to-one email (compose, templates, automations).
+  signature: string | null
+  // Where "Send me a copy" goes: intake notify address → reply-to → from.
+  copyTo: string
+}
+
+export interface EmailAttachment {
+  filename: string
+  content: Buffer
 }
 
 export interface SmsSettings {
@@ -23,7 +33,7 @@ export interface SmsSettings {
 }
 
 export type SendResult =
-  | { ok: true; providerId: string | null }
+  | { ok: true; providerId: string | null; activityId: string | null }
   | { ok: false; error: string }
 
 // Replaces {{first_name}}, {{last_name}}, {{full_name}}, {{email}}, {{phone}}
@@ -53,16 +63,21 @@ export async function getEmailSettings(
     .eq("id", subAccountId)
     .single()
 
-  const emailSettings = (subAccount?.settings as Record<string, unknown>)?.email as
-    | { from_name?: string; from_email?: string; reply_to?: string }
+  const settings = (subAccount?.settings ?? {}) as Record<string, unknown>
+  const emailSettings = settings.email as
+    | { from_name?: string; from_email?: string; reply_to?: string; signature?: string }
     | undefined
+  const intake = settings.intake as { notify_email?: string } | undefined
 
   if (!emailSettings?.from_email) return null
 
+  const replyTo = emailSettings.reply_to || emailSettings.from_email
   return {
     fromName: emailSettings.from_name || subAccount?.name || "FlowCRM",
     fromEmail: emailSettings.from_email,
-    replyTo: emailSettings.reply_to || emailSettings.from_email,
+    replyTo,
+    signature: emailSettings.signature?.trim() || null,
+    copyTo: intake?.notify_email?.trim() || replyTo,
   }
 }
 
@@ -94,6 +109,10 @@ export async function sendEmailToContact(params: {
   settings: EmailSettings
   subject: string
   body: string
+  // Broadcasts pass false: a campaign carries its own footer.
+  includeSignature?: boolean
+  attachments?: EmailAttachment[]
+  bcc?: string[]
   activityMetadata?: Record<string, unknown>
 }): Promise<SendResult> {
   const { supabase, orgId, subAccountId, userId, contact, settings, subject, body } = params
@@ -104,36 +123,45 @@ export async function sendEmailToContact(params: {
 
   try {
     const resend = getResendClient()
+    const content = buildEmailContent(body, params.includeSignature === false ? null : settings.signature)
     const { data: sendResult, error: sendError } = await resend.emails.send({
       from: `${settings.fromName} <${settings.fromEmail}>`,
       to: [contact.email],
+      bcc: params.bcc && params.bcc.length > 0 ? params.bcc : undefined,
       replyTo: settings.replyTo,
       subject,
-      text: body,
+      text: content.text,
+      html: content.html,
+      attachments: params.attachments?.map((a) => ({ filename: a.filename, content: a.content })),
     })
 
     if (sendError) {
       return { ok: false, error: sendError.message }
     }
 
-    await supabase.from("activities").insert({
-      org_id: orgId,
-      sub_account_id: subAccountId,
-      contact_id: contact.id,
-      user_id: userId,
-      type: "email",
-      content: `**${subject}**\n\n${body}`,
-      metadata: {
-        resend_id: sendResult?.id,
-        to: contact.email,
-        from: `${settings.fromName} <${settings.fromEmail}>`,
-        subject,
-        sent_at: new Date().toISOString(),
-        ...params.activityMetadata,
-      },
-    })
+    const { data: activity } = await supabase
+      .from("activities")
+      .insert({
+        org_id: orgId,
+        sub_account_id: subAccountId,
+        contact_id: contact.id,
+        user_id: userId,
+        type: "email",
+        content: `**${subject}**\n\n${body.trim()}`,
+        metadata: {
+          resend_id: sendResult?.id,
+          to: contact.email,
+          from: `${settings.fromName} <${settings.fromEmail}>`,
+          subject,
+          sent_at: new Date().toISOString(),
+          ...(params.bcc && params.bcc.length > 0 ? { bcc: params.bcc } : {}),
+          ...params.activityMetadata,
+        },
+      })
+      .select("id")
+      .single()
 
-    return { ok: true, providerId: sendResult?.id ?? null }
+    return { ok: true, providerId: sendResult?.id ?? null, activityId: activity?.id ?? null }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error sending email" }
   }
@@ -163,7 +191,7 @@ export async function sendSmsToContact(params: {
       to: contact.phone,
     })
 
-    await supabase.from("activities").insert({
+    const { data: activity } = await supabase.from("activities").insert({
       org_id: orgId,
       sub_account_id: subAccountId,
       contact_id: contact.id,
@@ -178,9 +206,9 @@ export async function sendSmsToContact(params: {
         sent_at: new Date().toISOString(),
         ...params.activityMetadata,
       },
-    })
+    }).select("id").single()
 
-    return { ok: true, providerId: message.sid }
+    return { ok: true, providerId: message.sid, activityId: activity?.id ?? null }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error sending SMS" }
   }

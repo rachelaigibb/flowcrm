@@ -133,6 +133,21 @@ export interface Activity {
   created_at: string
 }
 
+export interface Document {
+  id: string
+  org_id: string
+  sub_account_id: string
+  contact_id: string | null
+  deal_id: string | null
+  activity_id: string | null
+  name: string
+  path: string
+  size: number
+  mime_type: string | null
+  created_by: string | null
+  created_at: string
+}
+
 export interface DealContact {
   id: string
   org_id: string

@@ -104,6 +104,13 @@ export default async function ContactDetailRoute({
     .map((l) => ({ id: l.id, role: l.role, note: l.note, deal: l.deal as DealWithContact }))
   const currency = (subAccount as { currency?: string } | null)?.currency ?? "USD"
 
+  const { data: documents } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("contact_id", id)
+    .eq("sub_account_id", subAccountId)
+    .order("created_at", { ascending: false })
+
   // Prev/next contact navigation
   const contactIdList = (allContactIds ?? []).map((c) => c.id)
   const currentIndex = contactIdList.indexOf(id)
@@ -131,6 +138,7 @@ export default async function ContactDetailRoute({
       dealTypes={dealTypes}
       dealRoles={dealRoles}
       relatedDeals={relatedDeals}
+      documents={(documents ?? []) as import("@/types/database").Document[]}
       contact={contactWithRelations}
       tagColors={tagColors}
       stages={(stages ?? []) as import("@/types/database").PipelineStage[]}

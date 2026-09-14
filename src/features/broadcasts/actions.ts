@@ -274,6 +274,7 @@ export async function sendBroadcast(id: string) {
             settings: emailSettings!,
             subject: renderTemplate(broadcast.email_subject as string, contact),
             body: renderTemplate(broadcast.email_body as string, contact),
+            includeSignature: false,
             activityMetadata: { broadcast_id: id },
           })
         }

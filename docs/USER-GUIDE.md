@@ -93,7 +93,7 @@ What happens on every submission: the person is created in that workspace as a l
 ## 7. Sending email & SMS
 
 - **Per-workspace settings**: Settings → Email (your from-name/from-email via Resend) and Settings → SMS (your Twilio number).
-- **One-off messages**: from any contact page — Email / SMS buttons.
+- **One-off messages**: from any contact page — Email / SMS buttons. Emails go out as proper HTML with your signature, can carry attachments, and can BCC you a copy (see "Email signature, attachments, documents" below).
 - **Templates**: saved in Settings, usable in compose, automations, and broadcasts. Personalization tokens work everywhere: `{{first_name}}`, `{{last_name}}`, `{{full_name}}`, `{{email}}`, `{{phone}}`.
 - **Broadcasts**: campaigns to filtered groups (by tag/source/all). Consent-gated automatically.
 - **Automations**: trigger → steps (send email/SMS, wait, add/remove tag, create task). Triggers: contact created, tag added, deal stage change, form submission, manual.
@@ -157,3 +157,14 @@ Every new deal is numbered automatically per workspace and its title becomes "#N
 
 ## Inquiries on a listing (v0.7.1)
 Log inquiry now does everything in one step: the person is linked to the deal as an inquiry, tagged with the listing (for example `listing-53`), the note is saved on both, and a follow-up task is booked. On the deal's People card each person shows as a link to their profile with phone and email beside the name (tap the phone icon to call), and the note sits underneath in full. To see everyone who asked about a property, open Contacts and filter by that listing tag, or run a call block on it from the Calls page. Add person is for anyone else on the deal (co-op agent, appraiser, lawyer). Linking someone twice in the same role is blocked; pick another role or remove the first link.
+
+## Email signature, attachments, documents (v0.8.0)
+**Signature.** Settings → Email Settings → Signature. Type it as plain lines; web addresses and email addresses turn into links. It is added to the end of every email you send from a contact, every template, and every automation email. Broadcasts go out exactly as written, so put a footer in the campaign itself. Each workspace has its own signature.
+
+**Attachments.** In the compose dialog click Attach file. Up to 10 MB per email. The files are sent with the email and kept on the contact: they show as chips under the email in the timeline and in the Documents card.
+
+**Documents.** Every contact and every deal has a Documents card (contact page right column; deal sheet under People). Upload keeps the file in FlowCRM's private storage; click the name to open it; the trash icon removes it after a confirmation. Use it for agreements, disclosures, ID checklists, photos.
+
+**Send me a copy.** Ticked by default in compose. FlowCRM BCCs the workspace copy address, so the email also arrives in your Gmail inbox and shows up in Gmail search. It lands as a received message, not in Sent, because Gmail did not send it. A Gmail filter can label those copies and archive them. The copy address is the Website Intake notify email if set, otherwise Reply-To, otherwise From.
+
+**Gmail replies.** Client replies still arrive only in Gmail. The planned fix is a BCC logging address (see BUILD-STATUS) rather than a Google connection.

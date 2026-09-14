@@ -45,3 +45,6 @@ references/
 
 # personal client data used for imports — never commit
 references/import/
+
+# reversible archive of replaced assets (kept locally, history has the originals)
+_archive/
