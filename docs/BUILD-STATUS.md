@@ -85,22 +85,8 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 
 **✅ 2026-08-30 — env vars verified via Vercel CLI.** All 7 present on `rachelaigibbs-projects/flowcrm`. `ANTHROPIC_API_KEY` and `NEXT_PUBLIC_SITE_URL` were created 2026-08-13 20:41:53; the live deployment (`dpl_3b1wd7G6iA5secv8us82ucFJAw8s`) built at 21:34:41 — **53 min later, so both are baked into what's running.** Vercel's API refuses to return env *values*, so a typo in `NEXT_PUBLIC_SITE_URL` would still be invisible; only the password-reset email test proves the value.
 
-### ⚠️ Two Vercel accounts — know which is which
-
-| Account | Contains | Git-connected | Serves the domain |
-|---|---|---|---|
-| `rachelaigibbs-projects` | the **real** `flowcrm` + 8 other projects | ✅ yes | ✅ `crm.getflowplan.app` |
-| `rachelgibb` (**Pro**) | an empty duplicate `flowcrm`, `rachelgibbrealtor.ca` | ❌ no | ❌ |
-
-`.vercel/project.json` pointed at the empty duplicate until 2026-08-30; it is now correctly linked to `prj_ErSFQUwwDcvY8hsvhY6rgmtkQvjB`. **Open question:** the live project sits on the non-Pro account while the Pro subscription sits on the other — worth consolidating, since Vercel's Hobby plan disallows commercial use. Treat as its own migration task.
-
-**Deploy gotcha observed 2026-08-13:** a push to `main` was silently not picked up by Vercel (no build, no check-run). A follow-up push triggered it. If a change doesn't appear live, check that a deployment actually exists for the commit.
-
-**Still to confirm by hand (Rachel, ~3 min):** item 1, plus the *values* behind items 2–3. The reset email goes to `rachelaigibb@gmail.com`, which Claude cannot read, so these two tests stay manual. One test covers all of it — request a password reset on the live site; if the emailed link starts with `https://crm.getflowplan.app` and logging in works, `NEXT_PUBLIC_SITE_URL` and the Supabase allowlist are both correct. Then click **Score lead** on a contact to confirm the AI key value.
-
----
-
-**v0.8.0 setup (Rachel):** paste a signature into Settings → Email Settings for each workspace (Vancouver and Dubai); optionally set the copy address in Settings → Website Intake → notify email (otherwise copies go to Reply-To / From).
+### ✅ 2026-09-22 — moved to the Vercel Pro team (with every real estate project)
+FlowCRM, `rachelgibbrealtor.com`, `buyingindubai.com` and `dubai-property-portal` now live on the Pro team `rachelgibb` next to the `.ca`; the Hobby account `rachelaigibbs-projects` is no longer used for anything real estate (its projects are kept, paused, not deleted). Reasons: Hobby disallows commercial use, Pro is per seat so extra projects are free, and Pro gives per-minute cron for the campaign scheduler. Keys were rotated on the way (Vercel "Sensitive" variables are write-only). Domains moved by ownership TXT records (`_vercel` at Cloudflare for getflowplan.app, GoDaddy for the two .com zones) so there was no downtime beyond the first one. Deploys are now CLI-only from this Mac (`vercel deploy --prod --scope rachelgibb`); GitHub is deliberately not connected because Vercel Pro blocks deploys whose commit author is not a team member.
 
 ## 🔨 Not started / next candidates
 
@@ -177,7 +163,7 @@ Leave everything else in the template as is. The app already sends `redirect_to=
 | v0.7.1 | 2026-09-09 | Inquiry workflow fix #23: People card layout, listing tags, phone on tasks |
 | **v0.8.0** | 2026-09-14 | **Phase 5c — HTML email + signature, attachments, Documents card on contacts/deals, "Send me a copy", new app icon (current)** |
 | v0.7.x | planned | Unsubscribe link + broadcast sends (job 3, due 2026-09-26) |
-| v0.6 | planned | Vercel Pro migration + automation scheduler |
+| v0.9 | planned | Automation scheduler on Vercel Cron (Pro migration done 2026-09-22) + date-driven campaigns (birthday, anniversary) |
 | v1.0 | goal | Ready to sell to other agencies |
 
 *Keep this table updated when a phase ships. Bump `version` in `package.json` to match.*

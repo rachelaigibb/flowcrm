@@ -88,10 +88,11 @@ tests/
 - Test files in `tests/` mirroring `src/features/` structure
 
 ## Deployment
-- Push to `main` → Vercel auto-deploys to crm.getflowplan.app
+- **Hosting (since 2026-09-22): Vercel Pro team `rachelgibb`** (`team_KT5JgsyfIWVu1ob63q2OyJ4R`), project `flowcrm`, alongside the `.ca`, `.com`, `buyingindubai.com` and `dubai-property-portal` projects. The repo is NOT Git-connected: pushing to `main` does not deploy.
+- Deploy from this Mac: `npx vercel deploy --prod --yes --scope rachelgibb` (token = `VERCEL_TOKEN` in `~/Projects/rachelgibbrealtor.ca/.env.local`, export it first, never print it). Verify with `npx vercel ls flowcrm --scope rachelgibb` (● Ready) and a probe of the live route.
 - Run `npx tsc --noEmit` before committing
-- Commit ALL modified files before declaring done
-- Confirm Vercel shows ● Ready before declaring live
+- Commit ALL modified files and push (backup), then deploy via CLI, before declaring done
+- Old Hobby project `rachelaigibbs-projects/flowcrm` (`prj_ErSFQUwwDcvY8hsvhY6rgmtkQvjB`) holds no domain any more; leave it paused, never delete.
 - Supabase migrations: apply via Supabase dashboard or `npx supabase db push`
 
 ## What NOT to do
