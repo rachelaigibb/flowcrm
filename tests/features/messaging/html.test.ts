@@ -38,3 +38,15 @@ describe("buildEmailContent", () => {
     expect(html).not.toContain("border-top")
   })
 })
+
+describe("buildEmailContent with a marketing footer", () => {
+  it("adds the sender line and unsubscribe link to both text and HTML", () => {
+    const { text, html } = buildEmailContent("Body", null, {
+      senderLine: "Rachel Gibb · info@example.com",
+      unsubscribeUrl: "https://crm.example.com/u/abc",
+    })
+    expect(text).toBe("Body\n\nRachel Gibb · info@example.com\nUnsubscribe: https://crm.example.com/u/abc")
+    expect(html).toContain('<a href="https://crm.example.com/u/abc"')
+    expect(html).toContain("Rachel Gibb · info@example.com")
+  })
+})

@@ -14,6 +14,7 @@ import type {
 import {
   updateBroadcast,
   sendBroadcast,
+  sendBroadcastTest,
   getRecipientCount,
 } from "@/features/broadcasts/actions"
 import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card"
@@ -164,6 +165,16 @@ export function BroadcastEditorPage({
     }
   }
 
+  // ── Test send (to the workspace copy address, sample merge values) ──
+  const [testing, setTesting] = useState(false)
+  async function handleTestSend() {
+    setTesting(true)
+    const result = await sendBroadcastTest({ subject: emailSubject, body: emailBody })
+    setTesting(false)
+    if (result.error) toast.error(result.error)
+    else toast.success(`Test sent to ${result.sentTo}`)
+  }
+
   // ── Send now ──
   async function handleSend() {
     setSending(true)
@@ -301,6 +312,17 @@ export function BroadcastEditorPage({
             )}
             {broadcast.channel === "email" ? "Email" : "SMS"}
           </Badge>
+          {isDraft && broadcast.channel === "email" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestSend}
+              disabled={testing || !emailSubject.trim() || !emailBody.trim()}
+            >
+              {testing ? <Loader2 className="size-3.5 animate-spin" /> : <Mail className="size-3.5" data-icon="inline-start" />}
+              Send test to me
+            </Button>
+          )}
           {isDraft && (
             <Button variant="outline" size="sm" onClick={handleSave} disabled={saving}>
               {saving ? (
@@ -398,6 +420,9 @@ export function BroadcastEditorPage({
                       rows={12}
                       disabled={!isDraft}
                     />
+                  <p className="text-xs text-muted-foreground">
+                    Sent as HTML. Merge fields: {"{{first_name}}"}, {"{{full_name}}"}, {"{{email}}"}. A footer with your sender name, reply-to address and an unsubscribe link is added to every copy automatically. Your signature is not added; sign off in the text.
+                  </p>
                   </div>
                 </>
               )}

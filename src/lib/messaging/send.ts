@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getResendClient } from "@/lib/resend/client"
 import { getTwilioClient } from "@/lib/twilio/client"
 import { buildEmailContent } from "@/lib/messaging/html"
+import { unsubscribeHeaders, unsubscribeUrlFor } from "@/lib/messaging/unsubscribe"
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
@@ -11,6 +12,7 @@ export interface MessageContact {
   last_name: string | null
   email: string | null
   phone: string | null
+  unsubscribe_token?: string | null
 }
 
 export interface EmailSettings {
@@ -38,7 +40,8 @@ export type SendResult =
 
 // Replaces {{first_name}}, {{last_name}}, {{full_name}}, {{email}}, {{phone}}
 // (whitespace-tolerant, case-insensitive) with the contact's values.
-export function renderTemplate(text: string, contact: MessageContact): string {
+// Also {{unsubscribe_url}} when the contact has a token, plus any extra tokens.
+export function renderTemplate(text: string, contact: MessageContact, extra?: Record<string, string>): string {
   const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ")
   const tokens: Record<string, string> = {
     first_name: contact.first_name ?? "",
@@ -46,6 +49,8 @@ export function renderTemplate(text: string, contact: MessageContact): string {
     full_name: fullName,
     email: contact.email ?? "",
     phone: contact.phone ?? "",
+    unsubscribe_url: unsubscribeUrlFor(contact.unsubscribe_token) ?? "",
+    ...extra,
   }
   return text.replace(/\{\{\s*(\w+)\s*\}\}/gi, (match, key: string) => {
     const value = tokens[key.toLowerCase()]
@@ -111,6 +116,12 @@ export async function sendEmailToContact(params: {
   body: string
   // Broadcasts pass false: a campaign carries its own footer.
   includeSignature?: boolean
+  // Marketing mail (broadcasts, automation emails): adds the sender line +
+  // unsubscribe footer and the List-Unsubscribe headers. Needs the contact's
+  // unsubscribe_token; without one the mail goes out without a footer.
+  marketing?: boolean
+  // Test sends: deliver but do not write an activity (the "contact" is a sample).
+  skipActivity?: boolean
   attachments?: EmailAttachment[]
   bcc?: string[]
   activityMetadata?: Record<string, unknown>
@@ -123,7 +134,11 @@ export async function sendEmailToContact(params: {
 
   try {
     const resend = getResendClient()
-    const content = buildEmailContent(body, params.includeSignature === false ? null : settings.signature)
+    const unsubscribeUrl = params.marketing ? unsubscribeUrlFor(contact.unsubscribe_token) : null
+    const footer = unsubscribeUrl
+      ? { senderLine: `${settings.fromName} · ${settings.replyTo}`, unsubscribeUrl }
+      : null
+    const content = buildEmailContent(body, params.includeSignature === false ? null : settings.signature, footer)
     const { data: sendResult, error: sendError } = await resend.emails.send({
       from: `${settings.fromName} <${settings.fromEmail}>`,
       to: [contact.email],
@@ -132,11 +147,16 @@ export async function sendEmailToContact(params: {
       subject,
       text: content.text,
       html: content.html,
+      headers: params.marketing ? unsubscribeHeaders(contact.unsubscribe_token) : undefined,
       attachments: params.attachments?.map((a) => ({ filename: a.filename, content: a.content })),
     })
 
     if (sendError) {
       return { ok: false, error: sendError.message }
+    }
+
+    if (params.skipActivity) {
+      return { ok: true, providerId: sendResult?.id ?? null, activityId: null }
     }
 
     const { data: activity } = await supabase

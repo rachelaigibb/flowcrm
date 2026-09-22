@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.8.0** · Last updated 2026-09-14 · Latest commit *(see git log)*
+**Current version: v0.8.1** · Last updated 2026-09-22 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -62,6 +62,9 @@ Job 2 of the 90-day plan (website forms → CRM, due 2026-09-13). Step 1 of 6.
 ### Phase 5c — Email upgrade & documents (2026-09-14) · v0.8.0
 One-to-one email now goes out as HTML (plain-text fallback) with the workspace **signature** appended (`settings.email.signature`, Settings → Email Settings; compose, templates and automations get it, broadcasts do not) · **attachments** on compose (up to 10 MB per email, stored in the private `documents` bucket and listed on the email activity) · **Documents card** on every contact and deal (upload / open via signed link / remove with confirmation) · **"Send me a copy"** checkbox on compose, on by default, BCCs the workspace copy address (intake notify → reply-to → from) so the email also lands in Gmail · `documents` table + storage policies (migration `00018`) · `/api/documents/[id]` redirects to a 2-minute signed URL · compose sends through the shared `sendEmailToContact` helper (the duplicate Resend call in `email/actions.ts` is gone) · app icon replaced with the black-and-white FlowPlan mark (old set in `_archive/icons-v0.5.5/`).
 
+### Job 3 — Broadcasts with a working unsubscribe (2026-09-22) · v0.8.1
+Every contact has an `unsubscribe_token` (migration `00019`). Broadcast and automation emails now carry a footer (sender name · reply-to · Unsubscribe link) and the `List-Unsubscribe` / `List-Unsubscribe-Post` one-click headers, so Gmail and Apple Mail show their own Unsubscribe control. Public page `/u/<token>` (button, runs as anon through `unsubscribe_contact()`), one-click endpoint `POST /api/unsubscribe/<token>`; both set `consent_status = withdrawn`, stamp `consent_date`, keep the previous status in `metadata.consent_before_unsubscribe`, and log a `system` activity. Withdrawn contacts drop out of every broadcast automatically (existing consent filter). Merge field `{{unsubscribe_url}}` available in templates. Broadcast editor: **Send test to me** (to the workspace copy address, sample merge values, `/u/preview` link, nothing logged) and a body hint. One-to-one compose mail stays footer-free. Two Vancouver drafts created for the first sends: "Market update — October 2026" (tag `sphere`, 61 eligible) and "Deal Sheet — Friday" (tag `deal-list`).
+
 ## ⚠️ Pending setup (not code — configuration only)
 
 These are done in dashboards, not in the repo. Each one blocks a shipped feature from working.
@@ -95,7 +98,7 @@ FlowCRM, `rachelgibbrealtor.com`, `buyingindubai.com` and `dubai-property-portal
 | **Website form → FlowCRM wiring (job 2, due 2026-09-13)** | Step 1 `/api/intake` **shipped v0.7.0**. Step 2: `.ca` site switched to the intake endpoint (needs Rachel to create the key + set `FLOWCRM_INTAKE_URL`/`FLOWCRM_INTAKE_KEY` on the `.ca` Vercel project, then drop the old `FLOWCRM_SUPABASE_*` vars). Step 2 **verified by Rachel 2026-09-09** (contact + email copy landed; old `FLOWCRM_SUPABASE_*` vars to be deleted). Step 3 **built 2026-09-09**: `/deals` page in the `.ca` app (live at rachelgibbrealtor.ca/deals), host rewrite for `deals.rachelgibbrealtor.ca`, domain attached to the Vercel project — waiting on Rachel's GoDaddy CNAME. Step 4: honeypot + rate limit only (Turnstile deferred until spam appears). Step 5 **built 2026-09-09**: `rachelgibbrealtor.com` (contact, eXp-profile and marketing-package forms) and `buyingindubai.com` (contact) now post to their own `/api/leads` → FlowCRM intake → Dubai workspace, unified consent wording, honeypot + rate limit; Dubai tag definitions and Email Settings seeded. Step 6 **verified by Rachel 2026-09-10** (Dubai key on both projects, test submissions landed with email copies). **Job 2 complete, three days early.** Deferred from the plan: Turnstile (add only if spam appears). |
 | **Gmail record — BCC logging address (after job 4)** | Per-workspace inbound address on Resend Receiving (needs Resend Pro, planned for job 3): BCC from Gmail → logged on the matching contact; Gmail filter forwards client replies to the same address; unmatched mail lands in a review list. Chosen over Google OAuth (restricted-scope review needed to sell to clients). Decided 2026-09-14. |
 | **Google Calendar two-way sync** | Appointments/dated tasks → Google Calendar and back. Needs a Google OAuth app (internal to the Workspace domain); parked until the BCC logging lands. |
-| **Unsubscribe link (job 3, due 2026-09-26)** | Per-contact token → public `/u/[token]` sets consent `withdrawn`; `List-Unsubscribe` header on broadcasts. Not built today. |
+| **Scheduled broadcasts + automation waits on a clock (v0.9)** | `scheduled_at` is saved but nothing fires it, and `wait` steps still resume only on page load. Needs the Vercel Cron tick route (Pro plan now allows per-minute) running with a server-side Supabase identity; Rachel pastes `SUPABASE_SERVICE_ROLE_KEY` into Vercel for that route only, Claude never handles it. Decision pending. |
 | **`.ca` sender for Vancouver** | Rachel wants replies from `info@rachelgibbrealtor.ca` as well as `.com`. `.ca` domain must be verified in Resend first. |
 | **Automation scheduler (cron)** | "Wait" steps currently resume only when someone loads the automations pages. Needs a Vercel cron or queue before selling to other agencies. |
 | **Auto-score on contact change** | Phase 4 leftover — scoring is manual (button click) today. |
@@ -161,7 +164,8 @@ FlowCRM, `rachelgibbrealtor.com`, `buyingindubai.com` and `dubai-property-portal
 | **v0.5.0** | 2026-09-04 | **Phase 5a — prospecting: custom fields, transactions as won deals + commission, log-a-call, Calls page, Google Contacts importer, 6 fixes (current)** |
 | v0.7.0 | 2026-09-09 | Website intake: `/api/intake` + per-workspace keys + Settings card (job 2, step 1) |
 | v0.7.1 | 2026-09-09 | Inquiry workflow fix #23: People card layout, listing tags, phone on tasks |
-| **v0.8.0** | 2026-09-14 | **Phase 5c — HTML email + signature, attachments, Documents card on contacts/deals, "Send me a copy", new app icon (current)** |
+| v0.8.0 | 2026-09-14 | Phase 5c — HTML email + signature, attachments, Documents card on contacts/deals, "Send me a copy", new app icon |
+| **v0.8.1** | 2026-09-22 | **Job 3 — unsubscribe token + page + one-click headers, broadcast footer, test send, first two Vancouver drafts (current)** |
 | v0.7.x | planned | Unsubscribe link + broadcast sends (job 3, due 2026-09-26) |
 | v0.9 | planned | Automation scheduler on Vercel Cron (Pro migration done 2026-09-22) + date-driven campaigns (birthday, anniversary) |
 | v1.0 | goal | Ready to sell to other agencies |

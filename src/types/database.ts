@@ -73,6 +73,7 @@ export interface Contact {
   consent_to_display_sale: SaleDisplayConsent
   consent_status: ConsentStatus
   consent_date: string | null
+  unsubscribe_token: string
   created_at: string
   updated_at: string
 }

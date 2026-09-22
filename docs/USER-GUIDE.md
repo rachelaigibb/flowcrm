@@ -95,7 +95,7 @@ What happens on every submission: the person is created in that workspace as a l
 - **Per-workspace settings**: Settings → Email (your from-name/from-email via Resend) and Settings → SMS (your Twilio number).
 - **One-off messages**: from any contact page — Email / SMS buttons. Emails go out as proper HTML with your signature, can carry attachments, and can BCC you a copy (see "Email signature, attachments, documents" below).
 - **Templates**: saved in Settings, usable in compose, automations, and broadcasts. Personalization tokens work everywhere: `{{first_name}}`, `{{last_name}}`, `{{full_name}}`, `{{email}}`, `{{phone}}`.
-- **Broadcasts**: campaigns to filtered groups (by tag/source/all). Consent-gated automatically.
+- **Broadcasts**: campaigns to filtered groups (by tag/source/all). Consent-gated automatically, unsubscribe footer added to every copy, "Send test to me" before sending (see "Broadcasts and unsubscribe" below).
 - **Automations**: trigger → steps (send email/SMS, wait, add/remove tag, create task). Triggers: contact created, tag added, deal stage change, form submission, manual.
   - ⚠️ **"Wait" steps resume when someone uses the app**, not on a clock. A "wait 1 day" step fires the next time you open the Automations pages after the day has passed. Fine for solo use; needs a scheduler before selling to agencies.
 
@@ -168,3 +168,12 @@ Log inquiry now does everything in one step: the person is linked to the deal as
 **Send me a copy.** Ticked by default in compose. FlowCRM BCCs the workspace copy address, so the email also arrives in your Gmail inbox and shows up in Gmail search. It lands as a received message, not in Sent, because Gmail did not send it. A Gmail filter can label those copies and archive them. The copy address is the Website Intake notify email if set, otherwise Reply-To, otherwise From.
 
 **Gmail replies.** Client replies still arrive only in Gmail. The planned fix is a BCC logging address (see BUILD-STATUS) rather than a Google connection.
+
+## Broadcasts and unsubscribe (v0.8.1)
+**Sending a broadcast, start to finish.** Broadcasts → New → Email. Name it, pick the audience (tag `sphere` for the monthly market email, `deal-list` for the Friday Deal Sheet), write the subject and body in plain text. Merge fields work: `{{first_name}}`, `{{full_name}}`. Click **Send test to me**: the email arrives at your copy address with `[TEST]` in the subject, sample merge values and a preview unsubscribe link. Fix anything, Save Draft, then **Send now**. Progress shows on the broadcast page; refresh to update.
+
+**What every copy carries.** A grey footer with your sender name, your reply-to address and an Unsubscribe link, plus the hidden headers that let Gmail and Apple Mail show their own Unsubscribe button. Do not add your own unsubscribe line. Your signature is not added to broadcasts, so sign off in the text.
+
+**When someone unsubscribes.** Their consent becomes "withdrawn", a system entry appears in their timeline, and they drop out of every future broadcast and automation email automatically. You can still email them one to one from their contact page. To re-subscribe someone who asks, edit the contact and set consent back to explicit, and note where the request came from.
+
+**Two drafts are waiting** in the Vancouver workspace: "Market update — October 2026" and "Deal Sheet — Friday". Replace the bracketed placeholders, test, send.

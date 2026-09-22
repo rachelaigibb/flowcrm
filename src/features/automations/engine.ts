@@ -195,6 +195,7 @@ export async function executeAutomationRun(
           settings,
           subject: renderTemplate(template.subject, messageContact),
           body: renderTemplate(template.body, messageContact),
+          marketing: true,
           activityMetadata: { automation_run_id: runId },
         })
         if (!result.ok) return fail(`Step ${i + 1}: email failed — ${result.error}`)

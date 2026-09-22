@@ -202,7 +202,7 @@ export async function sendBroadcast(id: string) {
   const filter = broadcast.recipient_filter as BroadcastRecipientFilter
   let query = supabase
     .from("contacts")
-    .select("id, first_name, last_name, email, phone, consent_status")
+    .select("id, first_name, last_name, email, phone, consent_status, unsubscribe_token")
     .eq("org_id", orgId)
     .eq("sub_account_id", subAccountId)
 
@@ -275,6 +275,7 @@ export async function sendBroadcast(id: string) {
             subject: renderTemplate(broadcast.email_subject as string, contact),
             body: renderTemplate(broadcast.email_body as string, contact),
             includeSignature: false,
+            marketing: true,
             activityMetadata: { broadcast_id: id },
           })
         }
@@ -379,4 +380,52 @@ export async function getRecipientCount(
 
   if (error) return { error: error.message }
   return { data: count ?? 0 }
+}
+
+// ── Test send ──
+// Sends the current editor content to the workspace copy address (intake
+// notify → reply-to → from) with sample merge values and a preview
+// unsubscribe link. Nothing is logged on any contact.
+
+export async function sendBroadcastTest(input: { subject: string; body: string }) {
+  const { userId, orgId, subAccountId, supabase } = await getUserContext()
+  const subject = input.subject.trim()
+  const body = input.body.trim()
+  if (!subject || !body) return { error: "Subject and body are required for a test send" }
+
+  const settings = await getEmailSettings(supabase, subAccountId)
+  if (!settings) return { error: "Email sending is not configured. Set a verified sender email in Settings > Email." }
+
+  const { data: me } = await supabase
+    .from("contacts")
+    .select("first_name, last_name")
+    .eq("sub_account_id", subAccountId)
+    .eq("email", settings.copyTo)
+    .limit(1)
+    .maybeSingle()
+
+  const sample: MessageContact = {
+    id: "test",
+    first_name: me?.first_name ?? "Test",
+    last_name: me?.last_name ?? "Recipient",
+    email: settings.copyTo,
+    phone: null,
+    unsubscribe_token: "preview",
+  }
+
+  const result = await sendEmailToContact({
+    supabase,
+    orgId,
+    subAccountId,
+    userId,
+    contact: sample,
+    settings,
+    subject: `[TEST] ${renderTemplate(subject, sample)}`,
+    body: renderTemplate(body, sample),
+    includeSignature: false,
+    marketing: true,
+    skipActivity: true,
+  })
+  if (!result.ok) return { error: result.error }
+  return { success: true, sentTo: settings.copyTo }
 }

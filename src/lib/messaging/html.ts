@@ -55,14 +55,26 @@ export interface EmailContent {
 
 // Builds the final text + HTML bodies. The signature is separated by the
 // conventional "-- " line in text and a bordered block in HTML.
-export function buildEmailContent(body: string, signature?: string | null): EmailContent {
+export interface EmailFooter {
+  // Who is sending and how to reach them (CASL identification), plus the
+  // unsubscribe link. Rendered in small grey type under a rule.
+  senderLine: string
+  unsubscribeUrl: string
+}
+
+export function buildEmailContent(body: string, signature?: string | null, footer?: EmailFooter | null): EmailContent {
   const trimmedBody = body.trim()
   const sig = signature?.trim() ?? ""
-  const text = sig ? `${trimmedBody}\n\n-- \n${sig}` : trimmedBody
+  let text = sig ? `${trimmedBody}\n\n-- \n${sig}` : trimmedBody
   const bodyHtml = textToHtml(trimmedBody)
   const sigHtml = sig
     ? `<div style="margin-top:1.5em;padding-top:0.75em;border-top:1px solid #e5e7eb;color:#4b5563;">${textToHtml(sig)}</div>`
     : ""
-  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#111827;">${bodyHtml}${sigHtml}</div>`
+  let footerHtml = ""
+  if (footer) {
+    text += `\n\n${footer.senderLine}\nUnsubscribe: ${footer.unsubscribeUrl}`
+    footerHtml = `<div style="margin-top:2em;padding-top:0.75em;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.5;color:#6b7280;">${escapeHtml(footer.senderLine)}<br><a href="${escapeHtml(footer.unsubscribeUrl)}" style="color:#6b7280;">Unsubscribe</a></div>`
+  }
+  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#111827;">${bodyHtml}${sigHtml}${footerHtml}</div>`
   return { text, html }
 }

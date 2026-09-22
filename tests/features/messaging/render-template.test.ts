@@ -38,3 +38,15 @@ describe("renderTemplate", () => {
     expect(renderTemplate("{{company}} {{first_name}}", contact)).toBe("{{company}} Rachel")
   })
 })
+
+describe("renderTemplate unsubscribe token", () => {
+  it("fills {{unsubscribe_url}} from the contact token and accepts extra tokens", () => {
+    const out = renderTemplate("Hi {{first_name}} {{unsubscribe_url}} {{area}}", {
+      id: "1", first_name: "Sam", last_name: null, email: null, phone: null,
+      unsubscribe_token: "11111111-1111-1111-1111-111111111111",
+    }, { area: "Surrey" })
+    expect(out).toContain("/u/11111111-1111-1111-1111-111111111111")
+    expect(out.startsWith("Hi Sam ")).toBe(true)
+    expect(out.endsWith(" Surrey")).toBe(true)
+  })
+})
