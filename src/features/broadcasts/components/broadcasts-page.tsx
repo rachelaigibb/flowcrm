@@ -44,6 +44,8 @@ import {
   Loader2,
   Radio,
 } from "lucide-react"
+import { SchedulerStatusLine } from "@/features/scheduler/components/scheduler-status-line"
+import type { SchedulerStatus } from "@/features/scheduler/status"
 
 const STATUS_BADGE_COLORS: Record<BroadcastStatus, string> = {
   draft: "bg-muted text-muted-foreground border-border",
@@ -55,9 +57,10 @@ const STATUS_BADGE_COLORS: Record<BroadcastStatus, string> = {
 
 interface BroadcastsPageProps {
   broadcasts: Broadcast[]
+  scheduler: SchedulerStatus
 }
 
-export function BroadcastsPage({ broadcasts }: BroadcastsPageProps) {
+export function BroadcastsPage({ broadcasts, scheduler }: BroadcastsPageProps) {
   const router = useRouter()
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -120,6 +123,7 @@ export function BroadcastsPage({ broadcasts }: BroadcastsPageProps) {
           <p className="text-sm text-muted-foreground mt-1">
             {broadcasts.length} broadcast{broadcasts.length !== 1 ? "s" : ""} total
           </p>
+          <SchedulerStatusLine status={scheduler} />
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="size-3.5" data-icon="inline-start" />

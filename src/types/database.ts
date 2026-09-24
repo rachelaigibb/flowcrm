@@ -279,6 +279,8 @@ export interface BroadcastStats {
   sent: number
   failed: number
   opened: number
+  // Why a broadcast ended as failed (set by the send loop or the scheduler)
+  error?: string
 }
 
 export interface Broadcast {

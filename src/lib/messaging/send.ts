@@ -1,10 +1,11 @@
-import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { getResendClient } from "@/lib/resend/client"
 import { getTwilioClient } from "@/lib/twilio/client"
 import { buildEmailContent } from "@/lib/messaging/html"
 import { unsubscribeHeaders, unsubscribeUrlFor } from "@/lib/messaging/unsubscribe"
 
-type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
+// Cookie client for user actions; service client for the cron scheduler.
+type SupabaseServerClient = SupabaseClient
 
 export interface MessageContact {
   id: string
@@ -109,7 +110,8 @@ export async function sendEmailToContact(params: {
   supabase: SupabaseServerClient
   orgId: string
   subAccountId: string
-  userId: string
+  // null when the scheduler sends and the org has no owner to attribute to
+  userId: string | null
   contact: MessageContact
   settings: EmailSettings
   subject: string
@@ -191,7 +193,8 @@ export async function sendSmsToContact(params: {
   supabase: SupabaseServerClient
   orgId: string
   subAccountId: string
-  userId: string
+  // null when the scheduler sends and the org has no owner to attribute to
+  userId: string | null
   contact: MessageContact
   settings: SmsSettings
   body: string

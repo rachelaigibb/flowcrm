@@ -1,6 +1,7 @@
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import { AutomationsPage } from "@/features/automations/components/automations-page"
 import type { Automation } from "@/types/database"
+import { getSchedulerStatus } from "@/features/scheduler/status"
 
 export const metadata = {
   title: "Automations | FlowCRM",
@@ -30,5 +31,7 @@ export default async function AutomationsRoute() {
     automation_runs: { count: number }[]
   })[]
 
-  return <AutomationsPage automations={typedAutomations} />
+  const scheduler = await getSchedulerStatus(supabase)
+
+  return <AutomationsPage automations={typedAutomations} scheduler={scheduler} />
 }

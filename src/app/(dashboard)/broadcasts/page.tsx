@@ -2,6 +2,7 @@ import { getUserContext } from "@/lib/supabase/get-user-context"
 import { redirect } from "next/navigation"
 import { BroadcastsPage } from "@/features/broadcasts/components/broadcasts-page"
 import type { Broadcast } from "@/types/database"
+import { getSchedulerStatus } from "@/features/scheduler/status"
 
 export default async function BroadcastsRoute() {
   let ctx: Awaited<ReturnType<typeof getUserContext>>
@@ -32,5 +33,7 @@ export default async function BroadcastsRoute() {
 
   const typedBroadcasts = (broadcasts ?? []) as Broadcast[]
 
-  return <BroadcastsPage broadcasts={typedBroadcasts} />
+  const scheduler = await getSchedulerStatus(supabase)
+
+  return <BroadcastsPage broadcasts={typedBroadcasts} scheduler={scheduler} />
 }

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   getEmailSettings,
   getSmsSettings,
@@ -9,13 +9,17 @@ import {
 } from "@/lib/messaging/send"
 import type { AutomationStep, AutomationTriggerType } from "@/types/database"
 
-type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
+// Cookie client for user actions; service client for the cron scheduler.
+type SupabaseServerClient = SupabaseClient
 
 export interface EngineContext {
   orgId: string
   subAccountId: string
-  userId: string
+  // The acting user. The scheduler passes the org owner, or null if none.
+  userId: string | null
 }
+
+const MARKETING_CONSENT = ["explicit", "implied"]
 
 interface LogEntry {
   event: string
@@ -93,9 +97,9 @@ export async function triggerAutomations(
 }
 
 // Executes a run's steps from current_step. A `wait` step pauses the run
-// (status=paused, resume_at set) and returns; processDueAutomationRuns picks
-// it up once due. A failed send marks the run failed with the error visible
-// in run history.
+// (status=paused, resume_at set) and returns; the cron scheduler (and
+// processDueAutomationRuns on page load) picks it up once due. A failed send
+// marks the run failed with the error visible in run history.
 export async function executeAutomationRun(
   supabase: SupabaseServerClient,
   ctx: EngineContext,
@@ -139,7 +143,7 @@ export async function executeAutomationRun(
 
   const { data: contact } = await supabase
     .from("contacts")
-    .select("id, first_name, last_name, email, phone, tags")
+    .select("id, first_name, last_name, email, phone, tags, consent_status, unsubscribe_token")
     .eq("id", run.contact_id)
     .single()
 
@@ -154,11 +158,16 @@ export async function executeAutomationRun(
   const allSteps = (steps ?? []) as AutomationStep[]
   const messageContact: MessageContact = contact
 
+  // Claim a paused run atomically: the cron tick and a page load can both find
+  // the same due run, and only the one whose update matches may continue.
   if (run.status === "paused") {
-    await supabase
+    const { data: claimed } = await supabase
       .from("automation_runs")
       .update({ status: "running", resume_at: null })
       .eq("id", runId)
+      .eq("status", "paused")
+      .select("id")
+    if (!claimed?.length) return
   }
 
   for (let i = run.current_step; i < allSteps.length; i++) {
@@ -180,6 +189,11 @@ export async function executeAutomationRun(
 
         if (!messageContact.email) {
           log.push({ event: "step_skipped", timestamp: stamp(), step: i, reason: "contact has no email" })
+          break
+        }
+        // Automation email is marketing mail (CASL): same consent rule as broadcasts.
+        if (!MARKETING_CONSENT.includes(contact.consent_status)) {
+          log.push({ event: "step_skipped", timestamp: stamp(), step: i, reason: `no marketing consent (${contact.consent_status})` })
           break
         }
 
@@ -329,8 +343,9 @@ export async function executeAutomationRun(
     .eq("id", runId)
 }
 
-// Resumes paused runs whose wait has elapsed. Called opportunistically when
-// automation pages load — no cron infrastructure needed at this stage.
+// Resumes paused runs whose wait has elapsed for one workspace. The cron
+// scheduler (features/scheduler/tick.ts) does this for every workspace every
+// 5 minutes; automation pages still call it on load so a wait never lags.
 export async function processDueAutomationRuns(
   supabase: SupabaseServerClient,
   ctx: EngineContext

@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.8.1** · Last updated 2026-09-22 · Latest commit *(see git log)*
+**Current version: v0.9.0** · Last updated 2026-09-23 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -65,6 +65,9 @@ One-to-one email now goes out as HTML (plain-text fallback) with the workspace *
 ### Job 3 — Broadcasts with a working unsubscribe (2026-09-22) · v0.8.1
 Every contact has an `unsubscribe_token` (migration `00019`). Broadcast and automation emails now carry a footer (sender name · reply-to · Unsubscribe link) and the `List-Unsubscribe` / `List-Unsubscribe-Post` one-click headers, so Gmail and Apple Mail show their own Unsubscribe control. Public page `/u/<token>` (button, runs as anon through `unsubscribe_contact()`), one-click endpoint `POST /api/unsubscribe/<token>`; both set `consent_status = withdrawn`, stamp `consent_date`, keep the previous status in `metadata.consent_before_unsubscribe`, and log a `system` activity. Withdrawn contacts drop out of every broadcast automatically (existing consent filter). Merge field `{{unsubscribe_url}}` available in templates. Broadcast editor: **Send test to me** (to the workspace copy address, sample merge values, `/u/preview` link, nothing logged) and a body hint. One-to-one compose mail stays footer-free. Middleware now allow-lists `/u/` and `/f/` (public forms had been redirecting logged-out visitors to /login since Phase 2). Two Vancouver drafts created for the first sends: "Market update — October 2026" (tag `sphere`, 61 eligible) and "Deal Sheet — Friday" (tag `deal-list`).
 
+### v0.9.0 — Scheduler on Vercel Cron (2026-09-23)
+`vercel.json` cron calls `GET /api/cron/tick` every 5 minutes (Vercel sends `Authorization: Bearer $CRON_SECRET`; anything else is 401). The route is the only importer of the service-role client (`lib/supabase/service.ts`; key in Vercel Production only) and runs `features/scheduler/tick.ts`: due **scheduled broadcasts** (5 per tick) and due **automation wait steps** (50 per tick) across every workspace, 240 s budget, activities attributed to the org owner. Each item is claimed atomically (`scheduled → sending`, `paused → running`), so overlapping ticks or a Send-now click cannot double-send. The broadcast send loop moved to `features/broadcasts/deliver.ts`, shared by Send now and the tick. Broadcast editor: **Schedule** now really schedules (checks content, sender and recipients first; status `scheduled`), **Cancel schedule and edit** returns it to draft, a failed broadcast shows its reason. Heartbeat table `system_jobs` (migration `00020`) → "Scheduler ran N min ago" under the Automations and Broadcasts titles, amber after 15 minutes or on an error. Automation emails now also skip contacts without explicit/implied consent and carry the unsubscribe footer (the engine had not selected `unsubscribe_token`, so v0.8.1 automation mail went out without it; no automation had sent since). Birthday/anniversary triggers follow in v0.9.1 (9 am workspace time and Testing-first confirmed by Rachel 2026-09-23).
+
 ## ⚠️ Pending setup (not code — configuration only)
 
 These are done in dashboards, not in the repo. Each one blocks a shipped feature from working.
@@ -98,9 +101,8 @@ FlowCRM, `rachelgibbrealtor.com`, `buyingindubai.com` and `dubai-property-portal
 | **Website form → FlowCRM wiring (job 2, due 2026-09-13)** | Step 1 `/api/intake` **shipped v0.7.0**. Step 2: `.ca` site switched to the intake endpoint (needs Rachel to create the key + set `FLOWCRM_INTAKE_URL`/`FLOWCRM_INTAKE_KEY` on the `.ca` Vercel project, then drop the old `FLOWCRM_SUPABASE_*` vars). Step 2 **verified by Rachel 2026-09-09** (contact + email copy landed; old `FLOWCRM_SUPABASE_*` vars to be deleted). Step 3 **built 2026-09-09**: `/deals` page in the `.ca` app (live at rachelgibbrealtor.ca/deals), host rewrite for `deals.rachelgibbrealtor.ca`, domain attached to the Vercel project — waiting on Rachel's GoDaddy CNAME. Step 4: honeypot + rate limit only (Turnstile deferred until spam appears). Step 5 **built 2026-09-09**: `rachelgibbrealtor.com` (contact, eXp-profile and marketing-package forms) and `buyingindubai.com` (contact) now post to their own `/api/leads` → FlowCRM intake → Dubai workspace, unified consent wording, honeypot + rate limit; Dubai tag definitions and Email Settings seeded. Step 6 **verified by Rachel 2026-09-10** (Dubai key on both projects, test submissions landed with email copies). **Job 2 complete, three days early.** Deferred from the plan: Turnstile (add only if spam appears). |
 | **Gmail record — BCC logging address (after job 4)** | Per-workspace inbound address on Resend Receiving (needs Resend Pro, planned for job 3): BCC from Gmail → logged on the matching contact; Gmail filter forwards client replies to the same address; unmatched mail lands in a review list. Chosen over Google OAuth (restricted-scope review needed to sell to clients). Decided 2026-09-14. |
 | **Google Calendar two-way sync** | Appointments/dated tasks → Google Calendar and back. Needs a Google OAuth app (internal to the Workspace domain); parked until the BCC logging lands. |
-| **Scheduled broadcasts + automation waits on a clock (v0.9)** | `scheduled_at` is saved but nothing fires it, and `wait` steps still resume only on page load. Needs the Vercel Cron tick route (Pro plan now allows per-minute) running with a server-side Supabase identity; Rachel pastes `SUPABASE_SERVICE_ROLE_KEY` into Vercel for that route only, Claude never handles it. Decision pending. |
+| **Date campaigns (v0.9.1, due 2026-10-02)** | Birthday + buyer/seller closing-anniversary triggers on the v0.9.0 tick, 9 am workspace time, per-year idempotency keys, three disabled defaults per workspace, Testing first. Spec: memory `project-flowcrm-campaigns-roadmap`. |
 | **`.ca` sender for Vancouver** | Rachel wants replies from `info@rachelgibbrealtor.ca` as well as `.com`. `.ca` domain must be verified in Resend first. |
-| **Automation scheduler (cron)** | "Wait" steps currently resume only when someone loads the automations pages. Needs a Vercel cron or queue before selling to other agencies. |
 | **Auto-score on contact change** | Phase 4 leftover — scoring is manual (button click) today. |
 | **AI in pipeline / broadcast views** | Phase 4 leftover — AI is contact-page + Cmd+K only. |
 | **Phase 5 — landing page builder** | Evaluate GrapeJS vs Craft.js. The last "Coming Soon" item in the sidebar ("Website"). |
@@ -165,9 +167,9 @@ FlowCRM, `rachelgibbrealtor.com`, `buyingindubai.com` and `dubai-property-portal
 | v0.7.0 | 2026-09-09 | Website intake: `/api/intake` + per-workspace keys + Settings card (job 2, step 1) |
 | v0.7.1 | 2026-09-09 | Inquiry workflow fix #23: People card layout, listing tags, phone on tasks |
 | v0.8.0 | 2026-09-14 | Phase 5c — HTML email + signature, attachments, Documents card on contacts/deals, "Send me a copy", new app icon |
-| **v0.8.1** | 2026-09-22 | **Job 3 — unsubscribe token + page + one-click headers, broadcast footer, test send, first two Vancouver drafts (current)** |
-| v0.7.x | planned | Unsubscribe link + broadcast sends (job 3, due 2026-09-26) |
-| v0.9 | planned | Automation scheduler on Vercel Cron (Pro migration done 2026-09-22) + date-driven campaigns (birthday, anniversary) |
+| v0.8.1 | 2026-09-22 | Job 3 — unsubscribe token + page + one-click headers, broadcast footer, test send, first two Vancouver drafts |
+| **v0.9.0** | 2026-09-23 | **Scheduler: Vercel Cron tick every 5 min — scheduled broadcasts send, wait steps resume on a clock, heartbeat line (current)** |
+| v0.9.1 | planned | Birthday + buyer/seller anniversary campaigns (due 2026-10-02) |
 | v1.0 | goal | Ready to sell to other agencies |
 
 *Keep this table updated when a phase ships. Bump `version` in `package.json` to match.*

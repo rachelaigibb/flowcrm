@@ -16,6 +16,8 @@ import {
   sendBroadcast,
   sendBroadcastTest,
   getRecipientCount,
+  scheduleBroadcast,
+  unscheduleBroadcast,
 } from "@/features/broadcasts/actions"
 import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -57,6 +59,15 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
 }
 
 const SMS_MAX_LENGTH = 160
+
+// <input type="datetime-local"> wants local "YYYY-MM-DDTHH:mm", not ISO.
+function toLocalInput(iso: string | null): string {
+  if (!iso) return ""
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ""
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 interface BroadcastEditorPageProps {
   broadcast: Broadcast
@@ -100,7 +111,7 @@ export function BroadcastEditorPage({
   )
 
   // ── Schedule state ──
-  const [scheduledAt, setScheduledAt] = useState(broadcast.scheduled_at ?? "")
+  const [scheduledAt, setScheduledAt] = useState(toLocalInput(broadcast.scheduled_at))
 
   // ── UI state ──
   const [saving, setSaving] = useState(false)
@@ -214,7 +225,8 @@ export function BroadcastEditorPage({
     }
     setScheduling(true)
     try {
-      const result = await updateBroadcast(broadcast.id, {
+      // Save the editor content first, then lock it in as scheduled
+      const saveResult = await updateBroadcast(broadcast.id, {
         name: name.trim() || broadcast.name,
         email_subject: emailSubject || undefined,
         email_body: emailBody || undefined,
@@ -222,13 +234,32 @@ export function BroadcastEditorPage({
         email_template_id: selectedEmailTemplateId,
         sms_template_id: selectedSmsTemplateId,
         recipient_filter: buildFilter(),
-        scheduled_at: new Date(scheduledAt).toISOString(),
       })
+      if (saveResult.error) {
+        toast.error(saveResult.error)
+        return
+      }
+      const result = await scheduleBroadcast(broadcast.id, new Date(scheduledAt).toISOString())
       if (result.error) {
         toast.error(result.error)
         return
       }
-      toast.success("Broadcast scheduled")
+      toast.success(`Scheduled for ${new Date(scheduledAt).toLocaleString()} (${result.recipients} recipients)`)
+      router.refresh()
+    } finally {
+      setScheduling(false)
+    }
+  }
+
+  async function handleUnschedule() {
+    setScheduling(true)
+    try {
+      const result = await unscheduleBroadcast(broadcast.id)
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
+      toast.success("Schedule cancelled. The broadcast is a draft again.")
       router.refresh()
     } finally {
       setScheduling(false)
@@ -612,6 +643,9 @@ export function BroadcastEditorPage({
                       )}
                       Schedule
                     </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Goes out within 5 minutes of this time. Content is locked until you cancel the schedule.
+                    </p>
                   </div>
                 </>
               )}
@@ -647,21 +681,30 @@ export function BroadcastEditorPage({
               )}
 
               {broadcast.status === "scheduled" && (
-                <div className="flex items-center gap-2 text-blue-400">
-                  <Calendar className="size-4" />
-                  <span className="text-sm">
-                    Scheduled for{" "}
-                    {broadcast.scheduled_at
-                      ? new Date(broadcast.scheduled_at).toLocaleString()
-                      : "unknown"}
-                  </span>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-blue-400">
+                    <Calendar className="size-4" />
+                    <span className="text-sm">
+                      Scheduled for{" "}
+                      {broadcast.scheduled_at
+                        ? new Date(broadcast.scheduled_at).toLocaleString()
+                        : "unknown"}
+                    </span>
+                  </div>
+                  <Button variant="outline" className="w-full" onClick={handleUnschedule} disabled={scheduling}>
+                    {scheduling && <Loader2 className="size-3.5 animate-spin" />}
+                    Cancel schedule and edit
+                  </Button>
                 </div>
               )}
 
               {broadcast.status === "failed" && (
-                <div className="flex items-center gap-2 text-red-400">
-                  <AlertCircle className="size-4" />
-                  <span className="text-sm">Broadcast failed to send</span>
+                <div className="flex flex-col gap-1 text-red-400">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="size-4" />
+                    <span className="text-sm">Broadcast failed to send</span>
+                  </div>
+                  {stats.error && <p className="text-xs">{stats.error}</p>}
                 </div>
               )}
             </CardContent>

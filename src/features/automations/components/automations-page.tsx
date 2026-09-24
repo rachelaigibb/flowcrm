@@ -29,6 +29,8 @@ import { formatDateShort } from "@/lib/utils/dates"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { Plus, Trash2, Pencil, Zap, Loader2 } from "lucide-react"
+import { SchedulerStatusLine } from "@/features/scheduler/components/scheduler-status-line"
+import type { SchedulerStatus } from "@/features/scheduler/status"
 
 const TRIGGER_TYPE_LABELS: Record<AutomationTriggerType, string> = {
   form_submission: "Form Submission",
@@ -40,9 +42,10 @@ const TRIGGER_TYPE_LABELS: Record<AutomationTriggerType, string> = {
 
 interface AutomationsPageProps {
   automations: (Automation & { automation_runs: { count: number }[] })[]
+  scheduler: SchedulerStatus
 }
 
-export function AutomationsPage({ automations }: AutomationsPageProps) {
+export function AutomationsPage({ automations, scheduler }: AutomationsPageProps) {
   const router = useRouter()
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -114,6 +117,7 @@ export function AutomationsPage({ automations }: AutomationsPageProps) {
             {automations.length} automation{automations.length !== 1 ? "s" : ""}{" "}
             total
           </p>
+          <SchedulerStatusLine status={scheduler} />
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="size-3.5" data-icon="inline-start" />

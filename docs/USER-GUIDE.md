@@ -97,7 +97,8 @@ What happens on every submission: the person is created in that workspace as a l
 - **Templates**: saved in Settings, usable in compose, automations, and broadcasts. Personalization tokens work everywhere: `{{first_name}}`, `{{last_name}}`, `{{full_name}}`, `{{email}}`, `{{phone}}`.
 - **Broadcasts**: campaigns to filtered groups (by tag/source/all). Consent-gated automatically, unsubscribe footer added to every copy, "Send test to me" before sending (see "Broadcasts and unsubscribe" below).
 - **Automations**: trigger → steps (send email/SMS, wait, add/remove tag, create task). Triggers: contact created, tag added, deal stage change, form submission, manual.
-  - ⚠️ **"Wait" steps resume when someone uses the app**, not on a clock. A "wait 1 day" step fires the next time you open the Automations pages after the day has passed. Fine for solo use; needs a scheduler before selling to agencies.
+  - **"Wait" steps run on a clock** (since v0.9.0): the scheduler checks every 5 minutes, so "wait 1 day" continues within 5 minutes of the day passing, whether or not anyone is logged in.
+  - Automation emails go only to contacts with explicit or implied consent, with the unsubscribe footer, like broadcasts.
 
 ## 8. AI features
 
@@ -175,5 +176,7 @@ Log inquiry now does everything in one step: the person is linked to the deal as
 **What every copy carries.** A grey footer with your sender name, your reply-to address and an Unsubscribe link, plus the hidden headers that let Gmail and Apple Mail show their own Unsubscribe button. Do not add your own unsubscribe line. Your signature is not added to broadcasts, so sign off in the text.
 
 **When someone unsubscribes.** Their consent becomes "withdrawn", a system entry appears in their timeline, and they drop out of every future broadcast and automation email automatically. You can still email them one to one from their contact page. To re-subscribe someone who asks, edit the contact and set consent back to explicit, and note where the request came from.
+
+**Scheduling (v0.9.0).** Instead of Send now, pick a date and time under "Schedule for later" and click **Schedule**. FlowCRM checks the subject, body, sender and audience first, then locks the broadcast; it goes out within 5 minutes of that time, even if you are not logged in. To change anything, open it and click **Cancel schedule and edit** (it becomes a draft again), then schedule it again. If a scheduled broadcast cannot go out (for example the sender was removed), it turns red with the reason. Under the Broadcasts and Automations titles, "Scheduler ran N min ago" confirms the clock is running; if it turns amber, tell Claude.
 
 **Two drafts are waiting** in the Vancouver workspace: "Market update — October 2026" and "Deal Sheet — Friday". Replace the bracketed placeholders, test, send.

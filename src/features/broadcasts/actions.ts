@@ -4,12 +4,11 @@ import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import {
   getEmailSettings,
-  getSmsSettings,
   renderTemplate,
   sendEmailToContact,
-  sendSmsToContact,
   type MessageContact,
 } from "@/lib/messaging/send"
+import { checkBroadcastReady, deliverBroadcast } from "./deliver"
 import type { BroadcastChannel, BroadcastRecipientFilter } from "@/types/database"
 
 // ── Broadcast Queries ──
@@ -163,7 +162,27 @@ export async function deleteBroadcast(id: string) {
 export async function sendBroadcast(id: string) {
   const { userId, orgId, subAccountId, supabase } = await getUserContext()
 
-  // Step a: Fetch the broadcast — must be draft or scheduled
+  const result = await deliverBroadcast(supabase, { orgId, subAccountId, userId }, id)
+
+  revalidatePath("/broadcasts")
+  revalidatePath(`/broadcasts/${id}`)
+
+  if (!result.ok) return { error: result.error }
+  return { data: { sent: result.sent, failed: result.failed } }
+}
+
+// ── Schedule ──
+// A scheduled broadcast is sent by the cron scheduler (/api/cron/tick, every
+// 5 minutes) on the first tick at or after scheduled_at. Content and sender
+// are checked now so a problem shows up while Rachel is still in the editor.
+
+export async function scheduleBroadcast(id: string, scheduledAt: string) {
+  const { orgId, subAccountId, supabase } = await getUserContext()
+
+  const when = new Date(scheduledAt)
+  if (Number.isNaN(when.getTime())) return { error: "Pick a valid date and time" }
+  if (when.getTime() < Date.now() + 60_000) return { error: "Pick a time at least a minute from now, or use Send Now" }
+
   const { data: broadcast, error: fetchError } = await supabase
     .from("broadcasts")
     .select("*")
@@ -173,171 +192,51 @@ export async function sendBroadcast(id: string) {
     .single()
 
   if (fetchError) return { error: fetchError.message }
-  if (broadcast.status !== "draft" && broadcast.status !== "scheduled") {
-    return { error: "Only draft or scheduled broadcasts can be sent" }
-  }
+  if (broadcast.status !== "draft") return { error: "Only draft broadcasts can be scheduled" }
 
-  // Validate content and provider settings up front, while still draft
-  if (broadcast.channel === "email") {
-    if (!broadcast.email_subject?.trim() || !broadcast.email_body?.trim()) {
-      return { error: "Email subject and body are required before sending" }
-    }
-  } else if (!broadcast.sms_body?.trim()) {
-    return { error: "SMS message body is required before sending" }
-  }
+  const notReady = await checkBroadcastReady(supabase, subAccountId, broadcast)
+  if (notReady) return { error: notReady }
 
-  const emailSettings =
-    broadcast.channel === "email" ? await getEmailSettings(supabase, subAccountId) : null
-  const smsSettings =
-    broadcast.channel === "sms" ? await getSmsSettings(supabase, subAccountId) : null
+  const countResult = await getRecipientCount(
+    broadcast.recipient_filter as BroadcastRecipientFilter,
+    broadcast.channel as BroadcastChannel
+  )
+  const count = countResult.data ?? 0
+  if (!count) return { error: "No eligible recipients match this filter (consent and contact method required)" }
 
-  if (broadcast.channel === "email" && !emailSettings) {
-    return { error: "Email sending is not configured. Set a verified sender email in Settings > Email." }
-  }
-  if (broadcast.channel === "sms" && !smsSettings) {
-    return { error: "SMS sending is not configured. Set a Twilio phone number in Settings > SMS." }
-  }
-
-  // Step b: Fetch recipient contacts based on recipient_filter
-  const filter = broadcast.recipient_filter as BroadcastRecipientFilter
-  let query = supabase
-    .from("contacts")
-    .select("id, first_name, last_name, email, phone, consent_status, unsubscribe_token")
-    .eq("org_id", orgId)
-    .eq("sub_account_id", subAccountId)
-
-  if (!filter.all) {
-    // Build OR filters for tags and sources
-    const orConditions: string[] = []
-
-    if (filter.tags && filter.tags.length > 0) {
-      orConditions.push(`tags.ov.{${filter.tags.join(",")}}`)
-    }
-    if (filter.sources && filter.sources.length > 0) {
-      orConditions.push(`source.in.(${filter.sources.join(",")})`)
-    }
-
-    if (orConditions.length > 0) {
-      query = query.or(orConditions.join(","))
-    }
-  }
-
-  // Step c/d: Filter by channel-specific contact method + consent
-  if (broadcast.channel === "email") {
-    query = query.not("email", "is", null).in("consent_status", ["explicit", "implied"])
-  } else {
-    query = query.not("phone", "is", null).in("consent_status", ["explicit", "implied"])
-  }
-
-  const { data: recipients, error: recipientError } = await query
-
-  if (recipientError) return { error: recipientError.message }
-
-  const totalRecipients = recipients?.length ?? 0
-  if (totalRecipients === 0) {
-    return { error: "No eligible recipients match this filter (consent and contact method required)" }
-  }
-
-  // Step e: Update status to 'sending' with total count
-  const { error: sendingError } = await supabase
+  const { error } = await supabase
     .from("broadcasts")
-    .update({
-      status: "sending",
-      stats: { total: totalRecipients, sent: 0, failed: 0, opened: 0 },
-      updated_at: new Date().toISOString(),
-    })
+    .update({ status: "scheduled", scheduled_at: when.toISOString(), updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("org_id", orgId)
+    .eq("status", "draft")
 
-  if (sendingError) return { error: sendingError.message }
+  if (error) return { error: error.message }
 
-  // Step f: Send to each recipient via Resend/Twilio, personalized per
-  // contact, in small concurrent batches. Stats update after every batch so
-  // the UI shows live progress on refresh.
-  let sent = 0
-  let failed = 0
-  const failures: Array<{ contact_id: string; error: string }> = []
-  const BATCH_SIZE = 5
-
-  for (let i = 0; i < totalRecipients; i += BATCH_SIZE) {
-    const batch = (recipients ?? []).slice(i, i + BATCH_SIZE) as MessageContact[]
-
-    const results = await Promise.all(
-      batch.map(async (contact) => {
-        if (broadcast.channel === "email") {
-          return sendEmailToContact({
-            supabase,
-            orgId,
-            subAccountId,
-            userId,
-            contact,
-            settings: emailSettings!,
-            subject: renderTemplate(broadcast.email_subject as string, contact),
-            body: renderTemplate(broadcast.email_body as string, contact),
-            includeSignature: false,
-            marketing: true,
-            activityMetadata: { broadcast_id: id },
-          })
-        }
-        return sendSmsToContact({
-          supabase,
-          orgId,
-          subAccountId,
-          userId,
-          contact,
-          settings: smsSettings!,
-          body: renderTemplate(broadcast.sms_body as string, contact),
-          activityMetadata: { broadcast_id: id },
-        })
-      })
-    )
-
-    results.forEach((result, idx) => {
-      if (result.ok) {
-        sent++
-      } else {
-        failed++
-        failures.push({ contact_id: batch[idx].id, error: result.error })
-      }
-    })
-
-    await supabase
-      .from("broadcasts")
-      .update({
-        stats: { total: totalRecipients, sent, failed, opened: 0 },
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .eq("org_id", orgId)
-  }
-
-  // Step g: Final status — 'failed' only if nothing went out
-  const finalStatus = sent > 0 ? "sent" : "failed"
-  const { error: sentError } = await supabase
-    .from("broadcasts")
-    .update({
-      status: finalStatus,
-      sent_at: new Date().toISOString(),
-      stats: { total: totalRecipients, sent, failed, opened: 0 },
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .eq("org_id", orgId)
-
-  if (sentError) return { error: sentError.message }
-
-  if (failures.length > 0) {
-    console.error(`[Broadcast ${id}] ${failed}/${totalRecipients} sends failed:`, failures.slice(0, 5))
-  }
-
-  // Step h: Revalidate paths
   revalidatePath("/broadcasts")
   revalidatePath(`/broadcasts/${id}`)
+  return { success: true, recipients: count }
+}
 
-  if (sent === 0) {
-    return { error: `All ${totalRecipients} sends failed. First error: ${failures[0]?.error}` }
-  }
-  return { data: { sent, failed } }
+// Back to draft so it can be edited; only while nothing has gone out.
+export async function unscheduleBroadcast(id: string) {
+  const { orgId, subAccountId, supabase } = await getUserContext()
+
+  const { data, error } = await supabase
+    .from("broadcasts")
+    .update({ status: "draft", scheduled_at: null, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .eq("sub_account_id", subAccountId)
+    .eq("status", "scheduled")
+    .select("id")
+
+  if (error) return { error: error.message }
+  if (!data?.length) return { error: "This broadcast is no longer scheduled (it may already be sending)" }
+
+  revalidatePath("/broadcasts")
+  revalidatePath(`/broadcasts/${id}`)
+  return { success: true }
 }
 
 // ── Recipient Count Preview ──
