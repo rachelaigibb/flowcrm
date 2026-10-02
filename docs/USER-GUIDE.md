@@ -173,10 +173,22 @@ Log inquiry now does everything in one step: the person is linked to the deal as
 ## Broadcasts and unsubscribe (v0.8.1)
 **Sending a broadcast, start to finish.** Broadcasts → New → Email. Name it, pick the audience (tag `sphere` for the monthly market email, `deal-list` for the Friday Deal Sheet), write the subject and body in plain text. Merge fields work: `{{first_name}}`, `{{full_name}}`. Click **Send test to me**: the email arrives at your copy address with `[TEST]` in the subject, sample merge values and a preview unsubscribe link. Fix anything, Save Draft, then **Send now**. Progress shows on the broadcast page; refresh to update.
 
-**What every copy carries.** A grey footer with your sender name, your reply-to address and an Unsubscribe link, plus the hidden headers that let Gmail and Apple Mail show their own Unsubscribe button. Do not add your own unsubscribe line. Your signature is not added to broadcasts, so sign off in the text.
+**What every copy carries.** A grey footer with your sender name, your reply-to address, this sub-account’s mailing address and an Unsubscribe link, plus the hidden headers that let Gmail and Apple Mail show their own Unsubscribe button. Do not add your own unsubscribe line. Your signature is not added to broadcasts, so sign off in the text.
 
-**When someone unsubscribes.** Their consent becomes "withdrawn", a system entry appears in their timeline, and they drop out of every future broadcast and automation email automatically. You can still email them one to one from their contact page. To re-subscribe someone who asks, edit the contact and set consent back to explicit, and note where the request came from.
+**When someone unsubscribes.** Their consent becomes "withdrawn", a system entry appears in their timeline, and they drop out of every future broadcast and automation email automatically. Marketing email from their contact page is also blocked. For personal correspondence or a requested response, turn off Marketing email in compose. To re-subscribe someone who asks, edit the contact and set consent back to explicit, and note where the request came from.
 
 **Scheduling (v0.9.0).** Instead of Send now, pick a date and time under "Schedule for later" and click **Schedule**. FlowCRM checks the subject, body, sender and audience first, then locks the broadcast; it goes out within 5 minutes of that time, even if you are not logged in. To change anything, open it and click **Cancel schedule and edit** (it becomes a draft again), then schedule it again. If a scheduled broadcast cannot go out (for example the sender was removed), it turns red with the reason. Under the Broadcasts and Automations titles, "Scheduler ran N min ago" confirms the clock is running; if it turns amber, tell Claude.
 
 **Two drafts are waiting** in the Vancouver workspace: "Market update — October 2026" and "Deal Sheet — Friday". Replace the bracketed placeholders, test, send.
+
+## Email and long-content fixes (v0.9.1)
+
+**Marketing address.** Settings → Email Settings → Marketing mailing address. Each sub-account has its own address. Vancouver Real Estate is configured with the confirmed eXp brokerage address; it is not shared with Dubai or FlowPlan. Marketing email, broadcasts and email automations stop if their workspace address or unsubscribe link is missing. Keep the address and reply-to valid for at least 60 days after sending.
+
+**Contact email.** Marketing email is checked by default: it adds the mailing address, identification and unsubscribe footer, and requires explicit or implied consent. Turn it off only for personal correspondence or a requested response. Merge fields in the subject and message are filled from the contact when you send, including pasted text. Unknown fields stop sending so you can correct them. The saved template itself is unchanged.
+
+**Attachments.** Attach file now immediately displays filenames, sizes and an × to remove each selection. Files must total 10 MB or less. Check that every intended file is listed before pressing Send. Files uploaded separately to the Documents card are not automatically attached to emails.
+
+**Long content.** Email and note editors scroll within the screen so Send/Save stays reachable. Timeline entries display five wrapped lines; Show more expands the complete content and Show less collapses it. No note text is shortened in storage.
+
+**Before the developer campaign.** Reopen FlowCRM, send a test to your own contact with a merge field and a small attachment, verify both in the received email and check the unsubscribe footer. A test does not send the developer campaign. A visual HTML editor and birthday/anniversary campaigns remain later work.

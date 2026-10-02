@@ -13,6 +13,7 @@ import { formatCurrencyCompact } from "@/lib/utils/currency"
 import { ACTIVITY_TYPE_COLORS, getSourceBadge } from "@/lib/constants/colors"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { CollapsibleActivityContent } from "@/features/activities/components/collapsible-activity-content"
 
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -802,7 +803,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
       {/* ── Dialogs ── */}
 
       <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[calc(100dvh-2rem)] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingNoteId ? "Edit Note" : "Log Note"}</DialogTitle>
           </DialogHeader>
@@ -810,7 +811,7 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
             placeholder="Write a note..."
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
-            className="min-h-24 text-sm"
+            className="h-64 min-h-0 field-sizing-fixed resize-none overflow-y-auto overscroll-contain text-sm"
             autoFocus
           />
           <DialogFooter>
@@ -1007,9 +1008,7 @@ function ActivityRow({
           )}
         </div>
         {activity.content && (
-          <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
-            {activity.content}
-          </p>
+          <CollapsibleActivityContent content={activity.content} />
         )}
         <ActivityAttachments metadata={activity.metadata} />
       </div>

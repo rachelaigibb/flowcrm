@@ -22,6 +22,7 @@ export interface EmailSettings {
   replyTo: string
   // Appended to every one-to-one email (compose, templates, automations).
   signature: string | null
+  mailingAddress: string | null
   // Where "Send me a copy" goes: intake notify address → reply-to → from.
   copyTo: string
 }
@@ -71,7 +72,7 @@ export async function getEmailSettings(
 
   const settings = (subAccount?.settings ?? {}) as Record<string, unknown>
   const emailSettings = settings.email as
-    | { from_name?: string; from_email?: string; reply_to?: string; signature?: string }
+    | { from_name?: string; from_email?: string; reply_to?: string; signature?: string; mailing_address?: string }
     | undefined
   const intake = settings.intake as { notify_email?: string } | undefined
 
@@ -83,6 +84,7 @@ export async function getEmailSettings(
     fromEmail: emailSettings.from_email,
     replyTo,
     signature: emailSettings.signature?.trim() || null,
+    mailingAddress: emailSettings.mailing_address?.trim() || null,
     copyTo: intake?.notify_email?.trim() || replyTo,
   }
 }
@@ -120,7 +122,7 @@ export async function sendEmailToContact(params: {
   includeSignature?: boolean
   // Marketing mail (broadcasts, automation emails): adds the sender line +
   // unsubscribe footer and the List-Unsubscribe headers. Needs the contact's
-  // unsubscribe_token; without one the mail goes out without a footer.
+  // unsubscribe_token and a workspace mailing address; missing either blocks send.
   marketing?: boolean
   // Test sends: deliver but do not write an activity (the "contact" is a sample).
   skipActivity?: boolean
@@ -133,12 +135,18 @@ export async function sendEmailToContact(params: {
   if (!contact.email) {
     return { ok: false, error: "Contact has no email address" }
   }
+  if (params.marketing && !settings.mailingAddress) {
+    return { ok: false, error: "Add this workspace's mailing address in Settings > Email before sending marketing email." }
+  }
+  if (params.marketing && !contact.unsubscribe_token) {
+    return { ok: false, error: "This contact is missing an unsubscribe link. Email was not sent." }
+  }
 
   try {
     const resend = getResendClient()
     const unsubscribeUrl = params.marketing ? unsubscribeUrlFor(contact.unsubscribe_token) : null
     const footer = unsubscribeUrl
-      ? { senderLine: `${settings.fromName} · ${settings.replyTo}`, unsubscribeUrl }
+      ? { senderLine: `${settings.fromName} · ${settings.replyTo}`, mailingAddress: settings.mailingAddress!, unsubscribeUrl }
       : null
     const content = buildEmailContent(body, params.includeSignature === false ? null : settings.signature, footer)
     const { data: sendResult, error: sendError } = await resend.emails.send({

@@ -43,10 +43,12 @@ describe("buildEmailContent with a marketing footer", () => {
   it("adds the sender line and unsubscribe link to both text and HTML", () => {
     const { text, html } = buildEmailContent("Body", null, {
       senderLine: "Rachel Gibb · info@example.com",
+      mailingAddress: "eXp Realty, Vancouver",
       unsubscribeUrl: "https://crm.example.com/u/abc",
     })
-    expect(text).toBe("Body\n\nRachel Gibb · info@example.com\nUnsubscribe: https://crm.example.com/u/abc")
+    expect(text).toBe("Body\n\nRachel Gibb · info@example.com\neXp Realty, Vancouver\nUnsubscribe: https://crm.example.com/u/abc")
     expect(html).toContain('<a href="https://crm.example.com/u/abc"')
     expect(html).toContain("Rachel Gibb · info@example.com")
+    expect(html).toContain("eXp Realty, Vancouver")
   })
 })

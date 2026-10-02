@@ -52,6 +52,7 @@ export function ComposeEmailDialog({
   const [body, setBody] = useState("")
   const [files, setFiles] = useState<File[]>([])
   const [sendCopy, setSendCopy] = useState(true)
+  const [marketing, setMarketing] = useState(true)
   const [copyTo, setCopyTo] = useState<string | null>(null)
   const [hasSignature, setHasSignature] = useState(false)
   const [maxBytes, setMaxBytes] = useState(DEFAULT_MAX_BYTES)
@@ -91,7 +92,10 @@ export function ComposeEmailDialog({
 
   function addFiles(list: FileList | null) {
     if (!list) return
-    setFiles((prev) => [...prev, ...Array.from(list)])
+    // FileList is live: clearing the input before React runs the updater
+    // empties it. Snapshot the selection before resetting the input.
+    const selected = Array.from(list)
+    setFiles((prev) => [...prev, ...selected])
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
@@ -100,6 +104,7 @@ export function ComposeEmailDialog({
     setBody("")
     setFiles([])
     setSendCopy(true)
+    setMarketing(true)
   }
 
   function handleSend() {
@@ -110,6 +115,7 @@ export function ComposeEmailDialog({
       formData.set("subject", subject.trim())
       formData.set("body", body.trim())
       formData.set("send_copy", sendCopy && copyTo ? "true" : "false")
+      formData.set("marketing", String(marketing))
       files.forEach((f) => formData.append("files", f))
       const result = await sendEmail(formData)
       if (result.error) {
@@ -133,7 +139,7 @@ export function ComposeEmailDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="size-4" />
@@ -141,7 +147,7 @@ export function ComposeEmailDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain">
           {/* To (read-only) */}
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">To</Label>
@@ -188,7 +194,7 @@ export function ComposeEmailDialog({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Write your email..."
-              className="min-h-32 text-sm"
+              className="h-48 min-h-32 max-h-64 field-sizing-fixed resize-none overflow-y-auto text-sm"
             />
             <p className="text-xs text-muted-foreground">
               {hasSignature
@@ -233,6 +239,7 @@ export function ComposeEmailDialog({
                       size="icon-xs"
                       onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
                       aria-label={`Remove ${f.name}`}
+                      disabled={isPending}
                     >
                       <X className="size-3" />
                     </Button>
@@ -247,6 +254,10 @@ export function ComposeEmailDialog({
           </div>
 
           {/* Copy to self */}
+          <label className="flex items-start gap-2 text-sm">
+            <Checkbox checked={marketing} onCheckedChange={(v) => setMarketing(v === true)} disabled={isPending} />
+            <span>Marketing email <span className="block text-xs text-muted-foreground">Adds your mailing address and unsubscribe link. Requires consent. Turn off only for personal correspondence or a requested response.</span></span>
+          </label>
           {copyTo && (
             <label className="flex items-center gap-2 text-sm">
               <Checkbox checked={sendCopy} onCheckedChange={(v) => setSendCopy(v === true)} />

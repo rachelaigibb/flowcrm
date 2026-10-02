@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.9.0** · Last updated 2026-09-23 · Latest commit *(see git log)*
+**Current version: v0.9.1** · Last updated 2026-10-02 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -68,6 +68,16 @@ Every contact has an `unsubscribe_token` (migration `00019`). Broadcast and auto
 ### v0.9.0 — Scheduler on Vercel Cron (2026-09-23)
 `vercel.json` cron calls `GET /api/cron/tick` every 5 minutes (Vercel sends `Authorization: Bearer $CRON_SECRET`; anything else is 401). The route is the only importer of the service-role client (`lib/supabase/service.ts`; key in Vercel Production only) and runs `features/scheduler/tick.ts`: due **scheduled broadcasts** (5 per tick) and due **automation wait steps** (50 per tick) across every workspace, 240 s budget, activities attributed to the org owner. Each item is claimed atomically (`scheduled → sending`, `paused → running`), so overlapping ticks or a Send-now click cannot double-send. The broadcast send loop moved to `features/broadcasts/deliver.ts`, shared by Send now and the tick. Broadcast editor: **Schedule** now really schedules (checks content, sender and recipients first; status `scheduled`), **Cancel schedule and edit** returns it to draft, a failed broadcast shows its reason. Heartbeat table `system_jobs` (migration `00020`) → "Scheduler ran N min ago" under the Automations and Broadcasts titles, amber after 15 minutes or on an error. Automation emails now also skip contacts without explicit/implied consent and carry the unsubscribe footer (the engine had not selected `unsubscribe_token`, so v0.8.1 automation mail went out without it; no automation had sent since). **Verified live 2026-09-23 17:05 PT** in the Testing workspace: first tick sent a scheduled broadcast to Resend's `delivered@resend.dev` sink (activity logged, attributed to the owner) and resumed a paused run (tag added, run completed); heartbeat row written, no error. Test rows (contact `delivered@resend.dev`, broadcast + automation "Scheduler test v0.9.0", Testing email sender) left in Testing. Birthday/anniversary triggers follow in v0.9.1 (9 am workspace time and Testing-first confirmed by Rachel 2026-09-23).
 
+### v0.9.1 — Campaign email and long-content fixes (2026-10-02)
+- Contact compose renders merge fields in subject/body, including pasted drafts, and rejects unresolved fields before upload/send.
+- Attachment selection snapshots the live FileList before clearing the input; selected file rows show names, sizes and removal controls. Existing private storage and delivery payload remain in use.
+- Marketing email is on by default in compose, adds identification/address/unsubscribe in HTML + text and one-click headers, and checks contact consent. Requested correspondence may opt out of marketing mode. Broadcasts and automations require the workspace mailing address and a recipient unsubscribe token.
+- Settings → Email has a separate per-workspace mailing address. Rachel confirmed the eXp brokerage address for **Vancouver Real Estate only**; DB update/readback verified October 2. Other workspaces need their own addresses before marketing sends.
+- Email/note dialogs fit the viewport with bounded scrolling editors. Timeline content is limited to five wrapped lines with Show more / Show less.
+- Date campaigns previously assigned v0.9.1 are deferred by Rachel's October 2 priority change. No campaign sent or automation enabled as part of this release.
+- Validation: `npx tsc --noEmit`, 31 tests in 7 files, and `npm run build` passed. Build needed network access for the existing Inter font. Mocked delivery verifies exact attachment bytes, BCC, footer and headers; no live recipient email was sent. Production/UI verification follows deployment.
+- CRTC identification/address/unsubscribe guidance: https://crtc.gc.ca/eng/internet/infograph.htm and https://crtc.gc.ca/eng/com500/faq500.htm. Technical safeguards do not establish each recipient's consent basis.
+
 ## ⚠️ Pending setup (not code — configuration only)
 
 These are done in dashboards, not in the repo. Each one blocks a shipped feature from working.
@@ -101,7 +111,7 @@ FlowCRM, `rachelgibbrealtor.com`, `buyingindubai.com` and `dubai-property-portal
 | **Website form → FlowCRM wiring (job 2, due 2026-09-13)** | Step 1 `/api/intake` **shipped v0.7.0**. Step 2: `.ca` site switched to the intake endpoint (needs Rachel to create the key + set `FLOWCRM_INTAKE_URL`/`FLOWCRM_INTAKE_KEY` on the `.ca` Vercel project, then drop the old `FLOWCRM_SUPABASE_*` vars). Step 2 **verified by Rachel 2026-09-09** (contact + email copy landed; old `FLOWCRM_SUPABASE_*` vars to be deleted). Step 3 **built 2026-09-09**: `/deals` page in the `.ca` app (live at rachelgibbrealtor.ca/deals), host rewrite for `deals.rachelgibbrealtor.ca`, domain attached to the Vercel project — waiting on Rachel's GoDaddy CNAME. Step 4: honeypot + rate limit only (Turnstile deferred until spam appears). Step 5 **built 2026-09-09**: `rachelgibbrealtor.com` (contact, eXp-profile and marketing-package forms) and `buyingindubai.com` (contact) now post to their own `/api/leads` → FlowCRM intake → Dubai workspace, unified consent wording, honeypot + rate limit; Dubai tag definitions and Email Settings seeded. Step 6 **verified by Rachel 2026-09-10** (Dubai key on both projects, test submissions landed with email copies). **Job 2 complete, three days early.** Deferred from the plan: Turnstile (add only if spam appears). |
 | **Gmail record — BCC logging address (after job 4)** | Per-workspace inbound address on Resend Receiving (needs Resend Pro, planned for job 3): BCC from Gmail → logged on the matching contact; Gmail filter forwards client replies to the same address; unmatched mail lands in a review list. Chosen over Google OAuth (restricted-scope review needed to sell to clients). Decided 2026-09-14. |
 | **Google Calendar two-way sync** | Appointments/dated tasks → Google Calendar and back. Needs a Google OAuth app (internal to the Workspace domain); parked until the BCC logging lands. |
-| **Date campaigns (v0.9.1, due 2026-10-02)** | Birthday + buyer/seller closing-anniversary triggers on the v0.9.0 tick, 9 am workspace time, per-year idempotency keys, three disabled defaults per workspace, Testing first. Spec: memory `project-flowcrm-campaigns-roadmap`. |
+| **Date campaigns (deferred 2026-10-02)** | Birthday + buyer/seller closing-anniversary triggers on the v0.9.0 tick, 9 am workspace time, per-year idempotency keys, three disabled defaults per workspace, Testing first. Spec: memory `project-flowcrm-campaigns-roadmap`. |
 | **`.ca` sender for Vancouver** | Rachel wants replies from `info@rachelgibbrealtor.ca` as well as `.com`. `.ca` domain must be verified in Resend first. |
 | **Auto-score on contact change** | Phase 4 leftover — scoring is manual (button click) today. |
 | **AI in pipeline / broadcast views** | Phase 4 leftover — AI is contact-page + Cmd+K only. |
@@ -168,8 +178,8 @@ FlowCRM, `rachelgibbrealtor.com`, `buyingindubai.com` and `dubai-property-portal
 | v0.7.1 | 2026-09-09 | Inquiry workflow fix #23: People card layout, listing tags, phone on tasks |
 | v0.8.0 | 2026-09-14 | Phase 5c — HTML email + signature, attachments, Documents card on contacts/deals, "Send me a copy", new app icon |
 | v0.8.1 | 2026-09-22 | Job 3 — unsubscribe token + page + one-click headers, broadcast footer, test send, first two Vancouver drafts |
-| **v0.9.0** | 2026-09-23 | **Scheduler: Vercel Cron tick every 5 min — scheduled broadcasts send, wait steps resume on a clock, heartbeat line (current)** |
-| v0.9.1 | planned | Birthday + buyer/seller anniversary campaigns (due 2026-10-02) |
+| v0.9.0 | 2026-09-23 | **Scheduler: Vercel Cron tick every 5 min — scheduled broadcasts send, wait steps resume on a clock, heartbeat line** |
+| **v0.9.1** | 2026-10-02 | Contact email personalization, attachment selection/removal, per-workspace marketing address/footer, bounded dialogs and expandable timeline content (current) |
 | v1.0 | goal | Ready to sell to other agencies |
 
 *Keep this table updated when a phase ships. Bump `version` in `package.json` to match.*

@@ -59,6 +59,7 @@ export interface EmailFooter {
   // Who is sending and how to reach them (CASL identification), plus the
   // unsubscribe link. Rendered in small grey type under a rule.
   senderLine: string
+  mailingAddress: string
   unsubscribeUrl: string
 }
 
@@ -72,8 +73,8 @@ export function buildEmailContent(body: string, signature?: string | null, foote
     : ""
   let footerHtml = ""
   if (footer) {
-    text += `\n\n${footer.senderLine}\nUnsubscribe: ${footer.unsubscribeUrl}`
-    footerHtml = `<div style="margin-top:2em;padding-top:0.75em;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.5;color:#6b7280;">${escapeHtml(footer.senderLine)}<br><a href="${escapeHtml(footer.unsubscribeUrl)}" style="color:#6b7280;">Unsubscribe</a></div>`
+    text += `\n\n${footer.senderLine}\n${footer.mailingAddress}\nUnsubscribe: ${footer.unsubscribeUrl}`
+    footerHtml = `<div style="margin-top:2em;padding-top:0.75em;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.5;color:#6b7280;">${escapeHtml(footer.senderLine)}<br>${escapeHtml(footer.mailingAddress).replace(/\n/g, "<br>")}<br><a href="${escapeHtml(footer.unsubscribeUrl)}" style="color:#6b7280;">Unsubscribe</a></div>`
   }
   const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#111827;">${bodyHtml}${sigHtml}${footerHtml}</div>`
   return { text, html }

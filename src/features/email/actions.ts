@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
-import { getEmailSettings, sendEmailToContact } from "@/lib/messaging/send"
+import { getEmailSettings, sendEmailToContact, renderTemplate } from "@/lib/messaging/send"
 import { storeFiles, MAX_UPLOAD_BYTES } from "@/features/documents/store"
 import type { Document } from "@/types/database"
 
@@ -28,22 +28,33 @@ export async function sendEmail(formData: FormData) {
   const subject = String(formData.get("subject") ?? "").trim()
   const body = String(formData.get("body") ?? "").trim()
   const sendCopy = formData.get("send_copy") === "true"
+  const marketing = formData.get("marketing") !== "false"
   const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0)
 
   if (!contactId || !subject || !body) return { error: "Subject and message are required." }
 
   const { data: contact } = await supabase
     .from("contacts")
-    .select("id, first_name, last_name, email, phone")
+    .select("id, first_name, last_name, email, phone, consent_status, unsubscribe_token")
     .eq("id", contactId)
     .eq("sub_account_id", subAccountId)
     .single()
   if (!contact) return { error: "Contact not found" }
   if (!contact.email) return { error: "Contact has no email address" }
+  if (marketing && !["explicit", "implied"].includes(contact.consent_status)) {
+    return { error: "Marketing email requires explicit or implied consent. This contact is not eligible." }
+  }
 
   const settings = await getEmailSettings(supabase, subAccountId)
   if (!settings) {
     return { error: "Email sending is not configured. Set a verified sender email in Settings > Email." }
+  }
+  if (marketing && !settings.mailingAddress) return { error: "Add this workspace's mailing address in Settings > Email before sending marketing email." }
+  if (marketing && !contact.unsubscribe_token) return { error: "This contact is missing an unsubscribe link. Email was not sent." }
+  const renderedSubject = renderTemplate(subject, contact)
+  const renderedBody = renderTemplate(body, contact)
+  if (/\{\{[^{}]+\}\}/.test(renderedSubject + renderedBody)) {
+    return { error: "An unrecognized merge field remains. Use first_name, last_name, full_name, email, phone or unsubscribe_url." }
   }
 
   // Store attachments first so the record exists even if linking fails later;
@@ -63,8 +74,9 @@ export async function sendEmail(formData: FormData) {
     userId: ctx.userId,
     contact,
     settings,
-    subject,
-    body,
+    subject: renderedSubject,
+    body: renderedBody,
+    marketing,
     attachments: stored?.documents.map((d, i) => ({ filename: d.name, content: stored!.buffers[i] })),
     bcc: copyTo ? [copyTo] : undefined,
     activityMetadata: stored
@@ -181,6 +193,7 @@ export async function updateEmailSettings(settings: {
   from_email?: string
   reply_to?: string
   signature?: string
+  mailing_address?: string
 }) {
   const { orgId, subAccountId, supabase } = await getUserContext()
 
@@ -199,10 +212,12 @@ export async function updateEmailSettings(settings: {
       settings: {
         ...currentSettings,
         email: {
+          ...((currentSettings.email ?? {}) as Record<string, unknown>),
           from_name: settings.from_name?.trim() || null,
           from_email: settings.from_email?.trim() || null,
           reply_to: settings.reply_to?.trim() || null,
           signature: settings.signature?.trim() || null,
+          mailing_address: settings.mailing_address?.trim() || null,
         },
       },
       updated_at: new Date().toISOString(),

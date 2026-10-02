@@ -130,10 +130,11 @@ export function SubAccountSettingsPage({
 
   // Email settings state
   const emailSettings = (subAccount.settings as Record<string, unknown>)?.email as
-    | { from_name?: string; from_email?: string; reply_to?: string; signature?: string }
+    | { from_name?: string; from_email?: string; reply_to?: string; signature?: string; mailing_address?: string }
     | undefined
   const [fromName, setFromName] = React.useState(emailSettings?.from_name ?? "")
   const [signature, setSignature] = React.useState(emailSettings?.signature ?? "")
+  const [mailingAddress, setMailingAddress] = React.useState(emailSettings?.mailing_address ?? "")
   const [fromEmail, setFromEmail] = React.useState(emailSettings?.from_email ?? "")
   const [replyTo, setReplyTo] = React.useState(emailSettings?.reply_to ?? "")
   const [savingEmail, setSavingEmail] = React.useState(false)
@@ -366,6 +367,7 @@ export function SubAccountSettingsPage({
       from_email: fromEmail.trim() || undefined,
       reply_to: replyTo.trim() || undefined,
       signature: signature.trim() || undefined,
+      mailing_address: mailingAddress.trim() || undefined,
     })
     setSavingEmail(false)
     if (result.error) {
@@ -990,6 +992,19 @@ export function SubAccountSettingsPage({
               onChange={(e) => setReplyTo(e.target.value)}
               placeholder="e.g. rachel@yourdomain.com (optional)"
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="mailing-address">Marketing mailing address</Label>
+            <Textarea
+              id="mailing-address"
+              value={mailingAddress}
+              onChange={(e) => setMailingAddress(e.target.value)}
+              placeholder="Business name and complete mailing address"
+              className="h-24 field-sizing-fixed resize-none overflow-y-auto text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Used only for this sub-account. Required for marketing emails, broadcasts and email automations. Keep this address and your reply-to valid for at least 60 days after sending.
+            </p>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email-signature">Signature</Label>

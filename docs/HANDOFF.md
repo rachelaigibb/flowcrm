@@ -79,7 +79,7 @@ This file is the starting point. It does not replace `.claude/CLAUDE.md`, the ar
 ## 6. Open items
 
 ### A. Security: do these first (AIOS task `re-credential-review`)
-1. **Vercel token rotation is not confirmed.** On 2026-10-02 `~/Projects/rachelgibbrealtor.ca/.env.local` still had one malformed line: the bare duplicate of the token that was exposed in a Claude session on 2026-09-23. Ask Rachel whether she rotated it.
+1. **Update 2026-10-02: Rachel confirms Vercel token rotated; old-token revocation is reported by her confirmation, not independently inspected.** Previous finding: On 2026-10-02 `~/Projects/rachelgibbrealtor.ca/.env.local` still had one malformed line: the bare duplicate of the token that was exposed in a Claude session on 2026-09-23. Ask Rachel whether she rotated it.
    - Rotation steps: Vercel → Account Settings → Tokens → create `claude-cli-2026-09` (scope `rachelgibb`) → she replaces the `VERCEL_TOKEN=` value on line 1, deletes the bare line 2 and the empty line 15 → she deletes the old token.
    - Then run one deploy check. Do not read or print token values.
 2. **Old Dubai intake key `dubai-sites` (prefix `fk_Pjdjn`) is still active**, last used 2026-09-10. The live key is `vercel-pro` (`fk_rtmX2`), used 2026-09-23 by the rachelgibbrealtor.com form.
@@ -92,7 +92,7 @@ This file is the starting point. It does not replace `.claude/CLAUDE.md`, the ar
 - The AIOS plan now tracks this as `re-market-email` (due 2026-10-16: current primary-source data, consent and unsubscribe checks, then ask for send approval) and `re-deal-funnel-review` (due 2026-10-13).
 - By mid-October, GVR's September stats are out. Credit GVR as the source (BCFSA advertising rules).
 
-### C. Next build: v0.9.1 date campaigns (spec confirmed by Rachel 2026-09-22/23)
+### C. Deferred 2026-10-02: date campaigns (version to be assigned) (spec confirmed by Rachel 2026-09-22/23)
 Run in **Testing first**, then ask before enabling in Vancouver.
 - **Birthday:** every contact with `birthday`, an email, and explicit/implied consent. Send at **09:00 in the workspace `sub_accounts.timezone`**.
   - Data today: 54 Vancouver contacts have a birthday; 37 are eligible.
@@ -150,3 +150,6 @@ Run in **Testing first**, then ask before enabling in Vancouver.
 - She is learning. Give numbered step-by-step instructions with a short "why", and runbooks rather than option menus.
 - She pastes keys herself. Never ask her to paste a secret into chat, and never write one to a file.
 - She wants a plan before multi-step work, unless she has explicitly waived it for that job.
+
+## October 2 v0.9.1 scope update
+Rachel approved email merge fields, attachment selection/removal, Vancouver-only mailing address and marketing footers, bounded email/note dialogs and five-line expandable timeline entries. Date campaigns are deferred. See BUILD-STATUS and USER-GUIDE for current behavior. No client campaign was sent.

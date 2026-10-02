@@ -212,3 +212,12 @@ tests/
 - **Engine and send helpers take `SupabaseClient`** (from `@supabase/supabase-js`) and a nullable `userId`; the tick attributes work to the org's owner membership. Broadcast delivery lives in `features/broadcasts/deliver.ts` (plain module) so the `"use server"` actions file and the tick share it.
 - **Automation emails follow broadcast consent rules** (explicit/implied only) and must select `unsubscribe_token` with the contact.
 - **Heartbeat:** `system_jobs` row `scheduler_tick` (service role writes, signed-in users read, no tenant data). `SchedulerStatusLine` shows it under the Automations and Broadcasts titles; amber after 15 min.
+
+## Architecture decisions log (2026-10-02 — v0.9.1 fixes)
+- Rachel prioritized campaign blockers over date campaigns and approved implementation, commit, push and production deployment. FlowPlan is her separate lead-generation/product workspace.
+- Compose resolves contact merge fields server-side before upload/send and blocks remaining unknown tokens. Broadcast/automation extra-token handling remains unchanged.
+- Snapshot the live FileList synchronously before clearing a file input; React may defer its state updater. Otherwise selection disappears and no attachment reaches either the UI or server.
+- Per-workspace `settings.email.mailing_address` is separate from signature; preserve other email settings on save. Marketing mail requires it plus unsubscribe_token at the shared send boundary. Compose defaults to marketing with consent validation, with an explicit requested-correspondence opt-out. No schema migration needed (existing JSONB settings).
+- Rachel confirmed the eXp brokerage mailing address for Vancouver only; a scoped DB update and readback verified only that workspace changed. Other workspaces remain unset.
+- Bounded flex dialogs and fixed-sizing scrollable textareas prevent content growth from hiding action buttons. Timeline entries use measured five-line overflow and accessible expansion; full content stays intact.
+- Rachel confirmed Vercel token rotation October 2; values were not read or printed. Old Dubai intake-key replacement verification and `.ca` service-key review remain separate. Read-only inspection found `.ca` still references the service key in QR scans and lead code: do not remove it blindly.

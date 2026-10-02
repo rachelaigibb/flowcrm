@@ -36,9 +36,11 @@ export async function checkBroadcastReady(
     if (!broadcast.email_subject?.trim() || !broadcast.email_body?.trim()) {
       return "Email subject and body are required before sending"
     }
-    if (!(await getEmailSettings(supabase, subAccountId))) {
+    const settings = await getEmailSettings(supabase, subAccountId)
+    if (!settings) {
       return "Email sending is not configured. Set a verified sender email in Settings > Email."
     }
+    if (!settings.mailingAddress) return "Add this workspace's mailing address in Settings > Email before sending or scheduling marketing email."
   } else {
     if (!broadcast.sms_body?.trim()) return "SMS message body is required before sending"
     if (!(await getSmsSettings(supabase, subAccountId))) {
