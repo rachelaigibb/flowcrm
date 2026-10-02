@@ -153,3 +153,5 @@ Run in **Testing first**, then ask before enabling in Vancouver.
 
 ## October 2 v0.9.1 scope update
 Rachel approved email merge fields, attachment selection/removal, Vancouver-only mailing address and marketing footers, bounded email/note dialogs and five-line expandable timeline entries. Date campaigns are deferred. See BUILD-STATUS and USER-GUIDE for current behavior. No client campaign was sent.
+
+Production v0.9.1 deployed October 2 at 16:43 PT from code commit `8505228`; Vercel independently reports ● Ready (`dpl_AQQk1hxh2cvV29PKLP6QeixDW9a7`), https://crm.getflowplan.app. Rachel explicitly authorized the rotated token from the .ca folder. Token value was kept out of logs and files. See BUILD-STATUS for verification limits; actual inbox attachment receipt still needs an attended test before the developer campaign.
