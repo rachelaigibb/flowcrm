@@ -38,3 +38,21 @@ describe("compose attachments", () => {
     expect(container).toBeTruthy()
   }, 20000)
 })
+
+
+describe("compose failures", () => {
+  for (const transportFailure of [false, true]) {
+    it(`keeps the draft and releases Send after ${transportFailure ? "a rejected request" : "a validation error"}`, async () => {
+      if (transportFailure) mocks.sendEmail.mockRejectedValue(new Error("network failure"))
+      else mocks.sendEmail.mockResolvedValue({ error: "Marketing email requires explicit or implied consent." })
+      render(<ComposeEmailDialog open onOpenChange={() => {}} contactId="test" contactEmail="delivered@resend.dev" contactName="Test" />)
+      fireEvent.change(screen.getByPlaceholderText("Email subject"), { target: { value: "Test subject" } })
+      fireEvent.change(screen.getByPlaceholderText("Write your email..."), { target: { value: "Keep my draft" } })
+      fireEvent.click(screen.getByRole("button", { name: /^Send$/ }))
+      expect(await screen.findByRole("alert")).toHaveTextContent(transportFailure ? "Could not confirm whether this email was sent" : "requires explicit or implied consent")
+      await waitFor(() => expect(screen.getByRole("button", { name: /^Send$/ })).toBeEnabled())
+      expect(screen.getByPlaceholderText("Write your email...")).toHaveValue("Keep my draft")
+      expect(mocks.sendEmail).toHaveBeenCalledOnce()
+    })
+  }
+})

@@ -192,3 +192,7 @@ Log inquiry now does everything in one step: the person is linked to the deal as
 **Long content.** Email and note editors scroll within the screen so Send/Save stays reachable. Timeline entries display five wrapped lines; Show more expands the complete content and Show less collapses it. No note text is shortened in storage.
 
 **Before the developer campaign.** Reopen FlowCRM, send a test to your own contact with a merge field and a small attachment, verify both in the received email and check the unsubscribe footer. A test does not send the developer campaign. A visual HTML editor and birthday/anniversary campaigns remain later work.
+
+### If an email does not send
+
+The compose dialog keeps the error beside the message and retains your draft. Marketing requires explicit/implied contact consent and a mailing address configured for the current sub-account. For a personal test to yourself or requested correspondence, turn off Marketing email. If FlowCRM cannot confirm delivery, check the timeline and inbox before retrying to avoid duplicates.

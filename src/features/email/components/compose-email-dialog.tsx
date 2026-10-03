@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition, useEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { sendEmail, getEmailTemplates, getComposeDefaults } from "../actions"
 import type { EmailTemplate } from "@/types/database"
 import { formatBytes } from "@/features/documents/format"
@@ -56,7 +56,8 @@ export function ComposeEmailDialog({
   const [copyTo, setCopyTo] = useState<string | null>(null)
   const [hasSignature, setHasSignature] = useState(false)
   const [maxBytes, setMaxBytes] = useState(DEFAULT_MAX_BYTES)
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -100,6 +101,7 @@ export function ComposeEmailDialog({
   }
 
   function reset() {
+    setSendError(null)
     setSubject("")
     setBody("")
     setFiles([])
@@ -107,9 +109,11 @@ export function ComposeEmailDialog({
     setMarketing(true)
   }
 
-  function handleSend() {
-    if (!subject.trim() || !body.trim() || tooLarge) return
-    startTransition(async () => {
+  async function handleSend() {
+    if (isPending || !subject.trim() || !body.trim() || tooLarge) return
+    setIsPending(true)
+    setSendError(null)
+    try {
       const formData = new FormData()
       formData.set("contact_id", contactId)
       formData.set("subject", subject.trim())
@@ -119,7 +123,7 @@ export function ComposeEmailDialog({
       files.forEach((f) => formData.append("files", f))
       const result = await sendEmail(formData)
       if (result.error) {
-        toast.error(result.error)
+        setSendError(result.error)
       } else {
         toast.success(
           result.copiedTo ? `Email sent to ${contactName} (copy to ${result.copiedTo})` : `Email sent to ${contactName}`
@@ -127,7 +131,13 @@ export function ComposeEmailDialog({
         reset()
         onOpenChange(false)
       }
-    })
+    } catch {
+      // A transport failure does not prove the provider rejected the email.
+      // Keep the draft and avoid automatically retrying a possibly sent message.
+      setSendError("Could not confirm whether this email was sent. Check the contact timeline and your inbox before trying again. Your draft has been kept. If your session expired, sign in again.")
+    } finally {
+      setIsPending(false)
+    }
   }
 
   function handleClose(value: boolean) {
@@ -148,6 +158,7 @@ export function ComposeEmailDialog({
         </DialogHeader>
 
         <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain">
+          {sendError && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{sendError}</p>}
           {/* To (read-only) */}
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">To</Label>

@@ -183,3 +183,7 @@ FlowCRM, `rachelgibbrealtor.com`, `buyingindubai.com` and `dubai-property-portal
 | v1.0 | goal | Ready to sell to other agencies |
 
 *Keep this table updated when a phase ships. Bump `version` in `package.json` to match.*
+
+## v0.9.2 — compose failure feedback (October 2)
+
+Rachel reported a spinning test send. Live Testing contact has consent None, and Testing has no marketing mailing address. Reproducing a marketing send completed validation without sending, but transient toast feedback was not visible inside the modal. Compose now persists errors inside the dialog, uses send-request state rather than navigation transition state, and catches rejected server-action requests with a delivery-uncertain warning. Drafts remain intact; no automatic retry. Consent/address checks remain enforced. 33 tests and TypeScript passed; production verification pending. Original user's exact attachment/checkbox state remains unconfirmed.

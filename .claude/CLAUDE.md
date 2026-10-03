@@ -221,3 +221,8 @@ tests/
 - Rachel confirmed the eXp brokerage mailing address for Vancouver only; a scoped DB update and readback verified only that workspace changed. Other workspaces remain unset.
 - Bounded flex dialogs and fixed-sizing scrollable textareas prevent content growth from hiding action buttons. Timeline entries use measured five-line overflow and accessible expansion; full content stays intact.
 - Rachel confirmed Vercel token rotation October 2; values were not read or printed. Old Dubai intake-key replacement verification and `.ca` service-key review remain separate. Read-only inspection found `.ca` still references the service key in QR scans and lead code: do not remove it blindly.
+
+## Architecture decisions log (2026-10-02 — v0.9.2 compose feedback)
+- Persist validation errors inside the compose dialog; transient toast-only feedback can be missed while the dialog is open.
+- Track the send request explicitly and clear state in finally instead of tying the button to React navigation transition work. Catch rejected server actions, preserve the draft and warn that delivery may be uncertain. Never auto-retry a send.
+- Testing remains its own workspace: no inherited Vancouver mailing address or automatic consent changes.
