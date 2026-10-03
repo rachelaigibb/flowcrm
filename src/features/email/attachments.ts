@@ -22,7 +22,7 @@ export async function loadEmailAttachments(ctx: {
     const suffix = value.path.slice(prefix.length)
     if (!/^[0-9a-f-]{36}\/[^/]+$/.test(suffix) || suffix.split("/")[1] !== safeAttachmentName(value.name) || files.some(f => f.path === value.path)) return { error: "Invalid attachment reference." }
     const { data, error } = await ctx.supabase.storage.from("documents").info(value.path)
-    const size = data?.metadata?.size
+    const size = data?.size
     if (error || typeof size !== "number" || size <= 0) return { error: "An attachment has not finished uploading. Please attach it again." }
     total += size
     if (total > MAX_UPLOAD_BYTES) return { error: "Attachments must total 10 MB or less." }

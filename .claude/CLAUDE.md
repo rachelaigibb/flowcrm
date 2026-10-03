@@ -231,3 +231,6 @@ tests/
 - Increasing Next serverActions.bodySizeLimit cannot override Vercel's 4.5 MB incoming function payload cap. Compose sends binary files directly to signed private Supabase storage; server action payloads contain references only.
 - Signed upload preparation derives workspace/contact/user from getUserContext; send validates scoped paths, real stored sizes and exact download sizes before persisting document records. No service client, public bucket or RLS expansion. Existing raw-file action path remains for older clients and Documents card.
 - Show upload/send stages and bound direct uploads to two minutes. Retain uploaded references in the current draft for explicit retries; never automatically retry delivery. Unindexed abandoned uploads need future scoped cleanup, not silent deletion.
+
+## Architecture decisions log (2026-10-02 — v0.9.4 storage-info correction)
+- StorageFileApi.info returns FileObjectV2 top-level size; metadata is custom metadata. storage.objects SQL metadata and the HTTP API response have different shapes. Test fixtures must reflect the installed API contract.
