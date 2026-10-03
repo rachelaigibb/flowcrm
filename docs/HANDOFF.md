@@ -161,3 +161,5 @@ October 2 v0.9.2 follow-up: test-send spinner report investigated. Testing conta
 v0.9.2 production confirmed Ready: dpl_8666qTdRvDMZygRGyu28kareBS9K, code 8951d06, https://crm.getflowplan.app. Live native check verified persistent consent error and released Send without delivery.
 
 October 2 v0.9.3: attachment-only hangs reported, text-only email success observed in Testing. Found 10 MB app allowance exceeds Vercel incoming 4.5 MB cap. Email attachments now upload directly to signed private storage and the send action receives scoped references, verifies actual size and downloads provider bytes. Explicit upload stages and two-minute timeout; no auto-retry. Actual original attachment size and live inbox attachment receipt remain unverified. Documents-card upload is unchanged.
+
+v0.9.3 production ● Ready independently verified: dpl_EvLPUMCNioipo5MbdP9xRKNZdLUM, code 08ea395. Public preview 200. Mac lock prevented native synthetic 5 MB upload check; user unlock requested. Live attachment delivery remains unverified. Synthetic file prepared at /private/tmp/flowcrm-attachment-5mb.txt; no upload performed yet.
