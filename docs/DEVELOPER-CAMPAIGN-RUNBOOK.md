@@ -4,7 +4,7 @@ Prepared October 2, 2026. No broadcast has been sent or scheduled by Codex.
 
 ## Import completed
 
-Source: `~/Downloads/2026-10_Vancouver_14310-104Ave_FlowCRM-Import_v2.csv`. It is byte-for-byte identical to the v2 copy in the original campaign folder. Imported into **Vancouver Real Estate only**: 178 new contacts, 75 email contacts and 103 call-only contacts. The CSV consent values were preserved; the source research notes and campaign tags were included. No existing contact matched this import. Database readback confirmed the counts below.
+Source: `~/Downloads/2026-10_Vancouver_14310-104Ave_FlowCRM-Import_v2.csv`. It is byte-for-byte identical to the v2 copy in the original campaign folder. Imported into **Vancouver Real Estate only**: Originally 178 contacts were imported. After Rachel requested removal of records missing both email and phone, 29 were removed: **149 retained contacts, 75 email contacts and 74 call-only contacts**. The CSV consent values were preserved; the source research notes and campaign tags were included. No existing contact matched this import. Database readback confirmed the counts below.
 
 | Audience tag | Contacts | Use |
 |---|---:|---|
@@ -13,7 +13,7 @@ Source: `~/Downloads/2026-10_Vancouver_14310-104Ave_FlowCRM-Import_v2.csv`. It i
 | `14310-w2-named` | 10 | Second wave, named recipients |
 | `14310-w2-general` | 24 | Second wave, general company inboxes |
 | `14310-brokers` | 11 | Separate broker message |
-| `14310-call-list` | 103 | Phone outreach; no email address |
+| `14310-call-list` | 74 | Phone outreach; no email address |
 
 The workbook plan starts wave one the week of October 5, wave two the week of October 12, and phone follow-up three business days after the email. Those are suggested timing windows, not scheduled sends.
 
@@ -37,3 +37,5 @@ The workbook plan starts wave one the week of October 5, wave two the week of Oc
 ## Before pressing Send
 
 Correct sub-account; one precise audience tag; current property facts; working links; body signature; readable test; Vancouver footer; reviewed consent/source records. No attachments are included in a broadcast. No campaign sends or schedules were created during this import.
+
+October 2 cleanup: Downloads `2026-10_Vancouver_14310-104Ave_FlowCRM-Import_v3_reachable.csv` contains the 149 reachable rows. Original v2 preserved; removed rows and database recovery snapshot saved under Downloads/_archive/flowcrm-developer-cleanup-2026-10-02. Do not re-import v2 or v3 into the already populated workspace.
