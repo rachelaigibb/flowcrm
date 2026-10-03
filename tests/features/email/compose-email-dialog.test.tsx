@@ -3,17 +3,21 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { ComposeEmailDialog } from "@/features/email/components/compose-email-dialog"
 
-const mocks = vi.hoisted(() => ({ sendEmail: vi.fn() }))
+const mocks = vi.hoisted(() => ({ sendEmail: vi.fn(), prepare: vi.fn(), upload: vi.fn() }))
 vi.mock("@/features/email/actions", () => ({
   sendEmail: mocks.sendEmail,
+  prepareEmailAttachment: mocks.prepare,
   getEmailTemplates: async () => ({ data: [] }),
   getComposeDefaults: async () => ({ copyTo: null, hasSignature: false, maxBytes: 10485760 }),
 }))
-afterEach(() => { cleanup(); vi.clearAllMocks() })
+afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals() })
 
 describe("compose attachments", () => {
   it("keeps the selected files after clearing the live input, supports remove, and submits retained bytes", async () => {
     mocks.sendEmail.mockResolvedValue({ error: "Keep draft for inspection" })
+    mocks.prepare.mockResolvedValue({ path: "private/report.pdf", signedUrl: "https://storage.example/upload" })
+    mocks.upload.mockResolvedValue({ ok: true })
+    vi.stubGlobal("fetch", mocks.upload)
     const { container } = render(<StrictMode><ComposeEmailDialog open onOpenChange={() => {}} contactId="test" contactEmail="delivered@resend.dev" contactName="Test" /></StrictMode>)
     await screen.findByText("No signature set yet — add one in Settings → Email Settings.")
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
@@ -33,7 +37,10 @@ describe("compose attachments", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Send$/ }))
     await waitFor(() => expect(mocks.sendEmail).toHaveBeenCalledOnce())
     const payload = mocks.sendEmail.mock.calls[0][0] as FormData
-    expect(payload.getAll("files")).toEqual([first])
+    expect(payload.getAll("files")).toEqual([])
+    expect(JSON.parse(String(payload.get("uploaded_files")))).toEqual([{ path: "private/report.pdf", name: "report.pdf" }])
+    expect(mocks.prepare).toHaveBeenCalledWith("test", "report.pdf", first.size)
+    expect(mocks.upload).toHaveBeenCalledWith("https://storage.example/upload", expect.objectContaining({ method: "PUT", body: first }))
     expect(payload.get("marketing")).toBe("true")
     expect(container).toBeTruthy()
   }, 20000)
@@ -55,4 +62,22 @@ describe("compose failures", () => {
       expect(mocks.sendEmail).toHaveBeenCalledOnce()
     })
   }
+})
+
+
+describe("direct attachment upload", () => {
+  it("does not send after an upload failure and keeps the attachment and draft", async () => {
+    mocks.prepare.mockResolvedValue({ path: "private/report.pdf", signedUrl: "https://storage.example/upload" })
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("upload timed out")))
+    render(<ComposeEmailDialog open onOpenChange={() => {}} contactId="test" contactEmail="delivered@resend.dev" contactName="Test" />)
+    const file = new File([new Uint8Array(5 * 1024 * 1024)], "large.pdf")
+    fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [file] } })
+    fireEvent.change(screen.getByPlaceholderText("Email subject"), { target: { value: "Report" } })
+    fireEvent.change(screen.getByPlaceholderText("Write your email..."), { target: { value: "My draft" } })
+    fireEvent.click(screen.getByRole("button", { name: /^Send$/ }))
+    expect(await screen.findByRole("alert")).toHaveTextContent("Email was not sent")
+    expect(mocks.sendEmail).not.toHaveBeenCalled()
+    expect(screen.getByText("large.pdf")).toBeTruthy()
+    await waitFor(() => expect(screen.getByRole("button", { name: /^Send$/ })).toBeEnabled())
+  })
 })

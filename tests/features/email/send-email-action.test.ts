@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { sendEmail } from "@/features/email/actions"
 
-const mock = vi.hoisted(() => ({ send: vi.fn(), store: vi.fn(), contact: { id: "c1", first_name: "Rachel", last_name: "Gibb", email: "delivered@resend.dev", phone: null, consent_status: "explicit", unsubscribe_token: "token" } }))
+const mock = vi.hoisted(() => ({ send: vi.fn(), store: vi.fn(), load: vi.fn(), contact: { id: "c1", first_name: "Rachel", last_name: "Gibb", email: "delivered@resend.dev", phone: null, consent_status: "explicit", unsubscribe_token: "token" } }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 vi.mock("@/lib/supabase/get-user-context", () => ({ getUserContext: async () => {
   const query = { select: () => query, eq: () => query, single: async () => ({ data: mock.contact }) }
@@ -13,6 +13,10 @@ vi.mock("@/lib/messaging/send", async (importOriginal) => ({
   sendEmailToContact: mock.send,
 }))
 vi.mock("@/features/documents/store", () => ({ storeFiles: mock.store, MAX_UPLOAD_BYTES: 10485760 }))
+vi.mock("@/features/email/attachments", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/features/email/attachments")>(),
+  loadEmailAttachments: mock.load,
+}))
 beforeEach(() => { vi.clearAllMocks(); mock.contact.consent_status = "explicit"; mock.send.mockResolvedValue({ ok: true, activityId: null }) })
 function draft(body = "Hi {{first_name}}") {
   const form = new FormData()
@@ -23,6 +27,17 @@ function draft(body = "Hi {{first_name}}") {
   return form
 }
 describe("contact email action", () => {
+  it("loads uploaded references and sends their stored bytes without receiving binary files", async () => {
+    const form = draft()
+    const references = [{ path: "scoped/report.pdf", name: "report.pdf" }]
+    form.set("uploaded_files", JSON.stringify(references))
+    const buffer = Buffer.from("stored PDF")
+    mock.load.mockResolvedValue({ documents: [{ id: "doc", name: "report.pdf", size: buffer.length }], buffers: [buffer] })
+    expect(await sendEmail(form)).toMatchObject({ success: true })
+    expect(mock.load).toHaveBeenCalledWith(expect.objectContaining({ subAccountId: "Testing" }), "c1", references)
+    expect(mock.store).not.toHaveBeenCalled()
+    expect(mock.send).toHaveBeenCalledWith(expect.objectContaining({ attachments: [{ filename: "report.pdf", content: buffer }] }))
+  })
   it("personalizes pasted fields and passes stored file bytes and metadata together", async () => {
     const form = draft()
     const file = new File(["PDF"], "report.pdf", { type: "application/pdf" })

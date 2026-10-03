@@ -196,3 +196,5 @@ Log inquiry now does everything in one step: the person is linked to the deal as
 ### If an email does not send
 
 The compose dialog keeps the error beside the message and retains your draft. Marketing requires explicit/implied contact consent and a mailing address configured for the current sub-account. For a personal test to yourself or requested correspondence, turn off Marketing email. If FlowCRM cannot confirm delivery, check the timeline and inbox before retrying to avoid duplicates.
+
+Email attachments upload separately before sending. The dialog shows which file is uploading, then “Sending email.” Attachments still total at most 10 MB. If an upload fails or takes longer than two minutes, the email is not sent and the draft remains for another attempt.

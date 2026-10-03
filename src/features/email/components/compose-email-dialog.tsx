@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { sendEmail, getEmailTemplates, getComposeDefaults } from "../actions"
+import { sendEmail, prepareEmailAttachment, getEmailTemplates, getComposeDefaults } from "../actions"
 import type { EmailTemplate } from "@/types/database"
 import { formatBytes } from "@/features/documents/format"
 import { toast } from "sonner"
@@ -59,6 +59,8 @@ export function ComposeEmailDialog({
   const [isPending, setIsPending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
+  const [sendStage, setSendStage] = useState("")
+  const uploadedRef = useRef(new Map<File, { path: string; name: string }>())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const totalBytes = files.reduce((sum, f) => sum + f.size, 0)
@@ -102,6 +104,7 @@ export function ComposeEmailDialog({
 
   function reset() {
     setSendError(null)
+    uploadedRef.current.clear()
     setSubject("")
     setBody("")
     setFiles([])
@@ -120,7 +123,38 @@ export function ComposeEmailDialog({
       formData.set("body", body.trim())
       formData.set("send_copy", sendCopy && copyTo ? "true" : "false")
       formData.set("marketing", String(marketing))
-      files.forEach((f) => formData.append("files", f))
+      const uploaded = []
+      for (const file of files) {
+        setSendStage(`Uploading ${file.name}…`)
+        let reference = uploadedRef.current.get(file)
+        if (!reference) {
+          const prepared = await prepareEmailAttachment(contactId, file.name, file.size)
+          if (prepared.error || !prepared.signedUrl || !prepared.path) {
+            setSendError(prepared.error || "Could not start the attachment upload.")
+            return
+          }
+          let response: Response
+          try {
+            response = await fetch(prepared.signedUrl, {
+              method: "PUT", body: file,
+              headers: { "Content-Type": file.type || "application/octet-stream", "x-upsert": "false" },
+              signal: AbortSignal.timeout(120_000),
+            })
+          } catch {
+            setSendError(`Upload did not complete for ${file.name}. Email was not sent. Your draft has been kept.`)
+            return
+          }
+          if (!response.ok) {
+            setSendError(`Upload failed for ${file.name}. Email was not sent. Your draft has been kept.`)
+            return
+          }
+          reference = { path: prepared.path, name: file.name }
+          uploadedRef.current.set(file, reference)
+        }
+        uploaded.push(reference)
+      }
+      formData.set("uploaded_files", JSON.stringify(uploaded))
+      setSendStage("Sending email…")
       const result = await sendEmail(formData)
       if (result.error) {
         setSendError(result.error)
@@ -137,6 +171,7 @@ export function ComposeEmailDialog({
       setSendError("Could not confirm whether this email was sent. Check the contact timeline and your inbox before trying again. Your draft has been kept. If your session expired, sign in again.")
     } finally {
       setIsPending(false)
+      setSendStage("")
     }
   }
 
@@ -158,6 +193,7 @@ export function ComposeEmailDialog({
         </DialogHeader>
 
         <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain">
+          {isPending && <p role="status" className="text-sm text-muted-foreground">{sendStage || "Preparing email…"}</p>}
           {sendError && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{sendError}</p>}
           {/* To (read-only) */}
           <div className="flex flex-col gap-1">

@@ -4,11 +4,26 @@ import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import { getEmailSettings, sendEmailToContact, renderTemplate } from "@/lib/messaging/send"
 import { storeFiles, MAX_UPLOAD_BYTES } from "@/features/documents/store"
+import { loadEmailAttachments, safeAttachmentName } from "./attachments"
 import type { Document } from "@/types/database"
 
 // ── Send Email ──
 // Called with FormData from the compose dialog: contact_id, subject, body,
-// send_copy ("true" BCCs the workspace copy address) and zero or more "files".
+// send_copy ("true" BCCs the workspace copy address) and uploaded_files references.
+// Legacy clients may still supply binary files within the platform payload limit.
+
+// Only small metadata reaches Vercel. The signed URL permits one private object
+// upload; workspace/contact/user identity comes from the authenticated session.
+export async function prepareEmailAttachment(contactId: string, name: string, size: number) {
+  const ctx = await getUserContext()
+  if (!name || name.length > 255 || !Number.isSafeInteger(size) || size <= 0 || size > MAX_UPLOAD_BYTES) return { error: "Choose a file of 10 MB or less." }
+  const { data: contact } = await ctx.supabase.from("contacts").select("id").eq("id", contactId).eq("sub_account_id", ctx.subAccountId).single()
+  if (!contact) return { error: "Contact not found." }
+  const path = `${ctx.subAccountId}/email/${contactId}/${ctx.userId}/${crypto.randomUUID()}/${safeAttachmentName(name)}`
+  const { data, error } = await ctx.supabase.storage.from("documents").createSignedUploadUrl(path)
+  if (error || !data) return { error: "Could not start the attachment upload. Please try again." }
+  return { path, signedUrl: data.signedUrl }
+}
 
 export async function getComposeDefaults() {
   const { subAccountId, supabase } = await getUserContext()
@@ -57,10 +72,16 @@ export async function sendEmail(formData: FormData) {
     return { error: "An unrecognized merge field remains. Use first_name, last_name, full_name, email, phone or unsubscribe_url." }
   }
 
-  // Store attachments first so the record exists even if linking fails later;
-  // they are removed again if the send itself fails.
+  // Record uploaded attachments before delivery. Direct uploads remain available
+  // to the draft after a provider rejection; legacy uploads keep their cleanup.
   let stored: { documents: Document[]; buffers: Buffer[] } | null = null
-  if (files.length > 0) {
+  if (formData.has("uploaded_files")) {
+    let input: unknown
+    try { input = JSON.parse(String(formData.get("uploaded_files"))) } catch { return { error: "Invalid attachment list." } }
+    const result = await loadEmailAttachments(ctx, contactId, input)
+    if ("error" in result) return { error: result.error }
+    stored = result
+  } else if (files.length > 0) {
     const result = await storeFiles({ ...ctx, files, contactId })
     if ("error" in result) return { error: result.error }
     stored = result
@@ -85,7 +106,7 @@ export async function sendEmail(formData: FormData) {
   })
 
   if (!result.ok) {
-    if (stored) {
+    if (stored && !formData.has("uploaded_files")) {
       await supabase.storage.from("documents").remove(stored.documents.map((d) => d.path))
       await supabase.from("documents").delete().in("id", stored.documents.map((d) => d.id))
     }

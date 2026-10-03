@@ -226,3 +226,8 @@ tests/
 - Persist validation errors inside the compose dialog; transient toast-only feedback can be missed while the dialog is open.
 - Track the send request explicitly and clear state in finally instead of tying the button to React navigation transition work. Catch rejected server actions, preserve the draft and warn that delivery may be uncertain. Never auto-retry a send.
 - Testing remains its own workspace: no inherited Vancouver mailing address or automatic consent changes.
+
+## Architecture decisions log (2026-10-02 — v0.9.3 attachment transport)
+- Increasing Next serverActions.bodySizeLimit cannot override Vercel's 4.5 MB incoming function payload cap. Compose sends binary files directly to signed private Supabase storage; server action payloads contain references only.
+- Signed upload preparation derives workspace/contact/user from getUserContext; send validates scoped paths, real stored sizes and exact download sizes before persisting document records. No service client, public bucket or RLS expansion. Existing raw-file action path remains for older clients and Documents card.
+- Show upload/send stages and bound direct uploads to two minutes. Retain uploaded references in the current draft for explicit retries; never automatically retry delivery. Unindexed abandoned uploads need future scoped cleanup, not silent deletion.
