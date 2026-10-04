@@ -680,7 +680,7 @@ export function BroadcastEditorPage({
                       <span className="text-xs text-muted-foreground">Failed</span>
                     </div>
                     <div className="flex flex-col items-center rounded-lg bg-muted/50 p-3">
-                      <span className="text-lg font-semibold">{stats.opened}</span>
+                      <span className="text-sm font-semibold">Not tracked</span>
                       <span className="text-xs text-muted-foreground">Opened</span>
                     </div>
                   </div>
