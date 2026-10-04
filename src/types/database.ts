@@ -269,6 +269,7 @@ export type BroadcastChannel = "email" | "sms"
 export type BroadcastStatus = "draft" | "scheduled" | "sending" | "sent" | "failed"
 
 export interface BroadcastRecipientFilter {
+  contact_ids?: string[]
   tags?: string[]
   sources?: string[]
   all?: boolean
@@ -365,4 +366,12 @@ export interface UserContext {
   orgRole: OrgRole
   subAccountId: string
   subAccountRole: SubAccountRole
+}
+
+export interface BroadcastRecipient {
+ id: string; org_id: string; sub_account_id: string; broadcast_id: string; contact_id: string | null;
+ contact_name: string; company: string | null; address: string; status: "pending" | "sent" | "failed";
+ sent_at: string | null; provider_id: string | null; error: string | null;
+ follow_up_status: "not_followed_up" | "followed_up" | "interested" | "declined" | "replied";
+ follow_up_task_id: string | null; historical: boolean;
 }

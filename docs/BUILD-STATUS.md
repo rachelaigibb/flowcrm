@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current version: v0.9.1** · Last updated 2026-10-02 · Latest commit *(see git log)*
+**Current version: v0.9.5** · Last updated 2026-10-03 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -201,3 +201,9 @@ October 2 resumed live verification after unlock: synthetic flowcrm-attachment-5
 October 2 v0.9.4: native user's attachment draft exposed "An attachment has not finished uploading" after the upload step. Corrected Storage info response handling from metadata.size to top-level size, as declared by installed StorageFileApi/FileObjectV2. Prior test fixture incorrectly mimicked storage.objects SQL metadata, rather than the HTTP info response. Regression fixture now uses top-level size with empty custom metadata. Existing live 5 MB upload-only guard did not exercise file-info retrieval; actual inbox delivery remains unverified. User's draft remains open and intact; no send by Codex.
 
 v0.9.4 deployed from 81aa6f8; independent Vercel inspection confirms ● Ready (dpl_4Ckcf3itB9xWv27k1n3rMfC9rF12), https://crm.getflowplan.app. Scoped storage readback confirmed user PDF was fully uploaded (200,667 bytes), so this attempt failed during info validation, not upload. 38 tests, TypeScript and build passed. Existing user draft left intact; no automatic retry or email sent by Codex.
+
+## v0.9.5 — Broadcast recipients and follow-up (2026-10-03)
+
+Stage 1: permanent send-time recipient snapshots, per-recipient sent/failed/pending results, provider IDs and failure reasons. Broadcast recipient lists link to contact records and Contacts filters; contact emails link back to named broadcasts. Select recipients to create idempotent follow-up tasks, mark outcomes, open the sent/unfollowed phone queue, or prepare an email follow-up draft with a fixed selected audience. Current consent and do-not-contact tags are rechecked. Test sends are excluded. Sent means provider acceptance, not inbox delivery; delivery/open/click events and automatic Gmail replies remain Stage 2. Historical backfill recovered two successful records only; unknown failures are not fabricated.
+
+Migration 00021 applied and recorded as 20261003215000. Authenticated rollback fixtures verified repeated task creation produces one task, cross-workspace insert is rejected, and an unrelated user sees no recipient data. TypeScript, 42 tests and production build passed (build required network access for the existing Inter font). No campaign sends, follow-up tasks or schedules were created outside rolled-back fixtures. Deployment evidence follows after release.

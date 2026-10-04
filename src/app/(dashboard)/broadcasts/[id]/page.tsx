@@ -5,10 +5,13 @@ import type { Broadcast, EmailTemplate, SmsTemplate } from "@/types/database"
 
 export default async function BroadcastDetailRoute({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{recipients?: string}>
 }) {
   const { id } = await params
+  const {recipients}=await searchParams
 
   let ctx: Awaited<ReturnType<typeof getUserContext>>
   try {
@@ -86,6 +89,7 @@ export default async function BroadcastDetailRoute({
 
   return (
     <BroadcastEditorPage
+      initialRecipientStatus={recipients}
       broadcast={broadcast as Broadcast}
       emailTemplates={(emailTemplates ?? []) as EmailTemplate[]}
       smsTemplates={(smsTemplates ?? []) as SmsTemplate[]}

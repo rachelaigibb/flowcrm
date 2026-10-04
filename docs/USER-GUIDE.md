@@ -198,3 +198,14 @@ Log inquiry now does everything in one step: the person is linked to the deal as
 The compose dialog keeps the error beside the message and retains your draft. Marketing requires explicit/implied contact consent and a mailing address configured for the current sub-account. For a personal test to yourself or requested correspondence, turn off Marketing email. If FlowCRM cannot confirm delivery, check the timeline and inbox before retrying to avoid duplicates.
 
 Email attachments upload separately before sending. The dialog shows which file is uploading, then “Sending email.” Attachments still total at most 10 MB. If an upload fails or takes longer than two minutes, the email is not sent and the draft remains for another attempt.
+
+## Broadcast follow-up (v0.9.5)
+
+1. Open a sent broadcast and click **View recipients** or its Sent/Failed count. The recipient section lists each recorded contact, company, send-time address, result and follow-up outcome. Use the Send status filter to narrow to Sent or Failed; click a contact name to open its record. **Sent means provider acceptance**, not confirmed delivery. Test sends are excluded. Older sends show an incomplete-history notice and recoverable successes only. Pending may mean sending has not finished or its result is unknown; check before retrying.
+2. Click **Open in Contacts**, or use Contacts → Broadcast and Status. This filters recorded recipients, independently of their current tags. Deleted contacts remain in broadcast history but cannot appear in Contacts.
+3. Select recipients, choose a date, and click **Create follow-up tasks**. One task per broadcast/contact is created; repeated clicks skip existing tasks. Only sent, still-eligible contacts are included; declined/replied contacts are skipped. Complete the task from Tasks when done.
+4. Use **Set outcome** for Not followed up, Followed up, Interested, Declined or Replied. Gmail replies must currently be marked manually. Outcomes belong to this broadcast, not every campaign the contact has received.
+5. **Call sent recipients** opens the sent/not-followed-up contacts with phone numbers, excluding withdrawn consent and do-not-contact tags. Logging a call marks that broadcast follow-up complete.
+6. **Prepare follow-up draft** makes a new email draft for selected sent recipients; declined/replied/unsubscribed/do-not-contact contacts are excluded. Write the body and test it, then review before sending. Its selected audience stays fixed; current eligibility is checked again at send time. Creating the draft does not send or schedule anything.
+
+Broadcast emails in the contact timeline now show a clickable **Broadcast** label. Older email records link to their campaign even if its name was not stored in the original activity.

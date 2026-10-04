@@ -234,3 +234,6 @@ tests/
 
 ## Architecture decisions log (2026-10-02 — v0.9.4 storage-info correction)
 - StorageFileApi.info returns FileObjectV2 top-level size; metadata is custom metadata. storage.objects SQL metadata and the HTTP API response have different shapes. Test fixtures must reflect the installed API contract.
+
+### 2026-10-03 — Broadcast follow-up Stage 1
+Rachel approved Stage 1 after research. Persist broadcast_recipients before sending, with tenant-scoped RLS and send-time name/company/address. Preserve failures and provider IDs separately from mutable audience tags. Existing activities backfill only supported successes (2 records); tests remain excluded. Use an invoker SQL function with row locks and saved task IDs for duplicate-proof follow-up tasks. Contact filters use recorded membership; follow-up drafts use explicit contact_ids and recheck consent/do-not-contact. Calls record manual follow-up outcome; no automatic email sends. Stage 2 delivery/engagement and Gmail replies remain deferred. v0.9.5, migration 00021, 42 tests; rollback database isolation/idempotence verification passed.

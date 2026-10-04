@@ -1,5 +1,6 @@
 "use client"
 
+import { BroadcastRecipientList } from "./broadcast-recipient-list"
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -70,6 +71,7 @@ function toLocalInput(iso: string | null): string {
 }
 
 interface BroadcastEditorPageProps {
+  initialRecipientStatus?: string
   broadcast: Broadcast
   emailTemplates: EmailTemplate[]
   smsTemplates: SmsTemplate[]
@@ -78,6 +80,7 @@ interface BroadcastEditorPageProps {
 }
 
 export function BroadcastEditorPage({
+  initialRecipientStatus,
   broadcast,
   emailTemplates,
   smsTemplates,
@@ -122,12 +125,13 @@ export function BroadcastEditorPage({
 
   // ── Build current filter object ──
   const buildFilter = useCallback((): BroadcastRecipientFilter => {
+    if (filter.contact_ids) return { contact_ids: filter.contact_ids }
     if (sendToAll) return { all: true }
     const f: BroadcastRecipientFilter = {}
     if (selectedTags.size > 0) f.tags = Array.from(selectedTags)
     if (selectedSources.size > 0) f.sources = Array.from(selectedSources)
     return f
-  }, [sendToAll, selectedTags, selectedSources])
+  }, [sendToAll, selectedTags, selectedSources, filter.contact_ids])
 
   // ── Fetch recipient count when filters change ──
   useEffect(() => {
@@ -367,6 +371,9 @@ export function BroadcastEditorPage({
         </div>
       </div>
 
+      {!isDraft && broadcast.status !== "scheduled" && <BroadcastRecipientList initialStatus={initialRecipientStatus} id={broadcast.id} total={stats.total} channel={broadcast.channel} />}
+      {!isDraft && <a href="#recipients" className="text-sm underline">View recipients · Sent {stats.sent} · Failed {stats.failed}</a>}
+      {filter.contact_ids && <p className="text-sm">This follow-up uses {filter.contact_ids.length} selected contacts from the original broadcast. Current consent is checked again before sending.</p>}
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
         {/* Left column: Content */}
@@ -438,7 +445,7 @@ export function BroadcastEditorPage({
                       placeholder="Email subject line"
                       value={emailSubject}
                       onChange={(e) => setEmailSubject(e.target.value)}
-                      disabled={!isDraft}
+                      disabled={!isDraft || !!filter.contact_ids}
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -449,7 +456,7 @@ export function BroadcastEditorPage({
                       value={emailBody}
                       onChange={(e) => setEmailBody(e.target.value)}
                       rows={12}
-                      disabled={!isDraft}
+                      disabled={!isDraft || !!filter.contact_ids}
                     />
                   <p className="text-xs text-muted-foreground">
                     Sent as HTML. Merge fields: {"{{first_name}}"}, {"{{full_name}}"}, {"{{email}}"}. A footer with your sender name, reply-to address and an unsubscribe link is added to every copy automatically. Your signature is not added; sign off in the text.
@@ -480,7 +487,7 @@ export function BroadcastEditorPage({
                     value={smsBody}
                     onChange={(e) => setSmsBody(e.target.value)}
                     rows={6}
-                    disabled={!isDraft}
+                    disabled={!isDraft || !!filter.contact_ids}
                   />
                   {smsBody.length > SMS_MAX_LENGTH && (
                     <p className="text-xs text-destructive flex items-center gap-1">
@@ -528,13 +535,13 @@ export function BroadcastEditorPage({
                       setSelectedSources(new Set())
                     }
                   }}
-                  disabled={!isDraft}
+                  disabled={!isDraft || !!filter.contact_ids}
                 />
                 <span className="text-sm">Send to all contacts</span>
               </label>
 
               {/* Tag filters */}
-              {!sendToAll && availableTags.length > 0 && (
+              {!filter.contact_ids && !sendToAll && availableTags.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1">
                     <Filter className="size-3" />
@@ -549,7 +556,7 @@ export function BroadcastEditorPage({
                         <Checkbox
                           checked={selectedTags.has(tag)}
                           onCheckedChange={() => toggleTag(tag)}
-                          disabled={!isDraft}
+                          disabled={!isDraft || !!filter.contact_ids}
                         />
                         <span className="truncate">{tag}</span>
                       </label>
@@ -559,7 +566,7 @@ export function BroadcastEditorPage({
               )}
 
               {/* Source filters */}
-              {!sendToAll && availableSources.length > 0 && (
+              {!filter.contact_ids && !sendToAll && availableSources.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1">
                     <Filter className="size-3" />
@@ -574,7 +581,7 @@ export function BroadcastEditorPage({
                         <Checkbox
                           checked={selectedSources.has(source)}
                           onCheckedChange={() => toggleSource(source)}
-                          disabled={!isDraft}
+                          disabled={!isDraft || !!filter.contact_ids}
                         />
                         <span className="truncate capitalize">{source}</span>
                       </label>
@@ -665,11 +672,11 @@ export function BroadcastEditorPage({
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="flex flex-col items-center rounded-lg bg-muted/50 p-3">
-                      <span className="text-lg font-semibold">{stats.sent}</span>
+                      <Link href={`/broadcasts/${broadcast.id}?recipients=sent#recipients`} className="text-lg font-semibold underline">{stats.sent}</Link>
                       <span className="text-xs text-muted-foreground">Sent</span>
                     </div>
                     <div className="flex flex-col items-center rounded-lg bg-muted/50 p-3">
-                      <span className="text-lg font-semibold">{stats.failed}</span>
+                      <Link href={`/broadcasts/${broadcast.id}?recipients=failed#recipients`} className="text-lg font-semibold underline">{stats.failed}</Link>
                       <span className="text-xs text-muted-foreground">Failed</span>
                     </div>
                     <div className="flex flex-col items-center rounded-lg bg-muted/50 p-3">

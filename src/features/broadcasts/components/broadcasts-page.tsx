@@ -189,7 +189,7 @@ export function BroadcastsPage({ broadcasts, scheduler }: BroadcastsPageProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {stats.sent}/{stats.total}
+                      <Link className="underline" href={`/broadcasts/${broadcast.id}?recipients=sent#recipients`}>{stats.sent}/{stats.total}</Link>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-muted-foreground">
                       {formatDateShort(broadcast.created_at)}

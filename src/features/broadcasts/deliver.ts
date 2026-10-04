@@ -60,11 +60,14 @@ export async function getBroadcastRecipients(
 ) {
   let query = supabase
     .from("contacts")
-    .select("id, first_name, last_name, email, phone, consent_status, unsubscribe_token")
+    .select("id, first_name, last_name, company, email, phone, consent_status, unsubscribe_token")
     .eq("org_id", ctx.orgId)
     .eq("sub_account_id", ctx.subAccountId)
+    .not("tags", "cs", "{do-not-contact}")
 
-  if (!filter.all) {
+  if (filter.contact_ids) {
+    query = query.in("id", filter.contact_ids)
+  } else if (!filter.all) {
     const orConditions: string[] = []
     if (filter.tags && filter.tags.length > 0) orConditions.push(`tags.ov.{${filter.tags.join(",")}}`)
     if (filter.sources && filter.sources.length > 0) orConditions.push(`source.in.(${filter.sources.join(",")})`)
@@ -136,6 +139,16 @@ export async function deliverBroadcast(
   if (claimError) return { ok: false, error: claimError.message }
   if (!claimed?.length) return { ok: false, error: "This broadcast is already being sent" }
 
+  const { error: snapshotError } = await supabase.from("broadcast_recipients").insert(
+    (recipients ?? []).map((c) => ({ org_id: orgId, sub_account_id: subAccountId, broadcast_id: id,
+      contact_id: c.id, contact_name: [c.first_name,c.last_name].filter(Boolean).join(" ") || "Contact",
+      company: c.company, address: broadcast.channel === "email" ? c.email : c.phone, status: "pending" }))
+  )
+  if (snapshotError) {
+    await supabase.from("broadcasts").update({ status: "failed", stats: { total: totalRecipients, sent: 0, failed: 0, opened: 0, error: "Recipient history could not be saved. No messages sent." } }).eq("id",id).eq("org_id",orgId)
+    return { ok: false, error: "Recipient history could not be saved. No messages sent." }
+  }
+
   // Personalized per contact, in small concurrent batches. Stats update after
   // every batch so the UI shows live progress on refresh.
   let sent = 0
@@ -160,7 +173,7 @@ export async function deliverBroadcast(
             body: renderTemplate(broadcast.email_body as string, contact),
             includeSignature: false,
             marketing: true,
-            activityMetadata: { broadcast_id: id },
+            activityMetadata: { broadcast_id: id, broadcast_name: broadcast.name },
           })
         }
         return sendSmsToContact({
@@ -171,11 +184,16 @@ export async function deliverBroadcast(
           contact,
           settings: smsSettings!,
           body: renderTemplate(broadcast.sms_body as string, contact),
-          activityMetadata: { broadcast_id: id },
+          activityMetadata: { broadcast_id: id, broadcast_name: broadcast.name },
         })
       })
     )
 
+    const recorded = await Promise.all(results.map((result, idx) => supabase.from("broadcast_recipients").update({
+      status: result.ok ? "sent" : "failed", sent_at: result.ok ? new Date().toISOString() : null,
+      provider_id: result.ok ? result.providerId : null, error: result.ok ? null : result.error,
+    }).eq("broadcast_id",id).eq("contact_id",batch[idx].id).eq("sub_account_id",subAccountId)))
+    if (recorded.some((r) => r.error)) console.error("Broadcast recipient result persistence failed", id)
     results.forEach((result, idx) => {
       if (result.ok) {
         sent++

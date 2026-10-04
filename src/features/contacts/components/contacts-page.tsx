@@ -53,13 +53,17 @@ interface TagColor {
 interface ContactsPageProps {
   contacts: Contact[]
   tagColors: TagColor[]
+  broadcasts?: {id:string;name:string}[]
+  broadcastFilter?: string
+  broadcastStatus?: string
+  historyError?: string
 }
 
 function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined {
   return tagColors.find((t) => t.name.toLowerCase() === tagName.toLowerCase())?.color
 }
 
-export function ContactsPage({ contacts, tagColors }: ContactsPageProps) {
+export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilter="", broadcastStatus="all", historyError }: ContactsPageProps) {
   const router = useRouter()
   const [search, setSearch] = useState("")
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
@@ -279,6 +283,9 @@ export function ContactsPage({ contacts, tagColors }: ContactsPageProps) {
             className="pl-8"
           />
         </div>
+        <label className="text-sm">Broadcast <select aria-label="Filter by broadcast" className="border rounded p-2 bg-background max-w-64" value={broadcastFilter} onChange={e=>router.push(e.target.value?`/contacts?broadcast=${e.target.value}&status=sent`:'/contacts')}><option value="">All broadcasts / contacts</option>{broadcasts.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+        {broadcastFilter&&<label className="text-sm">Status <select aria-label="Broadcast recipient status" className="border rounded p-2 bg-background" value={broadcastStatus} onChange={e=>router.push(`/contacts?broadcast=${broadcastFilter}&status=${e.target.value}`)}>{['all','sent','failed','pending'].map(s=><option key={s} value={s}>{s}</option>)}</select></label>}
+        {historyError&&<p role="alert" className="text-destructive">Could not load broadcast recipients.</p>}
         {allTags.length > 0 && (
           <div className="flex items-center gap-2">
             <Popover>

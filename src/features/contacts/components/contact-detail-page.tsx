@@ -1007,6 +1007,7 @@ function ActivityRow({
             </div>
           )}
         </div>
+        {typeof activity.metadata?.broadcast_id === "string" && <Link className="text-xs underline block mb-1" href={`/broadcasts/${activity.metadata.broadcast_id}`}>Broadcast: {typeof activity.metadata.broadcast_name === "string" ? activity.metadata.broadcast_name : "View campaign"}</Link>}
         {activity.content && (
           <CollapsibleActivityContent content={activity.content} />
         )}

@@ -370,7 +370,7 @@ export async function logCall(
 }
 
 // Today's call queue: contacts carrying a tag, never-contacted first, then longest since last contact.
-export async function getCallQueue(tag: string | null, limit = 10) {
+export async function getCallQueue(tag: string | null, limit = 10, broadcastId?: string) {
   const { orgId, subAccountId, supabase } = await getUserContext()
 
   let q = supabase
@@ -383,7 +383,13 @@ export async function getCallQueue(tag: string | null, limit = 10) {
     .order("last_contact", { ascending: true, nullsFirst: true })
     .order("created_at", { ascending: true })
     .limit(limit)
-  if (tag) q = q.contains("tags", [tag])
+  if (broadcastId) {
+    const {data:recipients,error}=await supabase.from("broadcast_recipients").select("contact_id").eq("org_id",orgId).eq("sub_account_id",subAccountId).eq("broadcast_id",broadcastId).eq("status","sent").eq("follow_up_status","not_followed_up")
+    if(error)return {error:error.message}
+    const ids=(recipients??[]).map(r=>r.contact_id).filter(Boolean)
+    if(!ids.length)return {data:[]}
+    q=q.in("id",ids).in("consent_status",["explicit","implied"])
+  } else if (tag) q = q.contains("tags", [tag])
 
   const { data, error } = await q
   if (error) return { error: error.message }

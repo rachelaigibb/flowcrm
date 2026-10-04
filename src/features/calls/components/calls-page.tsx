@@ -3,6 +3,8 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { markBroadcastCallFollowup } from "@/features/broadcasts/recipient-actions"
+import { toast } from "sonner"
 import { LogCallDialog } from "./log-call-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -24,13 +26,14 @@ interface QueueContact {
 }
 
 interface CallsPageProps {
+  broadcastId?: string
   contacts: QueueContact[]
   selectedTag: string | null
   tagOptions: string[]
   error?: string
 }
 
-export function CallsPage({ contacts, selectedTag, tagOptions, error }: CallsPageProps) {
+export function CallsPage({ broadcastId, contacts, selectedTag, tagOptions, error }: CallsPageProps) {
   const router = useRouter()
   const [active, setActive] = useState<QueueContact | null>(null)
 
@@ -41,15 +44,15 @@ export function CallsPage({ contacts, selectedTag, tagOptions, error }: CallsPag
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2"><PhoneCall className="size-5" /> Today&apos;s calls</h1>
-          <p className="text-sm text-muted-foreground">Ten people, never-contacted first, then longest since last contact. Log each call and the list refreshes.</p>
+          <p className="text-sm text-muted-foreground">{broadcastId ? 'Sent recipients not yet followed up, with usable phone numbers. Log a call to move it out of this queue.' : 'Never-contacted first, then longest since last contact. Log each call and the list refreshes.'}</p>
         </div>
-        <Select value={selectedTag ?? "all"} onValueChange={(v) => router.push(`/calls?tag=${encodeURIComponent(v ?? "all")}`)}>
+        {broadcastId ? <Link className="underline text-sm" href={`/broadcasts/${broadcastId}#recipients`}>Back to broadcast</Link> : <Select value={selectedTag ?? "all"} onValueChange={(v) => router.push(`/calls?tag=${encodeURIComponent(v ?? "all")}`)}>
           <SelectTrigger className="w-48 h-8 text-sm"><SelectValue>{selectedTag ?? "All contacts"}</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All contacts</SelectItem>
             {tagOptions.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
-        </Select>
+        </Select>}
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -87,6 +90,7 @@ export function CallsPage({ contacts, selectedTag, tagOptions, error }: CallsPag
         <LogCallDialog
           open={!!active}
           onOpenChange={(v) => { if (!v) setActive(null) }}
+          onLogged={broadcastId ? () => { void markBroadcastCallFollowup(broadcastId,active.id).then(r=>{if(r.error)toast.error(r.error);router.refresh()}) } : undefined}
           contactId={active.id}
           contactName={name(active)}
           contactPhone={active.phone}
