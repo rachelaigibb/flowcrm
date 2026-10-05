@@ -72,6 +72,7 @@ function toLocalInput(iso: string | null): string {
 
 interface BroadcastEditorPageProps {
   initialRecipientStatus?: string
+  timezone?: string
   broadcast: Broadcast
   emailTemplates: EmailTemplate[]
   smsTemplates: SmsTemplate[]
@@ -81,6 +82,7 @@ interface BroadcastEditorPageProps {
 
 export function BroadcastEditorPage({
   initialRecipientStatus,
+  timezone = "UTC",
   broadcast,
   emailTemplates,
   smsTemplates,
@@ -371,7 +373,7 @@ export function BroadcastEditorPage({
         </div>
       </div>
 
-      {!isDraft && broadcast.status !== "scheduled" && <BroadcastRecipientList initialStatus={initialRecipientStatus} id={broadcast.id} total={stats.total} channel={broadcast.channel} />}
+      {!isDraft && broadcast.status !== "scheduled" && <BroadcastRecipientList key={`${broadcast.id}:${initialRecipientStatus ?? "all"}`} timezone={timezone} initialStatus={initialRecipientStatus} id={broadcast.id} total={stats.total} channel={broadcast.channel} />}
       {!isDraft && <a href="#recipients" className="text-sm underline">View recipients · Sent {stats.sent} · Failed {stats.failed}</a>}
       {filter.contact_ids && <p className="text-sm">This follow-up uses {filter.contact_ids.length} selected contacts from the original broadcast. Current consent is checked again before sending.</p>}
       {/* Two-column layout */}
@@ -445,7 +447,7 @@ export function BroadcastEditorPage({
                       placeholder="Email subject line"
                       value={emailSubject}
                       onChange={(e) => setEmailSubject(e.target.value)}
-                      disabled={!isDraft || !!filter.contact_ids}
+                      disabled={!isDraft}
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -456,7 +458,7 @@ export function BroadcastEditorPage({
                       value={emailBody}
                       onChange={(e) => setEmailBody(e.target.value)}
                       rows={12}
-                      disabled={!isDraft || !!filter.contact_ids}
+                      disabled={!isDraft}
                     />
                   <p className="text-xs text-muted-foreground">
                     Sent as HTML. Merge fields: {"{{first_name}}"}, {"{{full_name}}"}, {"{{email}}"}. A footer with your sender name, reply-to address and an unsubscribe link is added to every copy automatically. Your signature is not added; sign off in the text.
@@ -487,7 +489,7 @@ export function BroadcastEditorPage({
                     value={smsBody}
                     onChange={(e) => setSmsBody(e.target.value)}
                     rows={6}
-                    disabled={!isDraft || !!filter.contact_ids}
+                    disabled={!isDraft}
                   />
                   {smsBody.length > SMS_MAX_LENGTH && (
                     <p className="text-xs text-destructive flex items-center gap-1">
@@ -680,7 +682,7 @@ export function BroadcastEditorPage({
                       <span className="text-xs text-muted-foreground">Failed</span>
                     </div>
                     <div className="flex flex-col items-center rounded-lg bg-muted/50 p-3">
-                      <span className="text-sm font-semibold">Not tracked</span>
+                      <span className="text-sm font-semibold">Disabled</span>
                       <span className="text-xs text-muted-foreground">Opened</span>
                     </div>
                   </div>

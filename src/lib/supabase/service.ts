@@ -1,7 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
-// Service-role client: bypasses RLS. Only the cron route
-// (app/api/cron/tick/route.ts) may import this file — it has no user session,
+// Service-role client: bypasses RLS. Only the authenticated cron route and
+// signature-verified Resend webhook may import this file — neither has a user session,
 // so it cannot use the cookie client. The key lives only in Vercel
 // (Production, Sensitive); it is never in .env.local, so this throws locally.
 export function createServiceClient() {

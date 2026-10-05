@@ -128,7 +128,7 @@ export async function deliverBroadcast(
     .from("broadcasts")
     .update({
       status: "sending",
-      stats: { total: totalRecipients, sent: 0, failed: 0, opened: 0 },
+      stats: { total: totalRecipients, sent: 0, failed: 0 },
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -145,7 +145,7 @@ export async function deliverBroadcast(
       company: c.company, address: broadcast.channel === "email" ? c.email : c.phone, status: "pending" }))
   )
   if (snapshotError) {
-    await supabase.from("broadcasts").update({ status: "failed", stats: { total: totalRecipients, sent: 0, failed: 0, opened: 0, error: "Recipient history could not be saved. No messages sent." } }).eq("id",id).eq("org_id",orgId)
+    await supabase.from("broadcasts").update({ status: "failed", stats: { total: totalRecipients, sent: 0, failed: 0, error: "Recipient history could not be saved. No messages sent." } }).eq("id",id).eq("org_id",orgId)
     return { ok: false, error: "Recipient history could not be saved. No messages sent." }
   }
 
@@ -206,7 +206,7 @@ export async function deliverBroadcast(
     await supabase
       .from("broadcasts")
       .update({
-        stats: { total: totalRecipients, sent, failed, opened: 0 },
+        stats: { total: totalRecipients, sent, failed },
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
@@ -223,7 +223,6 @@ export async function deliverBroadcast(
         total: totalRecipients,
         sent,
         failed,
-        opened: 0,
         ...(sent === 0 ? { error: failures[0]?.error ?? "All sends failed" } : {}),
       },
       updated_at: new Date().toISOString(),

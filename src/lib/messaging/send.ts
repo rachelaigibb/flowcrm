@@ -153,6 +153,10 @@ export async function sendEmailToContact(params: {
       from: `${settings.fromName} <${settings.fromEmail}>`,
       to: [contact.email],
       bcc: params.bcc && params.bcc.length > 0 ? params.bcc : undefined,
+      // Provider-signed tags scope early webhook events to an existing campaign recipient.
+      tags: !params.skipActivity && typeof params.activityMetadata?.broadcast_id === "string"
+        ? [{ name: "flowcrm_broadcast_id", value: params.activityMetadata.broadcast_id }, { name: "flowcrm_contact_id", value: contact.id }]
+        : undefined,
       replyTo: settings.replyTo,
       subject,
       text: content.text,

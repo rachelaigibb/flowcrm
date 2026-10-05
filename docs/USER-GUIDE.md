@@ -209,3 +209,11 @@ Email attachments upload separately before sending. The dialog shows which file 
 6. **Prepare follow-up draft** makes a new email draft for selected sent recipients; declined/replied/unsubscribed/do-not-contact contacts are excluded. Write the body and test it, then review before sending. Its selected audience stays fixed; current eligibility is checked again at send time. Creating the draft does not send or schedule anything.
 
 Broadcast emails in the contact timeline now show a clickable **Broadcast** label. Older email records link to their campaign even if its name was not stored in the original activity.
+
+## Delivery and clicked links — v0.9.6 preview (not live yet)
+
+After reporting is configured and released, open a sent email broadcast's Recipients section. Delivery counts mean the receiving server accepted the message; Sent still means Resend accepted it for sending. Filter Engagement to Clicked, Delivered, Delivery issues or No delivery/click evidence. Search a clicked URL to see recipients who clicked that link, then expand a row for its first/latest times in your workspace timezone. Open in Contacts carries the engagement/link filters over.
+
+Select visible recipients to use the existing follow-up task or draft actions. A selected-recipient draft lets you edit subject/body while its audience stays fixed. Sending still requires your review and normal consent checks. Contact detail also shows each campaign's delivery/click evidence.
+
+Clicks can come from automated security scanners; they do not prove a person read the email or is interested. Reply/interested outcomes stay manual. Opens are disabled, and older messages without evidence stay unknown. “No clicks recorded” is not “unread.” Refresh to load newly received evidence; setup/read errors are shown explicitly.

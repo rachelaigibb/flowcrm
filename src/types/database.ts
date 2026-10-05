@@ -279,7 +279,7 @@ export interface BroadcastStats {
   total: number
   sent: number
   failed: number
-  opened: number
+  opened?: number // Legacy only; open tracking is disabled
   // Why a broadcast ended as failed (set by the send loop or the scheduler)
   error?: string
 }
@@ -374,4 +374,12 @@ export interface BroadcastRecipient {
  sent_at: string | null; provider_id: string | null; error: string | null;
  follow_up_status: "not_followed_up" | "followed_up" | "interested" | "declined" | "replied";
  follow_up_task_id: string | null; historical: boolean;
+}
+
+export interface EmailDeliveryEvent {
+  event_id: string
+  provider_id: string
+  event_type: string
+  occurred_at: string
+  link: string | null
 }

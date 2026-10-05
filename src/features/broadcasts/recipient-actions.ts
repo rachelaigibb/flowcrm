@@ -1,12 +1,21 @@
 "use server"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import { revalidatePath } from "next/cache"
+import { attachEngagement } from "./engagement-store"
 import type { BroadcastRecipient } from "@/types/database"
 
 export async function getBroadcastHistory(id: string) {
  const {supabase,orgId,subAccountId}=await getUserContext()
- const {data,error}=await supabase.from('broadcast_recipients').select('*').eq('broadcast_id',id).eq('org_id',orgId).eq('sub_account_id',subAccountId).order('contact_name')
- return {data:(data??[]) as BroadcastRecipient[],error:error?.message}
+ const rows: BroadcastRecipient[] = []
+ for (let offset=0;;offset+=500) {
+  const {data,error}=await supabase.from('broadcast_recipients').select('*').eq('broadcast_id',id).eq('org_id',orgId).eq('sub_account_id',subAccountId).order('id').range(offset,offset+499)
+  if(error)return {data:[],error:error.message}
+  rows.push(...(data??[]) as BroadcastRecipient[])
+  if((data?.length??0)<500)break
+ }
+ try { return {data:await attachEngagement(supabase,rows),error:undefined} }
+ catch { return {data:[],error:'Engagement could not be loaded. Confirm reporting setup and refresh.'} }
+
 }
 export async function updateBroadcastOutcome(id:string,ids:string[],outcome:BroadcastRecipient['follow_up_status']) {
  if(!['not_followed_up','followed_up','interested','declined','replied'].includes(outcome)||!ids.length||ids.length>500)return {error:'Invalid selection'}
@@ -37,7 +46,7 @@ export async function createBroadcastFollowupDraft(id:string,ids:string[]) {
  if(ce)return {error:ce.message}
  const eligible=(contacts??[]).filter(c=>!(c.tags??[]).includes('do-not-contact')).map(c=>c.id)
  if(!eligible.length)return {error:'No eligible recipients remain'}
- const {data:d,error:de}=await supabase.from('broadcasts').insert({org_id:orgId,sub_account_id:subAccountId,name:`Follow-up — ${b.name}`,channel:'email',status:'draft',email_subject:`Follow-up: ${b.email_subject??b.name}`,email_body:'',recipient_filter:{contact_ids:eligible},stats:{total:0,sent:0,failed:0,opened:0}}).select('id').single()
+ const {data:d,error:de}=await supabase.from('broadcasts').insert({org_id:orgId,sub_account_id:subAccountId,name:`Follow-up — ${b.name}`,channel:'email',status:'draft',email_subject:`Follow-up: ${b.email_subject??b.name}`,email_body:'',recipient_filter:{contact_ids:eligible},stats:{total:0,sent:0,failed:0}}).select('id').single()
  revalidatePath('/broadcasts')
  return {id:d?.id,error:de?.message}
 }

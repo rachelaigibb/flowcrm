@@ -1,4 +1,6 @@
 "use client"
+import { EngagementDetail } from "@/features/broadcasts/components/engagement-detail"
+import type { RecipientWithEngagement } from "@/features/broadcasts/engagement"
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
@@ -91,6 +93,9 @@ interface TagColor {
 }
 
 interface ContactDetailPageProps {
+  engagementRows?: RecipientWithEngagement[]
+  engagementError?: boolean
+  timezone?: string
   contact: ContactWithRelations
   tagColors: TagColor[]
   stages: PipelineStage[]
@@ -121,7 +126,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 
 // ── Main Component ──
 
-export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency, prevContactId, nextContactId, allContacts, allDeals, dealTypes, dealRoles, relatedDeals = [], documents = [] }: ContactDetailPageProps) {
+export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency, prevContactId, nextContactId, allContacts, allDeals, dealTypes, dealRoles, relatedDeals = [], documents = [], engagementRows = [], engagementError = false, timezone = "UTC" }: ContactDetailPageProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -568,6 +573,14 @@ export function ContactDetailPage({ contact, tagColors, stages, defaultCurrency,
 
         <Separator />
 
+        {(engagementError || engagementRows.length > 0) && <section className="rounded-lg border p-3 space-y-3">
+          <h3 className="text-sm font-semibold">Broadcast delivery and clicks</h3>
+          <p className="text-xs text-muted-foreground">Clicks can be automated; they do not change your manual reply or interest outcomes. No evidence means unknown.</p>
+          {engagementError ? <p role="alert" className="text-sm text-destructive">Engagement could not be loaded. Confirm reporting setup and refresh.</p> : engagementRows.map(row=><div key={row.id} className="border-t pt-2">
+            <Link href={`/broadcasts/${row.broadcast_id}#recipients`} className="text-sm underline">Broadcast · {row.sent_at ? new Date(row.sent_at).toLocaleString(undefined,{timeZone:timezone}) : row.status}</Link>
+            <EngagementDetail engagement={row.engagement} timezone={timezone}/>
+          </div>)}
+        </section>}
         {/* Unified timeline */}
         {allActivities.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">

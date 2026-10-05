@@ -1,3 +1,5 @@
+import { attachEngagement } from "@/features/broadcasts/engagement-store"
+import type { RecipientWithEngagement } from "@/features/broadcasts/engagement"
 import { createClient } from "@/lib/supabase/server"
 import { getSubAccountId } from "@/lib/supabase/get-sub-account"
 import { redirect, notFound } from "next/navigation"
@@ -42,7 +44,7 @@ export default async function ContactDetailRoute({
       .single(),
     supabase
       .from("sub_accounts")
-      .select("settings")
+      .select("settings,timezone")
       .eq("id", subAccountId)
       .single(),
     supabase
@@ -133,8 +135,24 @@ export default async function ContactDetailRoute({
     .eq("status", "open")
     .order("title")
 
+  let engagementRows: RecipientWithEngagement[] = []
+  let engagementError = false
+  try {
+    const rows: import("@/types/database").BroadcastRecipient[] = []
+    for (let offset=0;;offset+=500) {
+      const {data,error}=await supabase.from("broadcast_recipients").select("*, broadcast:broadcasts!inner(channel)").eq("contact_id",id).eq("sub_account_id",subAccountId).eq("broadcast.channel","email").order("id").range(offset,offset+499)
+      if(error)throw error
+      rows.push(...(data??[]))
+      if((data?.length??0)<500)break
+    }
+    engagementRows = await attachEngagement(supabase,rows)
+  } catch { engagementError = true }
+
   return (
     <ContactDetailPage
+      engagementRows={engagementRows}
+      engagementError={engagementError}
+      timezone={subAccount?.timezone ?? "UTC"}
       dealTypes={dealTypes}
       dealRoles={dealRoles}
       relatedDeals={relatedDeals}

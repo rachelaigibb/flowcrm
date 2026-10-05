@@ -87,8 +87,10 @@ export default async function BroadcastDetailRoute({
   }
   const availableSources = Array.from(sourceSet).sort()
 
+  const {data:workspace}=await supabase.from("sub_accounts").select("timezone").eq("id",subAccountId).single()
   return (
     <BroadcastEditorPage
+      timezone={workspace?.timezone ?? "UTC"}
       initialRecipientStatus={recipients}
       broadcast={broadcast as Broadcast}
       emailTemplates={(emailTemplates ?? []) as EmailTemplate[]}

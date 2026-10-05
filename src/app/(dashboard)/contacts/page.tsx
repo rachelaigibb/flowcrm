@@ -1,3 +1,6 @@
+import { attachEngagement } from "@/features/broadcasts/engagement-store"
+import { matchesEngagement } from "@/features/broadcasts/engagement"
+import type { BroadcastRecipient } from "@/types/database"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { getSubAccountId } from "@/lib/supabase/get-sub-account"
@@ -5,7 +8,7 @@ import { getUserContext } from "@/lib/supabase/get-user-context"
 import { ContactsPage } from "@/features/contacts/components/contacts-page"
 import type { Contact } from "@/types/database"
 
-export default async function ContactsRoute({searchParams}:{searchParams:Promise<{broadcast?:string;status?:string}>}) {
+export default async function ContactsRoute({searchParams}:{searchParams:Promise<{broadcast?:string;status?:string;engagement?:string;link?:string}>}) {
   const filter=await searchParams
   const {orgId}=await getUserContext()
   const supabase = await createClient()
@@ -48,11 +51,20 @@ export default async function ContactsRoute({searchParams}:{searchParams:Promise
   let filteredContacts=contacts??[]
   let historyError:string|undefined
   if(filter.broadcast){
-    let query=supabase.from("broadcast_recipients").select("contact_id").eq("org_id",orgId).eq("sub_account_id",subAccountId).eq("broadcast_id",filter.broadcast)
-    if(["sent","failed","pending"].includes(filter.status??""))query=query.eq("status",filter.status!)
-    const {data:recipients,error}=await query
-    historyError=error?.message
-    const ids=new Set((recipients??[]).map(r=>r.contact_id));filteredContacts=filteredContacts.filter(c=>ids.has(c.id))
+    try {
+      const rows: BroadcastRecipient[]=[]
+      for(let offset=0;;offset+=500){
+        let query=supabase.from("broadcast_recipients").select("*").eq("org_id",orgId).eq("sub_account_id",subAccountId).eq("broadcast_id",filter.broadcast).order("id").range(offset,offset+499)
+        if(["sent","failed","pending"].includes(filter.status??""))query=query.eq("status",filter.status!)
+        const {data,error}=await query
+        if(error)throw error
+        rows.push(...(data??[]));if((data?.length??0)<500)break
+      }
+      const enriched=await attachEngagement(supabase,rows)
+      const ids=new Set(enriched.filter(r=>matchesEngagement(r.engagement,filter.engagement??"all")&&(!filter.link||r.engagement.links.some(l=>l.url.toLowerCase().includes(filter.link!.toLowerCase())))).map(r=>r.contact_id))
+      filteredContacts=filteredContacts.filter(c=>ids.has(c.id))
+    } catch { historyError="Could not load engagement"; filteredContacts=[] }
+
   }
-  return <ContactsPage broadcasts={broadcasts??[]} broadcastFilter={filter.broadcast??""} broadcastStatus={filter.status??"all"} historyError={historyError} contacts={filteredContacts as Contact[]} tagColors={tagColors} />
+  return <ContactsPage broadcastEngagement={filter.engagement??"all"} broadcastLink={filter.link??""} broadcasts={broadcasts??[]} broadcastFilter={filter.broadcast??""} broadcastStatus={filter.status??"all"} historyError={historyError} contacts={filteredContacts as Contact[]} tagColors={tagColors} />
 }
