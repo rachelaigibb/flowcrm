@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import type { Broadcast } from '@/types/database'
-const mocks=vi.hoisted(()=>({save:vi.fn().mockResolvedValue({}),count:vi.fn().mockResolvedValue({count:1})}))
+const mocks=vi.hoisted(()=>({save:vi.fn().mockResolvedValue({}),count:vi.fn().mockResolvedValue({data:1})}))
 vi.mock('next/navigation',()=>({useRouter:()=>({push:vi.fn(),refresh:vi.fn()})}))
 vi.mock('@/features/broadcasts/actions',()=>({updateBroadcast:mocks.save,getRecipientCount:mocks.count,sendBroadcast:vi.fn(),sendBroadcastTest:vi.fn(),scheduleBroadcast:vi.fn(),unscheduleBroadcast:vi.fn()}))
 vi.mock('@/features/broadcasts/components/broadcast-recipient-list',()=>({BroadcastRecipientList:()=>null}))
@@ -10,6 +10,8 @@ describe('selected recipient follow-up editor',()=>{
  it('allows drafting subject and body while saving the fixed audience',async()=>{
   const b={id:'draft',name:'Follow-up',status:'draft',channel:'email',email_subject:'Follow-up',email_body:'',recipient_filter:{contact_ids:['selected']},stats:{total:0,sent:0,failed:0}} as Broadcast
   await act(async()=>{render(<BroadcastEditorPage broadcast={b} emailTemplates={[]} smsTemplates={[]} availableTags={[]} availableSources={[]}/> )})
+  expect(screen.getByText('~1 recipient')).toBeInTheDocument()
+  expect(mocks.count).toHaveBeenCalledWith({contact_ids:['selected']},'email')
   expect(screen.getByLabelText('Subject')).toBeEnabled();expect(screen.getByLabelText('Body')).toBeEnabled()
   expect(screen.getByRole('checkbox',{name:'Send to all contacts'})).toHaveAttribute('aria-disabled','true')
   fireEvent.change(screen.getByLabelText('Subject'),{target:{value:'Updated subject'}})

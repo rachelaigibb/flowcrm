@@ -252,8 +252,11 @@ export async function getRecipientCount(
     .select("id", { count: "exact", head: true })
     .eq("org_id", orgId)
     .eq("sub_account_id", subAccountId)
+    .not("tags", "cs", "{do-not-contact}")
 
-  if (!filter.all) {
+  if (filter.contact_ids) {
+    query = query.in("id", filter.contact_ids)
+  } else if (!filter.all) {
     const orConditions: string[] = []
 
     if (filter.tags && filter.tags.length > 0) {
