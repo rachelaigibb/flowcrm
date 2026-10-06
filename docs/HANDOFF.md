@@ -232,3 +232,16 @@ Rachel's conditional release approval was satisfied by the reviewed combined sco
 Production deployment `dpl_5azHUNPHvGAAfGDNrDKjra1YzQXR` / https://flowcrm-jdi0q4z6s-rachelgibb.vercel.app is Ready and aliased to https://crm.getflowplan.app. Independent Vercel API readback confirms exact SHA `610e4c2db756af8956c9c6fccb993bc99d4db3e7`, production target and aliases. Remote build/TypeScript passed. Live unsigned and invalid-signature webhook POST checks return400 Invalid webhook; login200. Historical test contact still displays receiving-server delivery and1click/1unique link; all3 original signed events remain stored.
 
 Authenticated live editor verification used an existing sphere-filter draft without saving:61eligible contacts initially; removing the only selection immediately showed0 and disabled Send; Schedule stayed disabled; reselecting triggered counting and returned61; refresh restored saved sphere selection/count. Campaign-record fingerprint across all11broadcast IDs/statuses/filters/update-times matched before/after (`13543fb25244a6d41eda14cb82090d99`). No emails, saved drafts, schedules or other production data were changed during release verification. A fresh live draft was deliberately not created because that action persists a record; fresh-draft default0/create/save semantics are covered by83tests and the local synthetic browser, while live empty-selection behavior is directly verified. Existing unrelated lint debt remains26errors29warnings. No remaining configuration blocker for this release.
+
+## October 6 UTC — 14310 shortened schedule, explicitly requested
+
+Rachel instructed not to pause and to shorten the existing campaign schedule. Transactional preflight verified the exact IDs, prior timestamps, scheduled status and tag filters. Only two `scheduled_at` values changed; comparison against all11campaign records confirmed every other business field and all other broadcasts unchanged (ordinary updated_at trigger metadata excluded). Exact eligible contact-ID arrays remained identical. No immediate send, pause, duplicate, enrollment, consent edit or content edit.
+
+| Campaign | Scheduled Vancouver time | UTC | Eligible recipients |
+|---|---|---|---|
+| [General launch](https://crm.getflowplan.app/broadcasts/03a0a345-0e48-4167-a11b-12d402846650) | Oct6,2026 10:00AM | 2026-10-06T17:00:00Z |22 unchanged|
+| [Co-op brokers](https://crm.getflowplan.app/broadcasts/671d70fb-b515-4564-b2f2-b994dbf4cb04) | Oct7,2026 10:00AM | 2026-10-07T17:00:00Z |11 unchanged|
+| [Named wave2](https://crm.getflowplan.app/broadcasts/9fc39597-0ac9-4a3f-b958-b987d2cf79ae) | Oct8,2026 10:00AM (was Oct13) | 2026-10-08T17:00:00Z |10 unchanged|
+| [General wave2](https://crm.getflowplan.app/broadcasts/2a2f2de7-36e8-4ae9-9dc7-3d883c200596) | Oct9,2026 10:00AM (was Oct14) | 2026-10-09T17:00:00Z |24 unchanged|
+
+Saved timestamps were read back after commit and converted with America/Vancouver. All four remain scheduled. Names were preserved per the requested narrow scope, so the last two titles still contain Oct13/Oct14; their actual scheduled dates are Oct8/Oct9. App eligibility counts do not establish legal compliance or provider opt-in permission; neither was verified by this scheduling action. No code change or deployment needed.
