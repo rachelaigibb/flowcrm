@@ -57,3 +57,11 @@ export async function markBroadcastCallFollowup(id:string,contactId:string) {
  revalidatePath('/calls');revalidatePath(`/broadcasts/${id}`)
  return {error:error?.message}
 }
+
+export async function retrySelectedRateFailures(broadcastId:string,recipientIds:string[]){
+ const ctx=await getUserContext()
+ const {retryRateLimitedRecipients}=await import('./retry')
+ const result=await retryRateLimitedRecipients(ctx.supabase,ctx,broadcastId,recipientIds)
+ revalidatePath(`/broadcasts/${broadcastId}`)
+ return result
+}

@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { randomUUID } from "node:crypto"
+import { sendPaced } from "@/lib/resend/send-paced"
 import { getResendClient } from "@/lib/resend/client"
 import { getTwilioClient } from "@/lib/twilio/client"
 import { buildEmailContent } from "@/lib/messaging/html"
@@ -149,7 +151,7 @@ export async function sendEmailToContact(params: {
       ? { senderLine: `${settings.fromName} · ${settings.replyTo}`, mailingAddress: settings.mailingAddress!, unsubscribeUrl }
       : null
     const content = buildEmailContent(body, params.includeSignature === false ? null : settings.signature, footer)
-    const { data: sendResult, error: sendError } = await resend.emails.send({
+    const { data: sendResult, error: sendError } = await sendPaced(resend, {
       from: `${settings.fromName} <${settings.fromEmail}>`,
       to: [contact.email],
       bcc: params.bcc && params.bcc.length > 0 ? params.bcc : undefined,
@@ -163,17 +165,22 @@ export async function sendEmailToContact(params: {
       html: content.html,
       headers: params.marketing ? unsubscribeHeaders(contact.unsubscribe_token) : undefined,
       attachments: params.attachments?.map((a) => ({ filename: a.filename, content: a.content })),
-    })
+    }, !params.skipActivity && typeof params.activityMetadata?.broadcast_id === "string"
+      ? `broadcast/${params.activityMetadata.broadcast_id}/${contact.id}` : randomUUID())
 
     if (sendError) {
-      return { ok: false, error: sendError.message }
+      return { ok: false, error: sendError.statusCode === null || (sendError.statusCode ?? 0) >= 500 ? `Acceptance unknown; do not retry automatically: ${sendError.message}` : sendError.message }
     }
+
+    if (!sendResult?.id) return { ok: false, error: "Acceptance unknown; provider returned no message ID. Do not retry automatically." }
 
     if (params.skipActivity) {
       return { ok: true, providerId: sendResult?.id ?? null, activityId: null }
     }
 
-    const { data: activity } = await supabase
+    let activityId: string | null = null
+    try {
+    const { data: activity, error: activityError } = await supabase
       .from("activities")
       .insert({
         org_id: orgId,
@@ -195,9 +202,12 @@ export async function sendEmailToContact(params: {
       .select("id")
       .single()
 
-    return { ok: true, providerId: sendResult?.id ?? null, activityId: activity?.id ?? null }
+    activityId = activity?.id ?? null
+    if (activityError) console.error("Accepted email activity could not be saved", sendResult.id)
+    } catch { console.error("Accepted email activity could not be saved", sendResult.id) }
+    return { ok: true, providerId: sendResult.id, activityId }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Unknown error sending email" }
+    return { ok: false, error: `Acceptance unknown; do not retry automatically: ${err instanceof Error ? err.message : "Unknown error sending email"}` }
   }
 }
 

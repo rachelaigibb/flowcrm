@@ -16,3 +16,5 @@ export async function sendBroadcast(){throw new Error('Fixture: sending disabled
 export const sendBroadcastTest=sendBroadcast
 export const scheduleBroadcast=sendBroadcast
 export const unscheduleBroadcast=sendBroadcast
+
+export async function retrySelectedRateFailures(){return {error:'Fixture: retries disabled'}}

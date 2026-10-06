@@ -160,7 +160,7 @@ export async function deliverBroadcast(
   let sent = 0
   let failed = 0
   const failures: Array<{ contact_id: string; error: string }> = []
-  const BATCH_SIZE = 5
+  const BATCH_SIZE = broadcast.channel === "email" ? 1 : 5
 
   for (let i = 0; i < totalRecipients; i += BATCH_SIZE) {
     const batch = (recipients ?? []).slice(i, i + BATCH_SIZE) as MessageContact[]

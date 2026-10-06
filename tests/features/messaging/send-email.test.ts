@@ -28,3 +28,13 @@ describe("email delivery payload", () => {
     expect(mocks.send.mock.calls[0][0].text).not.toContain("Unsubscribe:")
   })
 })
+it('retains provider acceptance if activity persistence throws', async()=>{
+ const supabase={from:()=>({insert:()=>({select:()=>({single:async()=>{throw new Error('database unavailable')}})})})} as unknown as SupabaseClient
+ expect(await sendEmailToContact({...params,supabase,skipActivity:false,activityMetadata:{broadcast_id:'campaign'}})).toEqual({ok:true,providerId:'provider-id',activityId:null})
+ expect(mocks.send.mock.calls[0][1]).toEqual({idempotencyKey:'broadcast/campaign/test'})
+})
+it('labels uncertain provider results as non-retryable',async()=>{
+ mocks.send.mockResolvedValue({data:null,error:{name:'internal_server_error',statusCode:null,message:'timeout'}})
+ expect(await sendEmailToContact(params)).toMatchObject({ok:false,error:expect.stringContaining('Acceptance unknown')})
+ expect(mocks.send).toHaveBeenCalledTimes(1)
+})

@@ -3,6 +3,8 @@ import { redirect, notFound } from "next/navigation"
 import { BroadcastEditorPage } from "@/features/broadcasts/components/broadcast-editor-page"
 import type { Broadcast, EmailTemplate, SmsTemplate } from "@/types/database"
 
+export const maxDuration = 300
+
 export default async function BroadcastDetailRoute({
   params,
   searchParams,

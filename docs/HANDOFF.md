@@ -249,3 +249,7 @@ Saved timestamps were read back after commit and converted with America/Vancouve
 ### October 6 UTC — schedule title consistency cleanup
 
 On explicit follow-up instruction, changed only the trailing date labels: `14310 | Wave 2 | Named developers | Oct 13` → `14310 | Wave 2 | Named developers | Oct 8`; `14310 | Wave 2 | General developers | Oct 14` → `14310 | Wave 2 | General developers | Oct 9`. Exact before/after readback verified. Transactional comparison of all11campaign records confirmed all other business fields unchanged, including scheduled status, Oct8/9 17:00Z (10AM Vancouver), content and audience filters. Ordinary updated_at trigger metadata excluded. No send. This supersedes the prior note that titles retained old dates.
+
+## October 6 — v0.9.8 rate pacing and explicit failed-recipient retry
+
+Rachel approved fixing rate pacing and retrying only the two Oct6 campaign rate rejections. Local implementation/tests and preflight evidence are in [RATE-LIMIT-RETRY.md](./RATE-LIMIT-RETRY.md).97 tests, TypeScript and production build passed; lint unchanged26errors29warnings. No send performed yet. Browser control is unavailable in this delegated environment; after deployment the authenticated campaign retry action must be invoked through an available parent/user browser. Existing unrelated AGENTS.md and Dubai handoff changes are preserved, excluded from this commit.
