@@ -245,3 +245,7 @@ Rachel instructed not to pause and to shorten the existing campaign schedule. Tr
 | [General wave2](https://crm.getflowplan.app/broadcasts/2a2f2de7-36e8-4ae9-9dc7-3d883c200596) | Oct9,2026 10:00AM (was Oct14) | 2026-10-09T17:00:00Z |24 unchanged|
 
 Saved timestamps were read back after commit and converted with America/Vancouver. All four remain scheduled. Names were preserved per the requested narrow scope, so the last two titles still contain Oct13/Oct14; their actual scheduled dates are Oct8/Oct9. App eligibility counts do not establish legal compliance or provider opt-in permission; neither was verified by this scheduling action. No code change or deployment needed.
+
+### October 6 UTC — schedule title consistency cleanup
+
+On explicit follow-up instruction, changed only the trailing date labels: `14310 | Wave 2 | Named developers | Oct 13` → `14310 | Wave 2 | Named developers | Oct 8`; `14310 | Wave 2 | General developers | Oct 14` → `14310 | Wave 2 | General developers | Oct 9`. Exact before/after readback verified. Transactional comparison of all11campaign records confirmed all other business fields unchanged, including scheduled status, Oct8/9 17:00Z (10AM Vancouver), content and audience filters. Ordinary updated_at trigger metadata excluded. No send. This supersedes the prior note that titles retained old dates.
