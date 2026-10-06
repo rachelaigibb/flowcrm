@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current production: v0.9.7 (audience safeguard verified)** · Last updated 2026-10-06 · Latest commit *(see git log)*
+**Current production: v0.9.8 (paced sending and guarded retry; approved retries awaiting browser interaction)** · Last updated 2026-10-06 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -261,3 +261,6 @@ Rachel's conditional release approval was satisfied by the reviewed combined sco
 Production deployment `dpl_5azHUNPHvGAAfGDNrDKjra1YzQXR` / https://flowcrm-jdi0q4z6s-rachelgibb.vercel.app is Ready and aliased to https://crm.getflowplan.app. Independent Vercel API readback confirms exact SHA `610e4c2db756af8956c9c6fccb993bc99d4db3e7`, production target and aliases. Remote build/TypeScript passed. Live unsigned and invalid-signature webhook POST checks return400 Invalid webhook; login200. Historical test contact still displays receiving-server delivery and1click/1unique link; all3 original signed events remain stored.
 
 Authenticated live editor verification used an existing sphere-filter draft without saving:61eligible contacts initially; removing the only selection immediately showed0 and disabled Send; Schedule stayed disabled; reselecting triggered counting and returned61; refresh restored saved sphere selection/count. Campaign-record fingerprint across all11broadcast IDs/statuses/filters/update-times matched before/after (`13543fb25244a6d41eda14cb82090d99`). No emails, saved drafts, schedules or other production data were changed during release verification. A fresh live draft was deliberately not created because that action persists a record; fresh-draft default0/create/save semantics are covered by83tests and the local synthetic browser, while live empty-selection behavior is directly verified. Existing unrelated lint debt remains26errors29warnings. No remaining configuration blocker for this release.
+
+
+October6: pacing/retry fix deployed as5c26634,97tests/TypeScript/build passed, production health verified. Exacttwo failed recipients still unaccepted; no retry executed due absent browser-control tool. See [recovery handoff](./RATE-LIMIT-RETRY.md).
