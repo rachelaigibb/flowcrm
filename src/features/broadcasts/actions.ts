@@ -8,7 +8,8 @@ import {
   sendEmailToContact,
   type MessageContact,
 } from "@/lib/messaging/send"
-import { checkBroadcastReady, deliverBroadcast } from "./deliver"
+import { checkBroadcastReady, deliverBroadcast, getBroadcastRecipients } from "./deliver"
+import { normalizeAudience } from "./audience"
 import type { BroadcastChannel, BroadcastRecipientFilter } from "@/types/database"
 
 // ── Broadcast Queries ──
@@ -108,7 +109,11 @@ export async function updateBroadcast(
   if (input.email_template_id !== undefined) updates.email_template_id = input.email_template_id
   if (input.sms_body !== undefined) updates.sms_body = input.sms_body
   if (input.sms_template_id !== undefined) updates.sms_template_id = input.sms_template_id
-  if (input.recipient_filter !== undefined) updates.recipient_filter = input.recipient_filter
+  if (input.recipient_filter !== undefined) {
+    const audience = normalizeAudience(input.recipient_filter)
+    if (!audience) return { error: "Invalid recipient selection" }
+    updates.recipient_filter = audience
+  }
   if (input.scheduled_at !== undefined) updates.scheduled_at = input.scheduled_at
 
   const { data, error } = await supabase
@@ -247,38 +252,7 @@ export async function getRecipientCount(
 ) {
   const { orgId, subAccountId, supabase } = await getUserContext()
 
-  let query = supabase
-    .from("contacts")
-    .select("id", { count: "exact", head: true })
-    .eq("org_id", orgId)
-    .eq("sub_account_id", subAccountId)
-    .not("tags", "cs", "{do-not-contact}")
-
-  if (filter.contact_ids) {
-    query = query.in("id", filter.contact_ids)
-  } else if (!filter.all) {
-    const orConditions: string[] = []
-
-    if (filter.tags && filter.tags.length > 0) {
-      orConditions.push(`tags.ov.{${filter.tags.join(",")}}`)
-    }
-    if (filter.sources && filter.sources.length > 0) {
-      orConditions.push(`source.in.(${filter.sources.join(",")})`)
-    }
-
-    if (orConditions.length > 0) {
-      query = query.or(orConditions.join(","))
-    }
-  }
-
-  // Filter by channel-appropriate contact method + consent
-  if (channel === "email") {
-    query = query.not("email", "is", null).in("consent_status", ["explicit", "implied"])
-  } else {
-    query = query.not("phone", "is", null).in("consent_status", ["explicit", "implied"])
-  }
-
-  const { count, error } = await query
+  const { count, error } = await getBroadcastRecipients(supabase, { orgId, subAccountId }, filter, channel, true)
 
   if (error) return { error: error.message }
   return { data: count ?? 0 }

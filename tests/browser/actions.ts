@@ -7,7 +7,7 @@ export const fixtureRows=[
  {...base,id:'three',contact_id:'three',contact_name:'Pat Bounced',engagement:summarizeEngagement([{event_id:'c',provider_id:'q',event_type:'email.bounced',occurred_at:'2026-10-05T14:01:00Z',link:null}])}
 ]
 export async function getBroadcastHistory(){return {data:fixtureRows}}
-export async function getRecipientCount(){return {count:1}}
+export async function getRecipientCount(filter: { all?: boolean; contact_ids?: string[]; tags?: string[]; sources?: string[] }){await new Promise(resolve=>setTimeout(resolve,250));return {data:filter.contact_ids ? filter.contact_ids.length : filter.all ? 3 : filter.tags?.length || filter.sources?.length ? 1 : 0}}
 export async function updateBroadcast(){return {error:'Fixture: saving is disabled'}}
 export async function createBroadcastFollowupDraft(){document.querySelector('#navigation')!.textContent='Fixture follow-up selected';return {id:'fixture-draft'}}
 export async function createBroadcastTasks(){return {error:'Fixture: task creation is disabled'}}

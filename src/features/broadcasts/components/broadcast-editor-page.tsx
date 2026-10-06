@@ -1,5 +1,7 @@
 "use client"
 
+import { hasAudience, normalizeAudience } from "../audience"
+
 import { BroadcastRecipientList } from "./broadcast-recipient-list"
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
@@ -106,7 +108,7 @@ export function BroadcastEditorPage({
   )
 
   // ── Recipient filter state ──
-  const filter = broadcast.recipient_filter as BroadcastRecipientFilter
+  const filter = normalizeAudience(broadcast.recipient_filter) ?? {}
   const [sendToAll, setSendToAll] = useState(filter.all ?? false)
   const [selectedTags, setSelectedTags] = useState<Set<string>>(
     new Set(filter.tags ?? [])
@@ -122,8 +124,7 @@ export function BroadcastEditorPage({
   const [saving, setSaving] = useState(false)
   const [sending, setSending] = useState(false)
   const [scheduling, setScheduling] = useState(false)
-  const [recipientCount, setRecipientCount] = useState<number | null>(null)
-  const [countLoading, setCountLoading] = useState(false)
+  const [countResult, setCountResult] = useState<{ key: string; count: number | null } | null>(null)
 
   // ── Build current filter object ──
   const buildFilter = useCallback((): BroadcastRecipientFilter => {
@@ -135,28 +136,21 @@ export function BroadcastEditorPage({
     return f
   }, [sendToAll, selectedTags, selectedSources, filter.contact_ids])
 
-  // ── Fetch recipient count when filters change ──
+  const audienceKey = JSON.stringify(buildFilter())
+  const audienceSelected = hasAudience(buildFilter())
+  const recipientCount = !audienceSelected ? 0 : countResult?.key === audienceKey ? countResult.count : null
+  const countLoading = audienceSelected && countResult?.key !== audienceKey
+  const canSend = audienceSelected && !countLoading && recipientCount !== null && recipientCount > 0
+
+  // Bind the count to its audience: a stale response must not enable sending.
   useEffect(() => {
     let cancelled = false
-    async function fetchCount() {
-      setCountLoading(true)
-      try {
-        const currentFilter = buildFilter()
-        const result = await getRecipientCount(currentFilter, broadcast.channel)
-        if (!cancelled) {
-          setRecipientCount(result.data ?? null)
-        }
-      } catch {
-        // Silently ignore count fetch errors
-      } finally {
-        if (!cancelled) setCountLoading(false)
-      }
-    }
-    fetchCount()
-    return () => {
-      cancelled = true
-    }
-  }, [sendToAll, selectedTags, selectedSources, broadcast.channel, buildFilter])
+    if (!audienceSelected) return
+    getRecipientCount(JSON.parse(audienceKey), broadcast.channel)
+      .then(result => { if (!cancelled) setCountResult({ key: audienceKey, count: result.data ?? null }) })
+      .catch(() => { if (!cancelled) setCountResult({ key: audienceKey, count: null }) })
+    return () => { cancelled = true }
+  }, [audienceKey, audienceSelected, broadcast.channel])
 
   // ── Save draft ──
   async function handleSave() {
@@ -194,6 +188,7 @@ export function BroadcastEditorPage({
 
   // ── Send now ──
   async function handleSend() {
+    if (!canSend) return
     setSending(true)
     try {
       // Save first
@@ -225,6 +220,7 @@ export function BroadcastEditorPage({
 
   // ── Schedule ──
   async function handleSchedule() {
+    if (!canSend) return
     if (!scheduledAt) {
       toast.error("Please select a date and time")
       return
@@ -294,6 +290,7 @@ export function BroadcastEditorPage({
 
   // ── Tag/source toggle helpers ──
   function toggleTag(tag: string) {
+    setCountResult(null)
     setSelectedTags((prev) => {
       const next = new Set(prev)
       if (next.has(tag)) next.delete(tag)
@@ -303,6 +300,7 @@ export function BroadcastEditorPage({
   }
 
   function toggleSource(source: string) {
+    setCountResult(null)
     setSelectedSources((prev) => {
       const next = new Set(prev)
       if (next.has(source)) next.delete(source)
@@ -520,17 +518,21 @@ export function BroadcastEditorPage({
                     ) : (
                       <Users className="size-3" />
                     )}
-                    ~{recipientCount} recipient{recipientCount !== 1 ? "s" : ""}
+                    {recipientCount} recipient{recipientCount !== 1 ? "s" : ""}
                   </Badge>
                 </CardAction>
               )}
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              {!audienceSelected && <p className="text-sm text-muted-foreground">No recipients selected. Choose tags, sources, or explicitly select all contacts.</p>}
+              {countLoading && <p className="text-sm">Counting eligible recipients…</p>}
+              {audienceSelected && !countLoading && recipientCount === null && <p role="alert">Recipient count unavailable. Refresh before sending.</p>}
               {/* Send to all */}
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
                   checked={sendToAll}
                   onCheckedChange={(checked) => {
+                    setCountResult(null)
                     setSendToAll(checked === true)
                     if (checked) {
                       setSelectedTags(new Set())
@@ -616,7 +618,7 @@ export function BroadcastEditorPage({
                   <Button
                     className="w-full"
                     onClick={handleSend}
-                    disabled={sending}
+                    disabled={sending || !canSend}
                   >
                     {sending ? (
                       <Loader2 className="size-3.5 animate-spin" />
@@ -643,7 +645,7 @@ export function BroadcastEditorPage({
                       variant="outline"
                       className="w-full"
                       onClick={handleSchedule}
-                      disabled={scheduling || !scheduledAt}
+                      disabled={scheduling || !scheduledAt || !canSend}
                     >
                       {scheduling ? (
                         <Loader2 className="size-3.5 animate-spin" />

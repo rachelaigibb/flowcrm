@@ -41,3 +41,7 @@ describe('recipient count audience boundaries', () => {
     expect(await getRecipientCount({ contact_ids: ['selected', 'blocked'] }, 'sms')).toEqual({ data: 1 })
   })
 })
+
+it.each([{}, { all: false }, { tags: [], sources: [] }, { all: 'true' }, { contact_ids: null, all: true }, null])('fails closed for unconfigured or malformed audience %j', async filter => {
+  expect(await getRecipientCount(filter as Parameters<typeof getRecipientCount>[0], 'email')).toEqual({ data: 0 })
+})

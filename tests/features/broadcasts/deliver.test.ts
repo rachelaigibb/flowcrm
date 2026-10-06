@@ -5,16 +5,16 @@ const mocks=vi.hoisted(()=>({send:vi.fn(),settings:vi.fn()}))
 vi.mock('@/lib/messaging/send',()=>({getEmailSettings:mocks.settings,getSmsSettings:vi.fn(),sendEmailToContact:mocks.send,sendSmsToContact:vi.fn(),renderTemplate:(s:string)=>s}))
 import {deliverBroadcast,getBroadcastRecipients} from '@/features/broadcasts/deliver'
 const ctx={orgId:'org',subAccountId:'workspace',userId:'user'}
-function db(snapshotFails=false){
+function db(snapshotFails=false, recipientFilter: unknown={all:true}){
  const updates:Record<string,unknown>[]=[];const snapshots:unknown[]=[];const filters:unknown[]=[]
  const from=vi.fn((table:string)=>{
-  let op='select';let value:Record<string,unknown>={}
+  let noRecipients=false;let op='select';let value:Record<string,unknown>={}
   const q:Record<string,any>={}
-  for(const method of ['select','eq','not','in','or','order'])q[method]=vi.fn((...args:unknown[])=>{filters.push([table,method,...args]);return q})
+  for(const method of ['select','eq','not','in','or','order'])q[method]=vi.fn((...args:unknown[])=>{filters.push([table,method,...args]);if(table==='contacts'&&method==='in'&&args[0]==='id'&&(args[1] as unknown[]).length===0)noRecipients=true;return q})
   q.insert=vi.fn((v:unknown)=>{op='insert';snapshots.push(v);return q})
   q.update=vi.fn((v:Record<string,unknown>)=>{op='update';value=v;updates.push(v);return q})
-  q.single=()=>Promise.resolve({data:{id:'broadcast',name:'Wave 1',status:'draft',channel:'email',email_subject:'Hi',email_body:'Message',recipient_filter:{all:true}},error:null})
-  q.then=(resolve:any)=>resolve(table==='contacts'?{data:[{id:'c1',first_name:'Rachel',last_name:'Gibb',company:'eXp',email:'self@test.invalid',phone:null}],error:null}:table==='broadcasts'?{data:op==='update'&&value.status==='sending'?[{id:'broadcast'}]:null,error:null}:{data:null,error:op==='insert'&&snapshotFails?{message:'disk error'}:null})
+  q.single=()=>Promise.resolve({data:{id:'broadcast',name:'Wave 1',status:'draft',channel:'email',email_subject:'Hi',email_body:'Message',recipient_filter:recipientFilter},error:null})
+  q.then=(resolve:any)=>resolve(table==='contacts'?{data:noRecipients?[]:[{id:'c1',first_name:'Rachel',last_name:'Gibb',company:'eXp',email:'self@test.invalid',phone:null}],error:null}:table==='broadcasts'?{data:op==='update'&&value.status==='sending'?[{id:'broadcast'}]:null,error:null}:{data:null,error:op==='insert'&&snapshotFails?{message:'disk error'}:null})
   return q
  });return {client:{from} as unknown as SupabaseClient,updates,snapshots,filters}
 }
@@ -26,3 +26,5 @@ describe('broadcast recipient history',()=>{
  it('stores per-recipient failure reasons',async()=>{mocks.send.mockResolvedValue({ok:false,error:'Rejected'});const d=db();await deliverBroadcast(d.client,ctx,'broadcast');expect(d.updates).toContainEqual(expect.objectContaining({status:'failed',error:'Rejected'}))})
  it('keeps explicit selected contacts narrower than all/tags and rechecks consent',async()=>{const d=db();await getBroadcastRecipients(d.client,ctx,{contact_ids:['c1'],all:true,tags:['other']},'email');expect(d.filters).toContainEqual(['contacts','in','id',['c1']]);expect(d.filters.some(f=>(f as string[])[1]==='or')).toBe(false);expect(d.filters).toContainEqual(['contacts','in','consent_status',['explicit','implied']])})
 })
+
+it.each([{}, {all:false}, {tags:[],sources:[]}, {contact_ids:[]}, {all:'true'}, null])('does not claim or send an empty or invalid audience %j',async filter=>{const d=db(false,filter);const result=await deliverBroadcast(d.client,ctx,'broadcast');expect(result.ok).toBe(false);expect(mocks.send).not.toHaveBeenCalled();expect(d.snapshots).toHaveLength(0);expect(d.updates).toHaveLength(0)})

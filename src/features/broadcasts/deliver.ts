@@ -7,6 +7,7 @@ import {
   sendSmsToContact,
   type MessageContact,
 } from "@/lib/messaging/send"
+import { normalizeAudience, hasAudience } from "./audience"
 import type { BroadcastRecipientFilter } from "@/types/database"
 
 // Shared by "Send now" (features/broadcasts/actions.ts, cookie client) and the
@@ -56,16 +57,21 @@ export async function getBroadcastRecipients(
   supabase: SupabaseClient,
   ctx: { orgId: string; subAccountId: string },
   filter: BroadcastRecipientFilter,
-  channel: string
+  channel: string,
+  countOnly = false
 ) {
+  const audience = normalizeAudience(filter)
+  filter = audience ?? {}
   let query = supabase
     .from("contacts")
-    .select("id, first_name, last_name, company, email, phone, consent_status, unsubscribe_token")
+    .select("id, first_name, last_name, company, email, phone, consent_status, unsubscribe_token", countOnly ? { count: "exact", head: true } : undefined)
     .eq("org_id", ctx.orgId)
     .eq("sub_account_id", ctx.subAccountId)
     .not("tags", "cs", "{do-not-contact}")
 
-  if (filter.contact_ids) {
+  if (!hasAudience(audience)) {
+    query = query.in("id", [])
+  } else if (filter.contact_ids) {
     query = query.in("id", filter.contact_ids)
   } else if (!filter.all) {
     const orConditions: string[] = []
