@@ -30,3 +30,12 @@ References: [Resend rate limits](https://resend.com/docs/api-reference/rate-limi
 ### October 6 — v0.9.8 deployed, retry interaction blocked
 
 Exact code `5c266343fc7c60d77335c8860aed79d1d2b613a8` deployed Ready as `dpl_FjL1x8fgRSsu9GLfPzjEvcDzPb3W`, https://flowcrm-ijknpmghf-rachelgibb.vercel.app, alias https://crm.getflowplan.app. Independent metadata confirms SHA/Ready/alias. Remote build/TypeScript passed; unsigned webhook400, login200. Bothfailed snapshots unchanged (`d1309c0cbe8646c7589b8b0828ccd7a9`),20accepted unchanged (`822ee8045df1042806dbd12761e5c414`), campaign content/audience/schedule fingerprint unchanged (`8b8442844465035dd33182b28fb57ab8`). No retry or other email sent by this task yet. Browser-control tools are absent in this environment; the parent/session with authenticated UI must invoke the already-authorized exact-two selection once, then return for acceptance/delivery verification. No further send approval is needed; no production secrets were retrieved to work around the tool limitation. See RATE-LIMIT-RETRY.md for exact IDs/action.
+
+## October 6 — authorized two-recipient recovery completed
+
+Parent browser session invoked the selected-recipient retry exactly once and verified FlowCRM plus Resend. Independent production database readback confirms:
+
+- Metro Vancouver Housing (`icentre@metrovancouver.org`), recipient `0fdc3818-2425-4760-87e4-12b85cc85875`, provider `01a112f0-e513-7c9e-96ec-f5c9aa926393`: accepted, signed delivered event at2026-10-06T20:39:02.074Z (13:39:02 Vancouver).
+- VRS Communities (`vanres@vrs.org`), recipient `172befa5-8cdc-46f6-a803-bc23ca5e9be9`, provider `01a112f0-e2ce-7430-a419-463b2d8a2fae`: accepted, signed delivered event at2026-10-06T20:39:07.174Z (13:39:07 Vancouver).
+
+Campaign summary is22accepted/0failed/22total. All20original recipient records are byte-for-byte unchanged by canonical JSON fingerprint `822ee8045df1042806dbd12761e5c414`; campaign content/audience/schedule fingerprint remains `8b8442844465035dd33182b28fb57ab8`. Parent reports Panorama West remains delayed on its original accepted send; it was not retried. This resolves the earlier browser-interaction blocker. No additional sends, code changes or deployment performed during this verification.

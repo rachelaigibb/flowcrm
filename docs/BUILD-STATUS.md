@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current production: v0.9.8 (paced sending and guarded retry; approved retries awaiting browser interaction)** · Last updated 2026-10-06 · Latest commit *(see git log)*
+**Current production: v0.9.8 (paced sending and guarded retry; both approved retries delivered)** · Last updated 2026-10-06 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -264,3 +264,6 @@ Authenticated live editor verification used an existing sphere-filter draft with
 
 
 October6: pacing/retry fix deployed as5c26634,97tests/TypeScript/build passed, production health verified. Exacttwo failed recipients still unaccepted; no retry executed due absent browser-control tool. See [recovery handoff](./RATE-LIMIT-RETRY.md).
+
+
+October6 recovery completed: both approved rate-limit retries delivered and signed events persisted; campaign22accepted/0failed. Independent fingerprints prove the original20recipients and campaign content/audience/schedule unchanged. See RATE-LIMIT-RETRY.md.
