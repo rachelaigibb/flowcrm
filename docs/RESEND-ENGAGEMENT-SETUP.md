@@ -1,6 +1,6 @@
-# Resend broadcast engagement — deployed, signing-secret entry pending
+# Resend broadcast engagement — deployed and configured
 
-October 5, 2026 · v0.9.6 candidate · branch `feature/resend-engagement`, based on `5e8f767`.
+October 6, 2026 · v0.9.6 · branch `feature/resend-engagement`, based on `5e8f767`.
 
 ## Implemented locally
 
@@ -55,3 +55,11 @@ Clean revision deployed Ready as `dpl_Bcvh6qs3MLncq5C3jE7k5qvHkVnv`, https://flo
 **Activation is incomplete:** production POST returns JSON 503 `Webhook not configured` as expected. Rachel must privately copy the signing secret from https://resend.com/webhooks/8f30d4b3-84b5-475e-a07c-628c7c4e47e8 into sensitive Production `RESEND_WEBHOOK_SECRET` at https://vercel.com/rachelgibb/flowcrm/settings/environment-variables. Do not paste it in chat. Then redeploy the same reviewed code to activate it and verify invalid unsigned requests return 400. Do not change/retrieve the existing service-role secret. No emails sent or scheduled; full signed-event delivery/click round trip remains unproven. Vercel connector returned team-access 403; approved existing CLI token worked, without credential disclosure. Unrelated AGENTS.md remains uncommitted.
 
 Deployment metadata independently confirms Git SHA `6f4cb45244f255c0611469ec0343f40f4dc9b4f4` and branch `feature/resend-engagement`. Authenticated production PWA inspection confirmed the sent eight-recipient campaign renders delivery/click filters, 8 recipients without evidence, per-recipient Delivery unknown, manual outcomes unchanged, and opens Disabled. This was read-only; no send, schedule, selection action or follow-up record was changed. Native screenshot capture was blank; verification used the accessibility tree. Vercel secret-entry tab currently requires Rachel to sign in. Resend details and Vercel environment tabs are retained for the private handoff; secret details were not inspected. Clean release worktree `/tmp/flowcrm-release-6f4cb45` remains available for the post-entry redeploy.
+
+## October 6 UTC — signing-secret activation verified
+
+Rachel confirmed private Production secret entry. Metadata-only `vercel env ls production` verified `RESEND_WEBHOOK_SECRET` exists, without reading its value. Redeployed the clean detached worktree at exact code SHA `6f4cb45244f255c0611469ec0343f40f4dc9b4f4`. New production deployment `dpl_4vTPcAVeq9GXfC2BfmGtUWCNPLvc` / https://flowcrm-5tlaryk0w-rachelgibb.vercel.app is Ready and aliased to https://crm.getflowplan.app. Vercel API independently confirms `meta.gitCommitSha` matches the reviewed revision (`gitCommitRef: HEAD` because the worktree is detached). Build and TypeScript passed.
+
+Live unsigned and invalid-signature POST checks both return HTTP 400 `Invalid webhook`, replacing the previous 503 missing-configuration response; login returns 200. Resend webhook list confirms the approved endpoint remains enabled. No credential value was read, copied or stored locally, and no real emails were sent or scheduled. The private-entry blocker is resolved. Valid provider-signed event receipt, signature-secret correctness and persisted real-event reporting remain unproven until a genuine event arrives. No signed traffic was fabricated. Use a subsequently authorized campaign for end-to-end evidence, or obtain explicit approval for a specific test recipient and message before any real send. Existing historical records remain unknown. Prior test coverage and lint limitations still apply.
+
+After activation, refreshed authenticated production campaign UI still renders all eight historical recipients as delivery unknown with no clicks recorded, without a load error. No campaign or contact data was changed.
