@@ -1,4 +1,4 @@
-# Resend broadcast engagement — local release candidate
+# Resend broadcast engagement — deployed, signing-secret entry pending
 
 October 5, 2026 · v0.9.6 candidate · branch `feature/resend-engagement`, based on `5e8f767`.
 
@@ -29,7 +29,7 @@ Browser fixture: `node node_modules/vite/bin/vite.js --config tests/browser/vite
 
 Isolated SQL check: install `@electric-sql/pglite` into a temporary directory outside the project, then `PGLITE_MODULE=/tmp/flowcrm-db-verify/node_modules/@electric-sql/pglite/dist/index.js node tests/features/broadcasts/engagement-db.mjs`. No production dependency was added. Supabase CLI was unavailable in this environment; migration follows the repository's established numbered-file convention.
 
-## Pending production work — explicit approval required
+## Original release checklist — superseded by verified release status below
 
 1. Review this candidate and approve applying migration 00022 and deploying the feature branch. Before migration, check for duplicate non-null `broadcast_recipients.provider_id` values; resolve only on reviewed evidence, never delete history to make the index pass. Apply/record the migration using the project's existing one-transaction procedure, then verify actual grants/RLS. Manual TypeScript interfaces are updated; production type regeneration was not performed.
 2. After action-time confirmation, create a Resend webhook pointing to `https://crm.getflowplan.app/api/webhooks/resend`. Subscribe to `email.sent`, `email.delivered`, `email.clicked`, `email.bounced`, `email.complained`, `email.delivery_delayed`, `email.failed`, `email.suppressed` — **not** `email.opened`.
@@ -38,10 +38,20 @@ Isolated SQL check: install `@electric-sql/pglite` into a temporary directory ou
 5. Verify Ready, webhook retry/error visibility, RLS with actual workspace identities, and authenticated campaign/contact UI. Provider dashboard synthetic messages without a matching campaign are deliberately ignored. A complete real-email/click test needs separate approval for its exact recipient/send, or use a subsequently authorized campaign. Replay stored delivery events only if approved and available; historical missing clicks cannot be reconstructed.
 6. If setup is incomplete, UI read errors must not be reported as zero engagement. New events can be replayed after transient storage failures. There is no automatic cleanup/retry sender. Retain minimal unmatched early events to avoid losing delayed persistence; future retention changes require a reviewed policy. Rollback app code if needed; preserve the ledger/history and disable the webhook only with approval.
 
-No production migration, webhook creation, signing secret/key configuration, real message, broadcast schedule, push, merge, commit or deployment was performed by this task. Pre-existing `AGENTS.md` edits are untouched.
+At the local-candidate checkpoint, no production changes had been performed. See the dated release outcome below for subsequently authorized work. Pre-existing `AGENTS.md` edits are untouched.
 
 References: [Resend signature verification](https://resend.com/docs/webhooks/verify-webhooks-requests), installed `resend` event types/SDK, installed Next.js route-handler documentation, [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
 
 ## October 5 release authorization and preflight
 
 Rachel approved feature-branch commit/push, production migration, CLI deployment and Resend webhook creation. Secret entry remains a private user handoff; no email is authorized. Remote main still matches 5e8f767; production database target verified as jsnufxpzeuoybgksgnon, migration 00021 latest, 10 recipient rows, zero duplicate provider-ID groups, no existing event ledger. Existing Vercel production remains Ready. Connector team access returned 403; the existing approved CLI token successfully verified team/project deployments without credential disclosure.
+
+## October 5 PT / October 6 UTC — production release, secret entry pending
+
+Rachel explicitly approved commit/push, migration, deployment and webhook creation. Commit `6f4cb45244f255c0611469ec0343f40f4dc9b4f4` is verified on remote `feature/resend-engagement`; main was not merged. Migration 00022 applied atomically and recorded as `20261006000005 resend_engagement` on existing Supabase `jsnufxpzeuoybgksgnon`. Preflight: 10 recipient rows, no duplicate provider IDs or prior ledger. RLS/grants verified; production transaction proved member visibility, unrelated-identity isolation and write restrictions, then rolled back (zero retained test events).
+
+Clean revision deployed Ready as `dpl_Bcvh6qs3MLncq5C3jE7k5qvHkVnv`, https://flowcrm-hj2sgh7a0-rachelgibb.vercel.app, aliased to https://crm.getflowplan.app. CLI independent inspect confirms Ready. Resend webhook `8f30d4b3-84b5-475e-a07c-628c7c4e47e8` created/enabled for the eight specified events; no opens. Creation form selection and saved endpoint/status verified through the browser; the signing secret was not read or copied.
+
+**Activation is incomplete:** production POST returns JSON 503 `Webhook not configured` as expected. Rachel must privately copy the signing secret from https://resend.com/webhooks/8f30d4b3-84b5-475e-a07c-628c7c4e47e8 into sensitive Production `RESEND_WEBHOOK_SECRET` at https://vercel.com/rachelgibb/flowcrm/settings/environment-variables. Do not paste it in chat. Then redeploy the same reviewed code to activate it and verify invalid unsigned requests return 400. Do not change/retrieve the existing service-role secret. No emails sent or scheduled; full signed-event delivery/click round trip remains unproven. Vercel connector returned team-access 403; approved existing CLI token worked, without credential disclosure. Unrelated AGENTS.md remains uncommitted.
+
+Deployment metadata independently confirms Git SHA `6f4cb45244f255c0611469ec0343f40f4dc9b4f4` and branch `feature/resend-engagement`. Authenticated production PWA inspection confirmed the sent eight-recipient campaign renders delivery/click filters, 8 recipients without evidence, per-recipient Delivery unknown, manual outcomes unchanged, and opens Disabled. This was read-only; no send, schedule, selection action or follow-up record was changed. Native screenshot capture was blank; verification used the accessibility tree. Vercel secret-entry tab currently requires Rachel to sign in. Resend details and Vercel environment tabs are retained for the private handoff; secret details were not inspected. Clean release worktree `/tmp/flowcrm-release-6f4cb45` remains available for the post-entry redeploy.
