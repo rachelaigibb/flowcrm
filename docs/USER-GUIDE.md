@@ -219,6 +219,6 @@ Select visible recipients to use the existing follow-up task or draft actions. A
 Clicks can come from automated security scanners; they do not prove a person read the email or is interested. Reply/interested outcomes stay manual. Opens are disabled, and older messages without evidence stay unknown. “No clicks recorded” is not “unread.” Refresh to load newly received evidence; setup/read errors are shown explicitly.
 
 
-## Safer broadcast audience selection (v0.9.7 candidate — not deployed yet)
+## Safer broadcast audience selection (v0.9.7)
 
 A new broadcast starts with **0 recipients**. Select a tag or source to see the eligible count. Select **Send to all contacts** only when you intend to reach all eligible contacts in the workspace. Clearing the last selection returns the count to zero. **Send Now** and **Schedule** stay disabled until the count is ready and greater than zero; you can save an empty draft. Follow-up drafts retain their selected contacts, with consent checked again before sending.
