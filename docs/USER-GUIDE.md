@@ -231,3 +231,8 @@ Open a broadcast’s **Recipients** section. The summary now includes **recipien
 This shows current contact consent, not which campaign caused the unsubscribe. Someone may remain delivered/clicked/interested in the historical record while currently unsubscribed. Existing follow-up tasks remain for review; new follow-up drafts and tasks exclude withdrawn contacts.
 
 Before every queued marketing email attempt, including a rate-limit retry, FlowCRM checks current consent, do-not-contact status and recorded suppression evidence again. If the contact is no longer eligible, their address/link changed, or eligibility cannot be verified, it does not send and displays the reason. This covers broadcast, automation and marketing compose emails; already accepted emails cannot be recalled.
+
+
+## Website inquiry follow-up (v0.9.10 candidate, not live)
+
+The proposed Vancouver workflow creates a task for Rachel for each new contact/property inquiry, including inquiries from existing contacts. It is due by 5 p.m. Vancouver time on the next weekday excluding BC statutory holidays. Retries of the same submission reuse the task. This sends no automatic client reply, does not enroll the person in an automation, and does not create tasks for historical records, Dubai inquiries, Deal Sheet signups or valuation-report requests. Publication and final assignment verification are pending; see WEBSITE-INQUIRY-FOLLOWUP.md.

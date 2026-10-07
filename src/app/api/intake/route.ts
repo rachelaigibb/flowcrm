@@ -49,17 +49,21 @@ export async function POST(req: Request) {
 
     const outcome = data as IntakeResult | { error: string }
     if ("error" in outcome) {
-      const status = outcome.error === "invalid_key" ? 401 : 400
+      const status = outcome.error === "invalid_key" ? 401 : outcome.error === "submission_conflict" ? 409 : 400
       return NextResponse.json({ error: outcome.error }, { status })
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin
-    const notified = await sendIntakeNotification(outcome, result.payload, appUrl)
+    // An accepted retry has already committed its contact/activity/task. Do not
+    // generate another notification or pretend a notification was sent this time.
+    const notified = outcome.duplicate ? false : await sendIntakeNotification(outcome, result.payload, appUrl)
 
     return NextResponse.json({
       ok: true,
       contact_id: outcome.contact_id,
       created: outcome.created,
+      duplicate: outcome.duplicate === true,
+      task_id: outcome.task_id ?? null,
       notified,
     })
   } catch (err) {
@@ -71,6 +75,6 @@ export async function POST(req: Request) {
 export async function GET() {
   return NextResponse.json({
     ok: true,
-    usage: "POST JSON {name, email, phone?, message?, source?, tags?, meta?, consent: true, consent_text?} with Authorization: Bearer <intake key>",
+    usage: "POST JSON {submission_id?, name, email, phone?, message?, source?, tags?, meta?, consent: true, consent_text?} with Authorization: Bearer <intake key>. Enabled inquiry workflows require a stable UUID submission_id.",
   })
 }

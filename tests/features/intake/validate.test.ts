@@ -67,3 +67,9 @@ describe("validateIntakePayload", () => {
     expect(validateIntakePayload({ ...good, meta: ["a"] }).ok).toBe(false)
   })
 })
+
+it('preserves a valid stable submission ID and rejects malformed IDs', () => {
+  const r = validateIntakePayload({ ...good, submission_id: 'ABCDEF00-0000-0000-0000-000000000001' })
+  expect(r.ok && r.payload.submission_id).toBe('abcdef00-0000-0000-0000-000000000001')
+  for (const submission_id of ['', 'invalid', 42, null]) expect(validateIntakePayload({ ...good, submission_id }).ok).toBe(false)
+})

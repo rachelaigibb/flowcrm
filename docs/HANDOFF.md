@@ -289,3 +289,8 @@ Authenticated production UI verification is pending: this delegated environment 
 Parent-reported read-only verification passed in existing browser task `01a10db3-464f-70d7-980e-16bfddcbe018`, turn `01a1145c-b0da-7349-8cfa-87254a430e48`. The Oct6 campaign summary displays **2 recipients currently unsubscribed**. The Unsubscribed filter shows Porte Communities (October 6, 10:16:11 AM) and Elizabeth Fry Society (October 6, 10:02:54 AM), in America/Vancouver time. Open in Contacts retains `consent=withdrawn`, the campaign and sent-status filter, with two matching contacts. The explanation distinguishing current consent from campaign attribution is visible.
 
 No login blocker, sends, retries, edits or record creation occurred. This closes the outstanding authenticated UI verification item. The approved v0.9.9 deployment and code SHA remain unchanged; this follow-up only updates documentation and project records.
+
+
+## October 7 — Vancouver inquiry follow-up local candidate
+
+Approved internal workflow for existing Command Center task `re-lead-route`. Native configuration alone cannot cover existing contacts, due dates or retry identity. Built opt-in atomic intake/task/receipt migration and API support, plus isolated `.ca` submission-ID companion at `/tmp/rachelgibb-inquiry-ids`. No production change or test submission. See [WEBSITE-INQUIRY-FOLLOWUP.md](./WEBSITE-INQUIRY-FOLLOWUP.md) for scope assumptions, verification, assignee confirmation limit and exact publication sequence. Keep re-lead-route partial until a real end-to-end assigned task is verified; production remains v0.9.9.

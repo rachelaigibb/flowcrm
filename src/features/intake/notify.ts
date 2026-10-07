@@ -2,6 +2,8 @@ import { getResendClient } from "@/lib/resend/client"
 import type { IntakePayload } from "@/features/intake/validate"
 
 export interface IntakeResult {
+  duplicate?: boolean
+  task_id?: string | null
   contact_id: string
   created: boolean
   org_id: string

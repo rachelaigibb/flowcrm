@@ -2,6 +2,7 @@
 // the shape is small and fixed, and this file is unit-tested.
 
 export interface IntakePayload {
+  submission_id?: string
   name: string
   email: string
   phone?: string
@@ -30,6 +31,10 @@ export function validateIntakePayload(body: unknown): IntakeValidation {
     return { ok: false, error: "Invalid input.", issues: ["body must be a JSON object"] }
   }
   const b = body as Record<string, unknown>
+  const submissionId = str(b.submission_id)
+  if (b.submission_id !== undefined && (!submissionId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(submissionId))) {
+    issues.push("submission_id: must be a UUID")
+  }
 
   const honeypot = typeof b.website === "string" && b.website.length > 0
 
@@ -86,6 +91,7 @@ export function validateIntakePayload(body: unknown): IntakeValidation {
     ok: true,
     honeypot,
     payload: {
+      ...(submissionId ? { submission_id: submissionId.toLowerCase() } : {}),
       name,
       email,
       ...(phone ? { phone } : {}),
