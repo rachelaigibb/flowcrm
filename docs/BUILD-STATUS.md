@@ -8,9 +8,9 @@
 
 ---
 
-## v0.9.9 — deployed October 7; authenticated UI check pending
+## v0.9.9 — deployed and verified October 7
 
-Current-unsubscribe count/filter/dates and send-boundary marketing consent/suppression checks are implemented on `feature/resend-engagement`. Covers queued email and each explicit rate-limit retry without changing v0.9.8 pacing/idempotency. 121 tests, TypeScript, production build and local synthetic desktop/mobile browser verification pass. Full lint remains baseline 26 errors / 29 warnings. No migration, sends or live data changes. Approved exact commit `08cb825` deployed Ready; alias and SHA verified, login 200 and unsigned webhook 400. Before/after campaign, consent and recipient fingerprints unchanged. Authenticated live UI check requires the existing parent browser task. Details and limitations: [UNSUBSCRIBE-REPORTING.md](./UNSUBSCRIBE-REPORTING.md).
+Current-unsubscribe count/filter/dates and send-boundary marketing consent/suppression checks are implemented on `feature/resend-engagement`. Covers queued email and each explicit rate-limit retry without changing v0.9.8 pacing/idempotency. 121 tests, TypeScript, production build and local synthetic desktop/mobile browser verification pass. Full lint remains baseline 26 errors / 29 warnings. No migration, sends or live data changes. Approved exact commit `08cb825` deployed Ready; alias and SHA verified, login 200 and unsigned webhook 400. Before/after campaign, consent and recipient fingerprints unchanged. Authenticated read-only browser verification passed: summary shows two currently unsubscribed recipients, withdrawal dates are correct in Vancouver time, and Open in Contacts preserves consent/campaign/sent-status filters with two matches. Details and limitations: [UNSUBSCRIBE-REPORTING.md](./UNSUBSCRIBE-REPORTING.md).
 
 ## Stack
 

@@ -282,3 +282,10 @@ Vercel deployment `dpl_4Q78moU4dba84RpDoR5yk6XxBJTF` is Ready at https://flowcrm
 Before/after read-only fingerprints are identical: campaigns (including schedules/content) `3b80a132a0ba8fe7d7150016b1b6bbb8`; contact consent/status/date/withdrawal fields `30c3ab1175d9f5b90eaedc982ad82b2d`; full broadcast recipient records `02c83c696c088a9546d21696d455acbb`. Email activities remain 39. No schema or credential configuration changes.
 
 Authenticated production UI verification is pending: this delegated environment has no authenticated browser-control tool. Parent's existing browser task should open the Oct6 general campaign, confirm the current-unsubscribe count, select Unsubscribed, inspect withdrawal dates, combine/reset filters and follow Open in Contacts, all read-only. Synthetic local desktop/mobile checks already passed. Do not retrieve browser credentials or create test records/sends to bypass this limitation.
+
+
+## October 7 — authenticated production UI verification complete
+
+Parent-reported read-only verification passed in existing browser task `01a10db3-464f-70d7-980e-16bfddcbe018`, turn `01a1145c-b0da-7349-8cfa-87254a430e48`. The Oct6 campaign summary displays **2 recipients currently unsubscribed**. The Unsubscribed filter shows Porte Communities (October 6, 10:16:11 AM) and Elizabeth Fry Society (October 6, 10:02:54 AM), in America/Vancouver time. Open in Contacts retains `consent=withdrawn`, the campaign and sent-status filter, with two matching contacts. The explanation distinguishing current consent from campaign attribution is visible.
+
+No login blocker, sends, retries, edits or record creation occurred. This closes the outstanding authenticated UI verification item. The approved v0.9.9 deployment and code SHA remain unchanged; this follow-up only updates documentation and project records.
