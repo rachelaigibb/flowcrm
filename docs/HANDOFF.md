@@ -294,3 +294,8 @@ No login blocker, sends, retries, edits or record creation occurred. This closes
 ## October 7 — Vancouver inquiry follow-up local candidate
 
 Approved internal workflow for existing Command Center task `re-lead-route`. Native configuration alone cannot cover existing contacts, due dates or retry identity. Built opt-in atomic intake/task/receipt migration and API support, plus isolated `.ca` submission-ID companion at `/tmp/rachelgibb-inquiry-ids`. No production change or test submission. See [WEBSITE-INQUIRY-FOLLOWUP.md](./WEBSITE-INQUIRY-FOLLOWUP.md) for scope assumptions, verification, assignee confirmation limit and exact publication sequence. Keep re-lead-route partial until a real end-to-end assigned task is verified; production remains v0.9.9.
+
+
+## October 7 — v0.9.10 inquiry workflow deployed and activated
+
+FlowCRM `01b46ea` → `dpl_F2XDQCChPbEYLrMqjsPErUet332Z`; .ca `5b8be05` → `dpl_45bwdcV9GBYHSCz6VKf3cAUACkrF`. API metadata verifies exact SHAs, Ready and production aliases. Companion rebased onto newer live `5d3becc` preserving analytics/Bing/hero changes; no website Git remote exists. Migration `20261007220056` applied and verified; Vancouver-only rule enabled after authenticated Rachel sole-owner reconciliation. Other settings hashes preserved. 129 tests, isolated SQL suite, typechecks/builds and mocked browser pass; lint baseline unchanged. Zero receipts/11 tasks at activation; no real submission/email/backfill. `re-lead-route` stays Partial until genuine inquiry creates the correctly assigned/due task. See WEBSITE-INQUIRY-FOLLOWUP.md for release evidence, advisor findings and rollback. Preserve unrelated AGENTS.md and Dubai handoff edits.

@@ -12,9 +12,9 @@
 
 Current-unsubscribe count/filter/dates and send-boundary marketing consent/suppression checks are implemented on `feature/resend-engagement`. Covers queued email and each explicit rate-limit retry without changing v0.9.8 pacing/idempotency. 121 tests, TypeScript, production build and local synthetic desktop/mobile browser verification pass. Full lint remains baseline 26 errors / 29 warnings. No migration, sends or live data changes. Approved exact commit `08cb825` deployed Ready; alias and SHA verified, login 200 and unsigned webhook 400. Before/after campaign, consent and recipient fingerprints unchanged. Authenticated read-only browser verification passed: summary shows two currently unsubscribed recipients, withdrawal dates are correct in Vancouver time, and Open in Contacts preserves consent/campaign/sent-status filters with two matches. Details and limitations: [UNSUBSCRIBE-REPORTING.md](./UNSUBSCRIBE-REPORTING.md).
 
-## Local v0.9.10 candidate — Vancouver inquiry follow-up
+## Production v0.9.10 — Vancouver inquiry follow-up
 
-Native automation cannot handle existing-contact inquiries, business-day due dates and replay protection. Local opt-in transactional intake/task candidate plus isolated `.ca` submission-ID companion are implemented and tested. No production configuration, migration, deployment or live test. Assignee identity confirmation and publication approval remain required; `re-lead-route` stays open until verified end-to-end task creation. See [WEBSITE-INQUIRY-FOLLOWUP.md](./WEBSITE-INQUIRY-FOLLOWUP.md).
+Deployed FlowCRM `01b46ea` and current-baseline .ca companion `5b8be05`; migration applied and Vancouver-only rule activated after verified Rachel owner reconciliation. 129 tests, SQL suite, typechecks, builds and mocked browser checks pass; lint remains documented baseline. No live test inquiry/email/backfill. `re-lead-route` remains Partial pending genuine inquiry-to-assigned-task evidence. See [WEBSITE-INQUIRY-FOLLOWUP.md](./WEBSITE-INQUIRY-FOLLOWUP.md).
 
 ## Stack
 

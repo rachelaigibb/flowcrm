@@ -1,17 +1,17 @@
-# Vancouver website inquiry follow-up — local release candidate
+# Vancouver website inquiry follow-up — production v0.9.10
 
-October 7, 2026. Approved internal workflow for Command Center `re-lead-route`. **Not configured or deployed in production.** Production remains v0.9.9. No live form submission, email, consent edit, task creation, migration or configuration write was performed.
+October 7, 2026. Approved Vancouver workflow deployed and activated. FlowCRM code `01b46ea89a09ba58bcb20555f93499d876f11948` is live at crm.getflowplan.app; website companion `5b8be0525714d00dd320ae75322b53f1bc1663df` is live at rachelgibbrealtor.ca. Command Center `re-lead-route` remains **Partial** until the next genuine inquiry proves assigned task creation end to end. No live test submission, email or historical backfill was performed.
 
 ## Discovery and scope
 
 Native configuration cannot meet the requirements: intake only queues `contact_created` automation for newly created contacts; existing contacts are missed. Native `create_task` sets no due date, assigns the executing user rather than a configured owner, and lacks per-inquiry replay protection. The website previously supplied no event ID. Its route could report success even when CRM persistence failed.
 
-Read-only current checks: Vancouver workspace `060de0c6-8d30-4cfc-be60-2fcbdebab042`, organization `ce925b6d-692d-4820-b7fd-caa14ccbe540`, timezone America/Vancouver. The only automation (`new contact notification`) is disabled. No follow-up setting is enabled. Public .ca/contact and FlowCRM /api/intake GET both returned 200; these do not prove authenticated intake delivery. Historical intake sources include contact-form and deal-list, with key label rachelgibbrealtor.ca.
+Pre-release discovery: Vancouver workspace `060de0c6-8d30-4cfc-be60-2fcbdebab042`, organization `ce925b6d-692d-4820-b7fd-caa14ccbe540`, timezone America/Vancouver. The only automation (`new contact notification`) is disabled. No follow-up setting is enabled. Public .ca/contact and FlowCRM /api/intake GET both returned 200; these do not prove authenticated intake delivery. Historical intake sources include contact-form and deal-list, with key label rachelgibbrealtor.ca.
 
-Candidate choices, explicitly reported for review:
+Approved scope:
 - **One task per genuinely new contact/property inquiry**, even from an existing contact or one with an open task. Same-ID retries never create another task, activity or contact. Same ID with different content is a conflict.
-- Only the configured Vancouver workspace and existing `.ca` intake key label qualify. Exact contact-form source and property- source prefix qualify. Imports, Dubai, Deal Sheet signups and valuation-report requests do not qualify. The optional scope question was unanswered; this is the narrow contact-response-promise interpretation, not a claim that valuation follow-up was declined.
-- The selected assignee ID `362192e1-4db4-4d4b-97ef-4cdd39c7c7ef` is the sole organization owner. Its display-name fields were blank. **Confirm in authenticated settings that this is Rachel before activation.** Automatic approval review rejected private auth-email retrieval as unnecessary; no email/credential was retrieved for this lookup.
+- Only the configured Vancouver workspace and existing `.ca` intake key label qualify. Exact contact-form source and property- source prefix qualify. Imports, Dubai, Deal Sheet signups and valuation-report requests do not qualify. Rachel subsequently approved this scope.
+- Assignee `362192e1-4db4-4d4b-97ef-4cdd39c7c7ef` reconciles to Rachel through authenticated Settings → Members evidence supplied by the coordinator: Rachel AI, sole Owner in organization Rachel AI. The database confirms the same sole-owner membership. No private auth-email lookup was used.
 
 ## Business-day definition
 
@@ -19,7 +19,7 @@ Tasks are due at **5 p.m. America/Vancouver on the next business date** after re
 
 The calendar covers New Year’s Day, Family Day, Good Friday, Victoria Day, Canada Day, BC Day, Labour Day, National Day for Truth and Reconciliation, Thanksgiving, Remembrance Day and Christmas. Easter Monday and Boxing Day are not BC statutory holidays. No additional office closure/substitute day is assumed: BC substitutes require agreement. Review this policy if Rachel observes extra closures or legislation changes. Time conversion uses the database’s America/Vancouver timezone data.
 
-Source checked: [BC statutory holidays, 2026 and 2027](https://www2.gov.bc.ca/gov/content/employment-business/employment-standards-advice/employment-standards/statutory-holidays). The 5 p.m. deadline and narrow form scope are implementation assumptions reported before publication, not additional user-confirmed business hours.
+Source checked: [BC statutory holidays, 2026 and 2027](https://www2.gov.bc.ca/gov/content/employment-business/employment-standards-advice/employment-standards/statutory-holidays). Rachel approved the 5 p.m. deadline and contact/property scope before publication.
 
 ## Implementation
 
@@ -37,15 +37,17 @@ Website companion: isolated worktree `/tmp/rachelgibb-inquiry-ids`, branch `feat
 - Reproduce: `CA_INQUIRY_WORKTREE=/tmp/rachelgibb-inquiry-ids npm test`; `PGLITE_MODULE=/tmp/flowcrm-db-verify/node_modules/@electric-sql/pglite/dist/index.js node tests/features/intake/followup-db.mjs`. Website fixture instructions are in its `tests/browser/` files.
 - No assertion of live end-to-end task creation is made.
 
-## Required publication steps (not yet authorized for execution)
+## Publication record and remaining verification
 
-1. Confirm Rachel’s assignee identity and the proposed form scope/deadline; review both repository commits. Preserve unrelated changes and v0.9.9 rollback deployment.
-2. Approve and apply **only** this additive FlowCRM migration, initially with the rule absent/disabled. Verify migration history, receipt RLS/grants, function owner/search path and existing intake-key boundary. Existing project types are manually maintained; the changed intake response is typed in `notify.ts`. Generate/reconcile database types from the target after migration without replacing unrelated manual interfaces blindly.
-3. Deploy the exact reviewed FlowCRM API candidate, then the `.ca` submission-ID companion from clean worktrees. Existing intake configuration must be present; do not configure/retrieve new credentials. Verify project/alias/SHA and public GET health. With the rule still disabled, no new follow-up task is created.
-4. Activate only the Vancouver rule below, preserving all other workspace settings, then read back just the rule fields. Configuration authority is approved, but activation is intentionally held until schema/code publication and assignee checks are complete.
-5. Verify end-to-end on the **next genuine inquiry**, read-only: `.ca` source and submission ID → correct Vancouver contact/activity → exactly one task assigned to Rachel → correct business-day due date. No test form submission or real email is authorized. If a controlled test is needed instead, request explicit authorization first. Only then may `re-lead-route` be closed. Local tests/configuration alone are insufficient.
+1. Applied migration `20261007220056_website_inquiry_followups` transactionally; migration history, private receipt RLS/revoked access, existing intake SECURITY DEFINER owner/search path verified. Generated target database types confirm the receipt table/helpers and unchanged `intake_contact(p_key:string,p_payload:Json) → Json` contract; retained the existing manually maintained interfaces and typed response adapter.
+2. FlowCRM deployment `dpl_F2XDQCChPbEYLrMqjsPErUet332Z` and website deployment `dpl_45bwdcV9GBYHSCz6VKf3cAUACkrF` are Ready. Independent Vercel API checks matched exact commits, projects and production aliases. Website contact GET and CRM intake GET returned 200; unsigned webhook request returned 400.
+3. The website had advanced to live `5d3becc8bee617efc8befa3fa9c3bbd956bb8c8d`. Integrated original companion `f6037a6` on that baseline as `5b8be05`, preserving accepted-enquiry analytics, Bing verification and hero optimization. Re-ran 129 tests, website typecheck/targeted lint/build and mocked Chromium retry checks successfully. Website has no Git remote configured; this is a locally committed, deployed SHA, not a pushed commit. FlowCRM release is pushed on `feature/resend-engagement`; main unchanged.
+4. Enabled only the Vancouver rule below after authenticated assignee reconciliation. Readback matches; hashes verify unrelated Vancouver settings and other workspace settings unchanged. The first guarded transaction rolled back because absent intake versus empty intake normalized differently; corrected guard then committed successfully. Post-activation: zero receipts, 11 existing tasks, zero enabled Vancouver generic automations. No backfill or test data.
+5. **Remaining:** verify the next genuine inquiry read-only: .ca source/submission ID → Vancouver contact/activity → exactly one task assigned to Rachel → correct business-day deadline. No live test inquiry is authorized. Keep `re-lead-route` Partial until this proof exists.
 
-Proposed rule (no secrets):
+Supabase security advisors were checked after migration. The private receipt table intentionally has RLS with no client policies ([advisor explanation](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)); direct access remains revoked. Existing intake RPC remains key-authenticated under its prior public SECURITY DEFINER execution boundary. Advisors also flag pre-existing functions with mutable search paths, other callable SECURITY DEFINER functions and disabled leaked-password protection; no unrelated security configuration was changed. [Search-path guidance](https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable), [public function guidance](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable), [password protection guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+Active rule (no secrets):
 ```json
 {"enabled":true,"assigned_to":"362192e1-4db4-4d4b-97ef-4cdd39c7c7ef","key_labels":["rachelgibbrealtor.ca"],"sources":["rachelgibbrealtor.ca:contact-form"],"source_prefixes":["rachelgibbrealtor.ca:property-"]}
 ```
