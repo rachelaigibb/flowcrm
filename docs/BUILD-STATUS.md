@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Current production: v0.9.8 (paced sending and guarded retry; both approved retries delivered)** · Last updated 2026-10-07 · Latest commit *(see git log)*
+**Current production: v0.9.9 (current unsubscribe reporting and send-time eligibility checks)** · Last updated 2026-10-07 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -8,9 +8,9 @@
 
 ---
 
-## Local candidate — v0.9.9 (not deployed)
+## v0.9.9 — deployed October 7; authenticated UI check pending
 
-Current-unsubscribe count/filter/dates and send-boundary marketing consent/suppression checks are implemented on `feature/resend-engagement`. Covers queued email and each explicit rate-limit retry without changing v0.9.8 pacing/idempotency. 121 tests, TypeScript, production build and local synthetic desktop/mobile browser verification pass. Full lint remains baseline 26 errors / 29 warnings. No migration, sends or live data changes. Deployment requires review approval. Details and limitations: [UNSUBSCRIBE-REPORTING.md](./UNSUBSCRIBE-REPORTING.md).
+Current-unsubscribe count/filter/dates and send-boundary marketing consent/suppression checks are implemented on `feature/resend-engagement`. Covers queued email and each explicit rate-limit retry without changing v0.9.8 pacing/idempotency. 121 tests, TypeScript, production build and local synthetic desktop/mobile browser verification pass. Full lint remains baseline 26 errors / 29 warnings. No migration, sends or live data changes. Approved exact commit `08cb825` deployed Ready; alias and SHA verified, login 200 and unsigned webhook 400. Before/after campaign, consent and recipient fingerprints unchanged. Authenticated live UI check requires the existing parent browser task. Details and limitations: [UNSUBSCRIBE-REPORTING.md](./UNSUBSCRIBE-REPORTING.md).
 
 ## Stack
 

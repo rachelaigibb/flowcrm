@@ -271,3 +271,14 @@ Campaign summary is22accepted/0failed/22total. All20original recipient records a
 ## October 7 — v0.9.9 unsubscribe reporting candidate (deployment held)
 
 Rachel approved current-unsubscribe count/filter/withdrawal dates in the Recipients summary, plus send-boundary marketing consent/suppression checks. Implemented on existing feature/resend-engagement with no migration or attribution-token architecture. Broadcast/automation/marketing-compose queued attempts and explicit 429 retries recheck eligibility; pacing/idempotency retained. 121 tests, tsc, build and isolated desktop/mobile Chromium verification pass; lint baseline unchanged 26 errors / 29 warnings. No real sends, consent/campaign edits or deployment. Production v0.9.8 remains unchanged. See [UNSUBSCRIBE-REPORTING.md](./UNSUBSCRIBE-REPORTING.md) for evidence, limits and release plan. Unrelated AGENTS.md and Dubai handoff edits remain excluded from the scoped commit.
+
+
+## October 7 — v0.9.9 released; authenticated UI verification pending
+
+Rachel explicitly approved deployment. Exact reviewed code `08cb825f0508a6f865fcb298fc85478ff6ed31ea` pushed and remotely verified on `feature/resend-engagement`; main remains `5e8f7676760cdd12efe495187adf17dceadb1594`. Released from clean detached worktree `/tmp/flowcrm-release-08cb825`.
+
+Vercel deployment `dpl_4Q78moU4dba84RpDoR5yk6XxBJTF` is Ready at https://flowcrm-lilslktlp-rachelgibb.vercel.app, aliased to https://crm.getflowplan.app. Independent API metadata confirms the exact SHA, production target and existing FlowCRM project. Remote build and TypeScript passed. Login returns 200; unsigned Resend webhook returns 400 with Invalid webhook. No signed event was manufactured and no email sent. The new deployment error-log scan returned zero entries (10-minute window; not proof of future runtime health).
+
+Before/after read-only fingerprints are identical: campaigns (including schedules/content) `3b80a132a0ba8fe7d7150016b1b6bbb8`; contact consent/status/date/withdrawal fields `30c3ab1175d9f5b90eaedc982ad82b2d`; full broadcast recipient records `02c83c696c088a9546d21696d455acbb`. Email activities remain 39. No schema or credential configuration changes.
+
+Authenticated production UI verification is pending: this delegated environment has no authenticated browser-control tool. Parent's existing browser task should open the Oct6 general campaign, confirm the current-unsubscribe count, select Unsubscribed, inspect withdrawal dates, combine/reset filters and follow Open in Contacts, all read-only. Synthetic local desktop/mobile checks already passed. Do not retrieve browser credentials or create test records/sends to bypass this limitation.

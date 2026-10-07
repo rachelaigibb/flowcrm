@@ -1,6 +1,6 @@
 # Current unsubscribe reporting and send-time checks
 
-October 7, 2026 — v0.9.9 local candidate; production remains v0.9.8. Rachel approved reporting and the send-time safeguard, with deployment held for review.
+October 7, 2026 — v0.9.9 deployed with explicit approval; authenticated production UI verification pending.
 
 ## Behaviour
 
@@ -27,8 +27,19 @@ Limits: checking and the remote provider request cannot be one atomic transactio
 - Full lint retains the pre-existing 26 errors / 29 warnings; no additional findings.
 - Actual production recipient component exercised in the isolated Vite fixture with cached Playwright/Chromium, desktop 1440px and mobile 390px. Summary, timezone date, unknown date, filter intersection/reset and Contacts-link propagation pass; no page errors. All fixture actions and sends are mocked; non-localhost requests blocked.
 - Local screenshots: `/tmp/flowcrm-unsubscribe-desktop.png`, `/tmp/flowcrm-unsubscribe-mobile.png`. Browser harness: `/tmp/flowcrm-unsubscribe-browser.cjs`; reusable fixture: `tests/browser/`.
-- No real sends, live campaign/consent edits or schema writes were performed. Production authenticated UI has not been verified for this candidate because it is not deployed.
+- No real sends, live campaign/consent edits or schema writes were performed. Authenticated production UI verification remains pending in the parent browser task.
 
-## Release plan
+## Release and rollback plan
 
-Review this scoped commit on `feature/resend-engagement`, approve deployment, then deploy the exact reviewed SHA using the existing Vercel project. No migration, new secrets or provider setup is required. Verify the production Recipients summary/filter/date and Contacts-link handoff read-only. Do not send a test or campaign as a release check without separate approval. Rollback is the prior v0.9.8 deployment; no data rollback is needed. Main remains unmerged.
+The approved exact SHA was deployed through the existing Vercel project; release evidence follows below. No migration, new secrets or provider setup is required. Verify the production Recipients summary/filter/date and Contacts-link handoff read-only. Do not send a test or campaign as a release check without separate approval. Rollback is the prior v0.9.8 deployment; no data rollback is needed. Main remains unmerged.
+
+
+## October 7 production release
+
+Rachel explicitly approved deployment. Exact reviewed code `08cb825f0508a6f865fcb298fc85478ff6ed31ea` pushed and remotely verified on `feature/resend-engagement`; main remains `5e8f7676760cdd12efe495187adf17dceadb1594`. Released from clean detached worktree `/tmp/flowcrm-release-08cb825`.
+
+Vercel deployment `dpl_4Q78moU4dba84RpDoR5yk6XxBJTF` is Ready at https://flowcrm-lilslktlp-rachelgibb.vercel.app, aliased to https://crm.getflowplan.app. Independent API metadata confirms the exact SHA, production target and existing FlowCRM project. Remote build and TypeScript passed. Login returns 200; unsigned Resend webhook returns 400 with Invalid webhook. No signed event was manufactured and no email sent. The new deployment error-log scan returned zero entries (10-minute window; not proof of future runtime health).
+
+Before/after read-only fingerprints are identical: campaigns (including schedules/content) `3b80a132a0ba8fe7d7150016b1b6bbb8`; contact consent/status/date/withdrawal fields `30c3ab1175d9f5b90eaedc982ad82b2d`; full broadcast recipient records `02c83c696c088a9546d21696d455acbb`. Email activities remain 39. No schema or credential configuration changes.
+
+Authenticated production UI verification is pending: this delegated environment has no authenticated browser-control tool. Parent's existing browser task should open the Oct6 general campaign, confirm the current-unsubscribe count, select Unsubscribed, inspect withdrawal dates, combine/reset filters and follow Open in Contacts, all read-only. Synthetic local desktop/mobile checks already passed. Do not retrieve browser credentials or create test records/sends to bypass this limitation.

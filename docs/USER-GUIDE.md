@@ -224,7 +224,7 @@ Clicks can come from automated security scanners; they do not prove a person rea
 A new broadcast starts with **0 recipients**. Select a tag or source to see the eligible count. Select **Send to all contacts** only when you intend to reach all eligible contacts in the workspace. Clearing the last selection returns the count to zero. **Send Now** and **Schedule** stay disabled until the count is ready and greater than zero; you can save an empty draft. Follow-up drafts retain their selected contacts, with consent checked again before sending.
 
 
-## Recipient unsubscribe reporting (v0.9.9 candidate — awaiting deployment)
+## Recipient unsubscribe reporting (v0.9.9)
 
 Open a broadcast’s **Recipients** section. The summary now includes **recipients currently unsubscribed**. Choose **Consent → Unsubscribed** to see those contacts, with withdrawal dates in your workspace timezone. If no date was recorded, the row says **Withdrawal date unknown**. **Open in Contacts** carries this filter through.
 
