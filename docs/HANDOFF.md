@@ -266,3 +266,8 @@ Parent browser session invoked the selected-recipient retry exactly once and ver
 - VRS Communities (`vanres@vrs.org`), recipient `172befa5-8cdc-46f6-a803-bc23ca5e9be9`, provider `01a112f0-e2ce-7430-a419-463b2d8a2fae`: accepted, signed delivered event at2026-10-06T20:39:07.174Z (13:39:07 Vancouver).
 
 Campaign summary is22accepted/0failed/22total. All20original recipient records are byte-for-byte unchanged by canonical JSON fingerprint `822ee8045df1042806dbd12761e5c414`; campaign content/audience/schedule fingerprint remains `8b8442844465035dd33182b28fb57ab8`. Parent reports Panorama West remains delayed on its original accepted send; it was not retried. This resolves the earlier browser-interaction blocker. No additional sends, code changes or deployment performed during this verification.
+
+
+## October 7 — v0.9.9 unsubscribe reporting candidate (deployment held)
+
+Rachel approved current-unsubscribe count/filter/withdrawal dates in the Recipients summary, plus send-boundary marketing consent/suppression checks. Implemented on existing feature/resend-engagement with no migration or attribution-token architecture. Broadcast/automation/marketing-compose queued attempts and explicit 429 retries recheck eligibility; pacing/idempotency retained. 121 tests, tsc, build and isolated desktop/mobile Chromium verification pass; lint baseline unchanged 26 errors / 29 warnings. No real sends, consent/campaign edits or deployment. Production v0.9.8 remains unchanged. See [UNSUBSCRIBE-REPORTING.md](./UNSUBSCRIBE-REPORTING.md) for evidence, limits and release plan. Unrelated AGENTS.md and Dubai handoff edits remain excluded from the scoped commit.

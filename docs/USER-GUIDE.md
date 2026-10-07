@@ -222,3 +222,12 @@ Clicks can come from automated security scanners; they do not prove a person rea
 ## Safer broadcast audience selection (v0.9.7)
 
 A new broadcast starts with **0 recipients**. Select a tag or source to see the eligible count. Select **Send to all contacts** only when you intend to reach all eligible contacts in the workspace. Clearing the last selection returns the count to zero. **Send Now** and **Schedule** stay disabled until the count is ready and greater than zero; you can save an empty draft. Follow-up drafts retain their selected contacts, with consent checked again before sending.
+
+
+## Recipient unsubscribe reporting (v0.9.9 candidate — awaiting deployment)
+
+Open a broadcast’s **Recipients** section. The summary now includes **recipients currently unsubscribed**. Choose **Consent → Unsubscribed** to see those contacts, with withdrawal dates in your workspace timezone. If no date was recorded, the row says **Withdrawal date unknown**. **Open in Contacts** carries this filter through.
+
+This shows current contact consent, not which campaign caused the unsubscribe. Someone may remain delivered/clicked/interested in the historical record while currently unsubscribed. Existing follow-up tasks remain for review; new follow-up drafts and tasks exclude withdrawn contacts.
+
+Before every queued marketing email attempt, including a rate-limit retry, FlowCRM checks current consent, do-not-contact status and recorded suppression evidence again. If the contact is no longer eligible, their address/link changed, or eligibility cannot be verified, it does not send and displays the reason. This covers broadcast, automation and marketing compose emails; already accepted emails cannot be recalled.

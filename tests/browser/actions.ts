@@ -1,9 +1,9 @@
-import type { BroadcastRecipient } from '../../src/types/database'
+import type { RecipientHistory } from '../../src/features/broadcasts/recipient-consent'
 import { summarizeEngagement } from '../../src/features/broadcasts/engagement'
-const base={org_id:'fixture',sub_account_id:'fixture',broadcast_id:'fixture',provider_id:null,company:'Synthetic fixture',address:'fixture@example.invalid',status:'sent',sent_at:'2026-10-05T14:00:00Z',error:null,follow_up_status:'not_followed_up',follow_up_task_id:null,historical:false} as BroadcastRecipient
+const base={id:'base',contact_id:'base',contact_name:'Base',org_id:'fixture',sub_account_id:'fixture',broadcast_id:'fixture',provider_id:null,company:'Synthetic fixture',address:'fixture@example.invalid',status:'sent',sent_at:'2026-10-05T14:00:00Z',consent:{status:'explicit',withdrawnAt:null},error:null,follow_up_status:'not_followed_up',follow_up_task_id:null,historical:false} as Omit<RecipientHistory, 'engagement'>
 export const fixtureRows=[
- {...base,id:'one',contact_id:'one',contact_name:'Alex Clicked',engagement:summarizeEngagement([{event_id:'a',provider_id:'p',event_type:'email.clicked',occurred_at:'2026-10-05T15:00:00Z',link:'https://example.com/brochure'},{event_id:'b',provider_id:'p',event_type:'email.delivered',occurred_at:'2026-10-05T14:01:00Z',link:null}])},
- {...base,id:'two',contact_id:'two',contact_name:'Sam Unknown',historical:true,engagement:summarizeEngagement([])},
+ {...base,id:'one',contact_id:'one',contact_name:'Alex Clicked',consent:{status:'withdrawn',withdrawnAt:'2026-10-06T17:02:54Z'},engagement:summarizeEngagement([{event_id:'a',provider_id:'p',event_type:'email.clicked',occurred_at:'2026-10-05T15:00:00Z',link:'https://example.com/brochure'},{event_id:'b',provider_id:'p',event_type:'email.delivered',occurred_at:'2026-10-05T14:01:00Z',link:null}])},
+ {...base,id:'two',contact_id:'two',contact_name:'Sam Unknown',consent:{status:'withdrawn',withdrawnAt:null},historical:true,engagement:summarizeEngagement([])},
  {...base,id:'three',contact_id:'three',contact_name:'Pat Bounced',engagement:summarizeEngagement([{event_id:'c',provider_id:'q',event_type:'email.bounced',occurred_at:'2026-10-05T14:01:00Z',link:null}])}
 ]
 export async function getBroadcastHistory(){return {data:fixtureRows}}

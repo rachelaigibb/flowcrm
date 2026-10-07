@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { randomUUID } from "node:crypto"
 import { sendPaced } from "@/lib/resend/send-paced"
+import { assertMarketingEligibility, MarketingSendBlocked } from "./marketing-eligibility"
 import { getResendClient } from "@/lib/resend/client"
 import { getTwilioClient } from "@/lib/twilio/client"
 import { buildEmailContent } from "@/lib/messaging/html"
@@ -166,7 +167,10 @@ export async function sendEmailToContact(params: {
       headers: params.marketing ? unsubscribeHeaders(contact.unsubscribe_token) : undefined,
       attachments: params.attachments?.map((a) => ({ filename: a.filename, content: a.content })),
     }, !params.skipActivity && typeof params.activityMetadata?.broadcast_id === "string"
-      ? `broadcast/${params.activityMetadata.broadcast_id}/${contact.id}` : randomUUID())
+      ? `broadcast/${params.activityMetadata.broadcast_id}/${contact.id}` : randomUUID(),
+      params.marketing && !params.skipActivity
+        ? () => assertMarketingEligibility(supabase, orgId, subAccountId, contact.id, contact.email!, contact.unsubscribe_token!)
+        : undefined)
 
     if (sendError) {
       return { ok: false, error: sendError.statusCode === null || (sendError.statusCode ?? 0) >= 500 ? `Acceptance unknown; do not retry automatically: ${sendError.message}` : sendError.message }
@@ -207,6 +211,7 @@ export async function sendEmailToContact(params: {
     } catch { console.error("Accepted email activity could not be saved", sendResult.id) }
     return { ok: true, providerId: sendResult.id, activityId }
   } catch (err) {
+    if (err instanceof MarketingSendBlocked) return { ok: false, error: err.message }
     return { ok: false, error: `Acceptance unknown; do not retry automatically: ${err instanceof Error ? err.message : "Unknown error sending email"}` }
   }
 }

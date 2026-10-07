@@ -2,6 +2,7 @@
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import { revalidatePath } from "next/cache"
 import { attachEngagement } from "./engagement-store"
+import { attachRecipientConsent } from "./recipient-consent"
 import type { BroadcastRecipient } from "@/types/database"
 
 export async function getBroadcastHistory(id: string) {
@@ -13,8 +14,8 @@ export async function getBroadcastHistory(id: string) {
   rows.push(...(data??[]) as BroadcastRecipient[])
   if((data?.length??0)<500)break
  }
- try { return {data:await attachEngagement(supabase,rows),error:undefined} }
- catch { return {data:[],error:'Engagement could not be loaded. Confirm reporting setup and refresh.'} }
+ try { return {data:await attachRecipientConsent(supabase,await attachEngagement(supabase,rows),orgId,subAccountId),error:undefined} }
+ catch { return {data:[],error:'Engagement or current consent could not be loaded. Confirm reporting setup and refresh.'} }
 
 }
 export async function updateBroadcastOutcome(id:string,ids:string[],outcome:BroadcastRecipient['follow_up_status']) {

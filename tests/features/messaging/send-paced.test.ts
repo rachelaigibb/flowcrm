@@ -18,3 +18,10 @@ describe('paced Resend sends',()=>{
  it('does not shorten long provider waits or retry quota/auth/5xx errors',async()=>{for(const error of [{...rate,headers:{'retry-after':'120'}},{...rate,error:{name:'daily_quota_exceeded',statusCode:429,message:'quota'}},{...rate,error:{name:'internal_server_error',statusCode:500,message:'unknown'}}] as CreateEmailResponse[]){const t=setup([error]);await t.send(t.client,payload,'stable');expect(t.starts).toHaveLength(1)}})
  it('never retries transport ambiguity and allows later independent calls',async()=>{const t=setup([new Error('timeout'),ok]);await expect(t.send(t.client,payload,'one')).rejects.toThrow('timeout');await t.send(t.client,payload,'two');expect(t.keys).toEqual(['one','two'])})
 })
+it('a failed pre-send check releases the queue without calling the provider', async()=>{
+ const t=setup([])
+ await expect(t.send(t.client,payload,'blocked',async()=>{throw new Error('withdrawn')})).rejects.toThrow('withdrawn')
+ expect(t.starts).toEqual([])
+ await t.send(t.client,payload,'eligible',async()=>{})
+ expect(t.keys).toEqual(['eligible'])
+})

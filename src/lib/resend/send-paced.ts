@@ -6,10 +6,12 @@ const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, m
 export function createPacedSender(wait = sleep, now = Date.now, random = Math.random) {
   let tail: Promise<unknown> = Promise.resolve()
   let nextStart = 0
-  return (client: Resend, payload: CreateEmailOptions, idempotencyKey: string): Promise<CreateEmailResponse> => {
+  return (client: Resend, payload: CreateEmailOptions, idempotencyKey: string, beforeAttempt?: () => Promise<void>): Promise<CreateEmailResponse> => {
     const run = tail.then(async () => {
       for (let attempt = 0; ; attempt++) {
         await wait(Math.max(0, nextStart - now()))
+        // Recheck after every queue/backoff wait, including each explicit 429 retry.
+        await beforeAttempt?.()
         nextStart = now() + 600
         // Transport/5xx uncertainty is NOT retried. One unchanged key/payload per operation.
         const result = await client.emails.send(payload, { idempotencyKey })

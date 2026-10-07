@@ -58,6 +58,7 @@ interface ContactsPageProps {
   broadcastFilter?: string
   broadcastStatus?: string
   broadcastEngagement?: string
+  broadcastConsent?: string
   broadcastLink?: string
   historyError?: string
 }
@@ -66,7 +67,7 @@ function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined
   return tagColors.find((t) => t.name.toLowerCase() === tagName.toLowerCase())?.color
 }
 
-export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilter="", broadcastStatus="all", broadcastEngagement="all", broadcastLink="", historyError }: ContactsPageProps) {
+export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilter="", broadcastStatus="all", broadcastEngagement="all", broadcastLink="", broadcastConsent="all", historyError }: ContactsPageProps) {
   const router = useRouter()
   const [search, setSearch] = useState("")
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
@@ -287,9 +288,10 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
           />
         </div>
         <label className="text-sm">Broadcast <select aria-label="Filter by broadcast" className="border rounded p-2 bg-background max-w-64" value={broadcastFilter} onChange={e=>router.push(e.target.value?`/contacts?broadcast=${e.target.value}&status=sent`:'/contacts')}><option value="">All broadcasts / contacts</option>{broadcasts.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
-        {broadcastFilter&&<label className="text-sm">Status <select aria-label="Broadcast recipient status" className="border rounded p-2 bg-background" value={broadcastStatus} onChange={e=>router.push(`/contacts?broadcast=${broadcastFilter}&status=${e.target.value}&engagement=${broadcastEngagement}&link=${encodeURIComponent(broadcastLink)}`)}>{['all','sent','failed','pending'].map(s=><option key={s} value={s}>{s}</option>)}</select></label>}
-        {broadcastFilter&&<label className="text-sm">Engagement <select aria-label="Broadcast engagement" className="border rounded p-2 bg-background" value={broadcastEngagement} onChange={e=>router.push(`/contacts?broadcast=${broadcastFilter}&status=${broadcastStatus}&engagement=${e.target.value}&link=${encodeURIComponent(broadcastLink)}`)}>{Object.entries(engagementFilters).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>}
-        {broadcastLink&&<p className="text-sm">Clicked link contains: {broadcastLink} <button className="underline" onClick={()=>router.push(`/contacts?broadcast=${broadcastFilter}&status=${broadcastStatus}&engagement=${broadcastEngagement}`)}>Clear link filter</button></p>}
+        {broadcastFilter&&<label className="text-sm">Status <select aria-label="Broadcast recipient status" className="border rounded p-2 bg-background" value={broadcastStatus} onChange={e=>router.push(`/contacts?broadcast=${broadcastFilter}&status=${e.target.value}&engagement=${broadcastEngagement}&link=${encodeURIComponent(broadcastLink)}&consent=${broadcastConsent}`)}>{['all','sent','failed','pending'].map(s=><option key={s} value={s}>{s}</option>)}</select></label>}
+        {broadcastFilter&&<label className="text-sm">Engagement <select aria-label="Broadcast engagement" className="border rounded p-2 bg-background" value={broadcastEngagement} onChange={e=>router.push(`/contacts?broadcast=${broadcastFilter}&status=${broadcastStatus}&engagement=${e.target.value}&link=${encodeURIComponent(broadcastLink)}&consent=${broadcastConsent}`)}>{Object.entries(engagementFilters).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>}
+        {broadcastFilter&&<label className="text-sm">Consent <select aria-label="Broadcast consent" className="border rounded p-2 bg-background" value={broadcastConsent} onChange={e=>router.push(`/contacts?broadcast=${broadcastFilter}&status=${broadcastStatus}&engagement=${broadcastEngagement}&link=${encodeURIComponent(broadcastLink)}&consent=${e.target.value}`)}><option value="all">All consent statuses</option><option value="withdrawn">Unsubscribed</option></select></label>}
+        {broadcastLink&&<p className="text-sm">Clicked link contains: {broadcastLink} <button className="underline" onClick={()=>router.push(`/contacts?broadcast=${broadcastFilter}&status=${broadcastStatus}&engagement=${broadcastEngagement}&consent=${broadcastConsent}`)}>Clear link filter</button></p>}
         {historyError&&<p role="alert" className="text-destructive">Could not load broadcast recipients.</p>}
         {allTags.length > 0 && (
           <div className="flex items-center gap-2">

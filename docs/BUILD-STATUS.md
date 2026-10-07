@@ -1,12 +1,16 @@
 # FlowCRM — Build Status
 
-**Current production: v0.9.8 (paced sending and guarded retry; both approved retries delivered)** · Last updated 2026-10-06 · Latest commit *(see git log)*
+**Current production: v0.9.8 (paced sending and guarded retry; both approved retries delivered)** · Last updated 2026-10-07 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
 > **On versioning:** GitHub tracks *every change* (history, diffs, who/when). It does not tell you "are we done with Phase 4?" — that's this file's job. Git = the ledger; this doc = the summary. Phase numbers here are the shared vocabulary.
 
 ---
+
+## Local candidate — v0.9.9 (not deployed)
+
+Current-unsubscribe count/filter/dates and send-boundary marketing consent/suppression checks are implemented on `feature/resend-engagement`. Covers queued email and each explicit rate-limit retry without changing v0.9.8 pacing/idempotency. 121 tests, TypeScript, production build and local synthetic desktop/mobile browser verification pass. Full lint remains baseline 26 errors / 29 warnings. No migration, sends or live data changes. Deployment requires review approval. Details and limitations: [UNSUBSCRIBE-REPORTING.md](./UNSUBSCRIBE-REPORTING.md).
 
 ## Stack
 

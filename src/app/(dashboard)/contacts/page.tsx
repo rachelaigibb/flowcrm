@@ -8,7 +8,7 @@ import { getUserContext } from "@/lib/supabase/get-user-context"
 import { ContactsPage } from "@/features/contacts/components/contacts-page"
 import type { Contact } from "@/types/database"
 
-export default async function ContactsRoute({searchParams}:{searchParams:Promise<{broadcast?:string;status?:string;engagement?:string;link?:string}>}) {
+export default async function ContactsRoute({searchParams}:{searchParams:Promise<{broadcast?:string;status?:string;engagement?:string;link?:string;consent?:string}>}) {
   const filter=await searchParams
   const {orgId}=await getUserContext()
   const supabase = await createClient()
@@ -62,9 +62,9 @@ export default async function ContactsRoute({searchParams}:{searchParams:Promise
       }
       const enriched=await attachEngagement(supabase,rows)
       const ids=new Set(enriched.filter(r=>matchesEngagement(r.engagement,filter.engagement??"all")&&(!filter.link||r.engagement.links.some(l=>l.url.toLowerCase().includes(filter.link!.toLowerCase())))).map(r=>r.contact_id))
-      filteredContacts=filteredContacts.filter(c=>ids.has(c.id))
+      filteredContacts=filteredContacts.filter(c=>ids.has(c.id)&&(filter.consent!=='withdrawn'||c.consent_status==='withdrawn'))
     } catch { historyError="Could not load engagement"; filteredContacts=[] }
 
   }
-  return <ContactsPage broadcastEngagement={filter.engagement??"all"} broadcastLink={filter.link??""} broadcasts={broadcasts??[]} broadcastFilter={filter.broadcast??""} broadcastStatus={filter.status??"all"} historyError={historyError} contacts={filteredContacts as Contact[]} tagColors={tagColors} />
+  return <ContactsPage broadcastConsent={filter.consent??"all"} broadcastEngagement={filter.engagement??"all"} broadcastLink={filter.link??""} broadcasts={broadcasts??[]} broadcastFilter={filter.broadcast??""} broadcastStatus={filter.status??"all"} historyError={historyError} contacts={filteredContacts as Contact[]} tagColors={tagColors} />
 }
