@@ -14,7 +14,7 @@ Current-unsubscribe count/filter/dates and send-boundary marketing consent/suppr
 
 ## Production v0.9.10 — Vancouver inquiry follow-up
 
-Deployed FlowCRM `01b46ea` and current-baseline .ca companion `5b8be05`; migration applied and Vancouver-only rule activated after verified Rachel owner reconciliation. 129 tests, SQL suite, typechecks, builds and mocked browser checks pass; lint remains documented baseline. No live test inquiry/email/backfill. `re-lead-route` remains Partial pending genuine inquiry-to-assigned-task evidence. See [WEBSITE-INQUIRY-FOLLOWUP.md](./WEBSITE-INQUIRY-FOLLOWUP.md).
+Deployed FlowCRM `01b46ea` and current-baseline .ca companion `5b8be05`; migration applied and Vancouver-only rule activated after verified Rachel owner reconciliation. 129 tests, SQL suite, typechecks, builds and mocked browser checks pass; lint remains documented baseline. Subsequent approved single live .ca/contact test passed at 22:36:47 UTC: existing contact, exactly one Rachel-assigned task due October 8 at 17:00 Vancouver, and notification receipt verified by the browser coordinator. No resend/backfill; property form not separately live-tested. Coordinator owns Command Center closure and test-task completion. See [WEBSITE-INQUIRY-FOLLOWUP.md](./WEBSITE-INQUIRY-FOLLOWUP.md).
 
 ## Stack
 
