@@ -1,12 +1,16 @@
 # FlowCRM — Build Status
 
-**Current production: v0.9.11 (monochrome app icons)** · Last updated 2026-10-18 · Latest commit *(see git log)*
+**Latest release: v0.9.12 (matching in-app logo; deployment pending)** · Last updated 2026-10-18 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
 > **On versioning:** GitHub tracks *every change* (history, diffs, who/when). It does not tell you "are we done with Phase 4?" — that's this file's job. Git = the ledger; this doc = the summary. Phase numbers here are the shared vocabulary.
 
 ---
+
+## v0.9.12 — matching in-app logo
+
+Sidebar, authentication screens and invitation screen now share `FlowCRMMark`, using the exact approved app-icon artwork in a neutral black tile. Tenant organization logos and user-selected accent colors remain independent.
 
 ## v0.9.11 — monochrome app icon · deployed October 18
 

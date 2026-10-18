@@ -37,6 +37,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
+import { FlowCRMMark } from "@/components/shared/flowcrm-mark"
 import { SubAccountSwitcher } from "@/components/shared/sub-account-switcher"
 import { signOut } from "@/features/auth/actions"
 import type { Organization, SubAccount, OrgRole } from "@/types/database"
@@ -103,7 +104,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <Link href="/dashboard" className="flex items-center gap-2 px-2 py-1.5">
-              <Building2 className="size-5 text-primary" />
+              <FlowCRMMark size={28} />
               <span className="text-sm font-bold tracking-tight">FlowCRM</span>
             </Link>
           </SidebarMenuItem>

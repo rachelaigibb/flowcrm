@@ -1,3 +1,4 @@
+import { FlowCRMMark } from "@/components/shared/flowcrm-mark"
 import { InviteAcceptPage } from "@/features/invitations/components/invite-accept-page"
 
 export default async function InvitePage({
@@ -12,9 +13,7 @@ export default async function InvitePage({
       <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-              F
-            </div>
+            <FlowCRMMark />
             <span className="text-xl font-semibold tracking-tight">
               FlowCRM
             </span>
