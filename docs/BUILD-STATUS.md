@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Latest release: v0.9.11 (monochrome app icons; deployment verification pending)** · Last updated 2026-10-18 · Latest commit *(see git log)*
+**Current production: v0.9.11 (monochrome app icons)** · Last updated 2026-10-18 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -8,9 +8,9 @@
 
 ---
 
-## v0.9.11 — monochrome app icon
+## v0.9.11 — monochrome app icon · deployed October 18
 
-Owner-approved white F/P infinity mark on black. Updated browser icon, multi-size favicon, iOS touch icon, Android standard/maskable icons, and neutral install colors. Versioned manifest icon URLs refresh cached artwork; existing iOS home-screen installs may require re-adding. Master: `assets/branding/flowcrm-icon-master.png`; reproducible exports: `node scripts/export-app-icons.cjs`.
+Owner-approved white F/P infinity mark on black. Updated browser icon, multi-size favicon, iOS touch icon, Android standard/maskable icons, and neutral install colors. Versioned manifest icon URLs refresh cached artwork; existing iOS home-screen installs may require re-adding. Master: `assets/branding/flowcrm-icon-master.png`; reproducible exports: `node scripts/export-app-icons.cjs`. Release `ad756b7` deployed Ready at `https://crm.getflowplan.app` (deployment `dpl_5MwHWb2tVYagcb6xUMunby2Mv9nA`). TypeScript and Vercel production build passed; live icon bytes and manifest verified. Local build could not fetch Google Fonts in the restricted environment; cloud build succeeded. Existing installed-device refresh remains device-dependent.
 
 ## v0.9.9 — deployed and verified October 7
 
