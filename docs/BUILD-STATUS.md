@@ -1,6 +1,6 @@
 # FlowCRM — Build Status
 
-**Latest release: v0.9.12 (matching in-app logo; deployment pending)** · Last updated 2026-10-18 · Latest commit *(see git log)*
+**Current production: v0.9.12 (matching in-app logo)** · Last updated 2026-10-18 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
@@ -8,9 +8,9 @@
 
 ---
 
-## v0.9.12 — matching in-app logo
+## v0.9.12 — matching in-app logo · deployed October 18
 
-Sidebar, authentication screens and invitation screen now share `FlowCRMMark`, using the exact approved app-icon artwork in a neutral black tile. Tenant organization logos and user-selected accent colors remain independent.
+Sidebar, authentication screens and invitation screen now share `FlowCRMMark`, using the exact approved app-icon artwork in a neutral black tile. Tenant organization logos and user-selected accent colors remain independent. Code `ef6c2c7` deployed Ready (`dpl_HdsuVgobunV8PYZ98e81LThA5fVi`). TypeScript and production build passed; targeted lint has zero errors and two pre-existing sidebar warnings. Live login/signup/reset-password markup and image responses verified against the approved source bytes. Sidebar/invitation placements verified in source and production build; no authenticated sidebar or invitation acceptance flow was exercised.
 
 ## v0.9.11 — monochrome app icon · deployed October 18
 
