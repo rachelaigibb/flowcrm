@@ -52,3 +52,19 @@ describe("buildEmailContent with a marketing footer", () => {
     expect(html).toContain("eXp Realty, Vancouver")
   })
 })
+
+
+describe("linked campaign images", () => {
+  it("renders an HTTPS linked image while preserving surrounding disclosures", () => {
+    const {html} = buildEmailContent("[![Concept only](https://example.com/concept.jpg)](https://example.com/property)\n\nLand only; parking unverified.")
+    expect(html).toContain('<a href="https://example.com/property"><img src="https://example.com/concept.jpg" alt="Concept only"')
+    expect(html).toContain("Land only; parking unverified.")
+  })
+  it("does not allow unsafe schemes or attribute injection", () => {
+    for (const body of [
+      '[![Concept](https://example.com/a.jpg)](javascript:alert(1))',
+      '[![Concept](data:image/png;base64,a)](https://example.com/)',
+      '[![Concept](https://example.com/a.jpg" onerror="alert)](https://example.com/)'
+    ]) expect(textToHtml(body)).not.toContain("<img")
+  })
+})

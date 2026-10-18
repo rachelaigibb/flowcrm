@@ -41,10 +41,19 @@ function lineToHtml(line: string): string {
   return parts.join("")
 }
 
+// A standalone linked image is the only supported markup. All other content
+// remains escaped text; only HTTPS image/link URLs can become attributes.
+function imageParagraph(paragraph: string): string | null {
+  const match = /^\[!\[([^\]\n]*)\]\((https:\/\/[^\s<>"'()]+)\)\]\((https:\/\/[^\s<>"'()]+)\)$/.exec(paragraph)
+  if (!match) return null
+  const [, alt, src, href] = match
+  return `<p style="margin:0 0 1em 0;"><a href="${escapeHtml(href)}"><img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" width="640" style="display:block;width:100%;max-width:640px;height:auto;border:0;"></a></p>`
+}
+
 export function textToHtml(text: string): string {
   const paragraphs = text.replace(/\r\n/g, "\n").trim().split(/\n{2,}/)
   return paragraphs
-    .map((p) => `<p style="margin:0 0 1em 0;">${p.split("\n").map(lineToHtml).join("<br>")}</p>`)
+    .map((p) => imageParagraph(p) ?? `<p style="margin:0 0 1em 0;">${p.split("\n").map(lineToHtml).join("<br>")}</p>`)
     .join("")
 }
 
