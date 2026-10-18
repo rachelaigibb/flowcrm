@@ -1,12 +1,16 @@
 # FlowCRM — Build Status
 
-**Current production: v0.9.9 (current unsubscribe reporting and send-time eligibility checks)** · Last updated 2026-10-07 · Latest commit *(see git log)*
+**Latest release: v0.9.11 (monochrome app icons; deployment verification pending)** · Last updated 2026-10-18 · Latest commit *(see git log)*
 
 *Developer-facing reference: what's built, what's pending, what was deliberately deferred. For how to use the app, see [USER-GUIDE.md](./USER-GUIDE.md).*
 
 > **On versioning:** GitHub tracks *every change* (history, diffs, who/when). It does not tell you "are we done with Phase 4?" — that's this file's job. Git = the ledger; this doc = the summary. Phase numbers here are the shared vocabulary.
 
 ---
+
+## v0.9.11 — monochrome app icon
+
+Owner-approved white F/P infinity mark on black. Updated browser icon, multi-size favicon, iOS touch icon, Android standard/maskable icons, and neutral install colors. Versioned manifest icon URLs refresh cached artwork; existing iOS home-screen installs may require re-adding. Master: `assets/branding/flowcrm-icon-master.png`; reproducible exports: `node scripts/export-app-icons.cjs`.
 
 ## v0.9.9 — deployed and verified October 7
 

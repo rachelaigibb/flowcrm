@@ -250,6 +250,11 @@ Saved timestamps were read back after commit and converted with America/Vancouve
 
 On explicit follow-up instruction, changed only the trailing date labels: `14310 | Wave 2 | Named developers | Oct 13` → `14310 | Wave 2 | Named developers | Oct 8`; `14310 | Wave 2 | General developers | Oct 14` → `14310 | Wave 2 | General developers | Oct 9`. Exact before/after readback verified. Transactional comparison of all11campaign records confirmed all other business fields unchanged, including scheduled status, Oct8/9 17:00Z (10AM Vancouver), content and audience filters. Ordinary updated_at trigger metadata excluded. No send. This supersedes the prior note that titles retained old dates.
 
+
+## October 6 approved Dubai intake verification and revocation
+
+October 6, 2026 UTC: With Rachel's explicit approvals, one buyingindubai.com/contact technical test updated the existing Dubai contact via vercel-pro at 03:35:31.171551 UTC; activity f65eb442-55af-44de-9172-3a270d616105 records source buyingindubai.com:contact-form and key_label vercel-pro. Notification receipt verified in Realtor Gmail, message 1a10f47e553951a2. Old dubai-sites key a772d939-c083-4128-9f39-95eae2ce3fe6 revoked at 03:50:23.975592 UTC through the authorized Supabase connector using the same revoked_at operation as the app action, constrained by ID, workspace and label. Independent readback confirms revoked; replacement vercel-pro 81a00160-c954-40e2-b746-e4da6e0803f4 remains active. No key values read, no repeat test. Dubai substep complete. Overall task remains Partial: .ca code still depends on FLOWCRM_SUPABASE_SERVICE_KEY for QR scan writes/export and legacy lead fallback; Vercel rotation remains Rachel-reported, with old-token revocation not independently inspected.
+
 ## October 6 — v0.9.8 rate pacing and explicit failed-recipient retry
 
 Rachel approved fixing rate pacing and retrying only the two Oct6 campaign rate rejections. Local implementation/tests and preflight evidence are in [RATE-LIMIT-RETRY.md](./RATE-LIMIT-RETRY.md).97 tests, TypeScript and production build passed; lint unchanged26errors29warnings. No send performed yet. Browser control is unavailable in this delegated environment; after deployment the authenticated campaign retry action must be invoked through an available parent/user browser. Existing unrelated AGENTS.md and Dubai handoff changes are preserved, excluded from this commit.
@@ -304,3 +309,12 @@ FlowCRM `01b46ea` → `dpl_F2XDQCChPbEYLrMqjsPErUet332Z`; .ca `5b8be05` → `dpl
 ## October 7 — approved live contact inquiry test passed
 
 Browser coordinator turn `01a11882-1002-7257-9825-5b4b6510d92c` reports one approved .ca/contact submission saved at 22:36:47 UTC, updating existing contact `c0c9d540-0cac-4cb7-83ea-6bd24803939c`. Exactly one task `43adbdc1-0d5e-44f1-9167-043ba939075e` assigned to configured Rachel owner `362192e1-4db4-4d4b-97ef-4cdd39c7c7ef`, due October 8 at 17:00 America/Vancouver. Activity `ee972f9c-f508-4ced-938a-df6b3b021cac`, marker `2026-10-07T22:36:38.120Z`; Gmail notification `1a118831cfa8074e`. Exactly one submit, no resend. This supersedes the contact-form E2E blocker above; property inquiry was not separately live-tested. Parent coordinator owns Command Center closure and test-task completion; do not duplicate those writes. Documentation only in this follow-up; no production actions. See WEBSITE-INQUIRY-FOLLOWUP.md.
+
+
+## October 9 — 14310 bounce protection production verification
+
+Read-only verification supplied by the owning FlowCRM task via coordinator. Authoritative alias/deployment metadata confirms crm.getflowplan.app at READY production deployment dpl_F2XDQCChPbEYLrMqjsPErUet332Z, SHA01b46ea89a09ba58bcb20555f93499d876f11948. That exact commit invokes assertMarketingEligibility before provider calls and blocks saved bounced/complained/suppressed events by tenant-scoped contact ID. Both verified contacts below satisfy that guard. This resolves the prior exact-live-deployment uncertainty; no live send was exercised.
+
+For info@ahma-bc.org and info@coastmentalhealth.com, Resend diagnostics classify Transient/General, while raw SMTP says “550 permanent failure for one or more recipients” with each address blocked. Both bounce events are persisted. No delivered event or current Resend suppression record was found. Do not treat the classification as evidence a retry is appropriate.
+
+Limits: audience previews/counts can still include these contacts; duplicate contacts sharing an email address are not covered by this contact-ID guard. No scheduled/sending Vancouver broadcasts exist, and neither contact is selected by current sphere/deal-list drafts, per supplied owning-task inspection. No resend, contact changes or new live send test. User informed. This is evidence writeback only; no code, deployment or production mutation performed here.
