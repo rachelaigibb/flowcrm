@@ -243,6 +243,6 @@ Choose **Any selected tag (OR)** to include contacts with at least one selected 
 
 
 ### Contact column widths and sorting
-Drag the right border of a column heading to change its width (100–800 pixels). You can also focus a border with Tab and use Left/Right arrows; Shift changes widths in larger steps. All columns remain available by horizontal scrolling on narrow screens. Widths last while the Contacts page is open.
+Drag the right border of a column heading to change its width (100–800 pixels). You can also focus a border with Tab and use Left/Right arrows; Shift changes widths in larger steps. All columns remain available by horizontal scrolling on narrow screens. Widths are saved automatically in this browser and restored when you return to Contacts or refresh. They do not sync to other browsers or devices. If browser storage is unavailable, resizing still works for the current visit.
 
 Click any data-column heading to cycle ascending → descending → off. **Clear sort** also restores default entry order (newest first), retaining search and tag filters. The active sort is shown above the table and by an arrow on its heading. Tags sort alphabetically by their combined labels.

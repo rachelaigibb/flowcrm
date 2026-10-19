@@ -1,6 +1,7 @@
 "use client"
 
 import { matchesTags, type TagMatch } from "@/lib/utils/tag-filter"
+import { useContactColumnWidths } from "../use-contact-column-widths"
 import { CONTACT_COLUMNS, ContactColumnHeader, type ContactSortField } from "./contact-column-header"
 import { engagementFilters } from "@/features/broadcasts/engagement"
 
@@ -76,7 +77,7 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [sortField, setSortField] = useState<SortField | null>(null)
-  const [columnWidths, setColumnWidths] = useState(() => Object.fromEntries(CONTACT_COLUMNS.map(c => [c.key, c.width])) as Record<SortField, number>)
+  const { columnWidths, resizeColumn } = useContactColumnWidths()
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
@@ -407,7 +408,7 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
                   <ContactColumnHeader key={column.key} label={column.label} width={columnWidths[column.key]}
                     sort={sortField === column.key ? sortOrder : null}
                     onSort={() => handleSort(column.key)}
-                    onWidth={width => setColumnWidths(previous => ({ ...previous, [column.key]: width }))}
+                    onWidth={width => resizeColumn(column.key, width)}
                   />
                 ))}
               </TableRow>
