@@ -69,3 +69,14 @@ it('keeps sending disabled when count lookup fails',async()=>{
  await waitFor(()=>expect(screen.getByRole('alert')).toHaveTextContent('Recipient count unavailable'))
  expect(screen.getByRole('button',{name:'Send Now'})).toBeDisabled()
 })
+
+it('recounts and saves AND matching, restores it, and can switch back to OR', async () => {
+ const props={broadcast:{...emptyDraft,recipient_filter:{tags:['Buyer','Touch Base'],tag_match:'all' as const}},emailTemplates:[],smsTemplates:[],availableTags:['Buyer','Touch Base'],availableSources:[]}
+ await act(async()=>{render(<BroadcastEditorPage {...props}/>)})
+ expect(screen.getByLabelText('Broadcast tag matching')).toHaveValue('all')
+ expect(mocks.count).toHaveBeenCalledWith({tags:['Buyer','Touch Base'],tag_match:'all'},'email')
+ fireEvent.click(screen.getByRole('button',{name:'Save Draft'}))
+ await waitFor(()=>expect(mocks.save).toHaveBeenCalledWith('empty',expect.objectContaining({recipient_filter:{tags:['Buyer','Touch Base'],tag_match:'all'}})))
+ fireEvent.change(screen.getByLabelText('Broadcast tag matching'),{target:{value:'any'}})
+ await waitFor(()=>expect(mocks.count).toHaveBeenLastCalledWith({tags:['Buyer','Touch Base']},'email'))
+})

@@ -51,7 +51,7 @@ export async function checkBroadcastReady(
   return null
 }
 
-// Eligible recipients: filter by tags (OR) / sources (OR) / all, plus the
+// Eligible recipients: filter by tags (Any/All) / sources (OR) / all, plus the
 // channel's contact method and marketing consent.
 export async function getBroadcastRecipients(
   supabase: SupabaseClient,
@@ -75,7 +75,7 @@ export async function getBroadcastRecipients(
     query = query.in("id", filter.contact_ids)
   } else if (!filter.all) {
     const orConditions: string[] = []
-    if (filter.tags && filter.tags.length > 0) orConditions.push(`tags.ov.{${filter.tags.join(",")}}`)
+    if (filter.tags && filter.tags.length > 0) orConditions.push(`tags.${filter.tag_match === "all" ? "cs" : "ov"}.{${filter.tags.map(tag => JSON.stringify(tag)).join(",")}}`)
     if (filter.sources && filter.sources.length > 0) orConditions.push(`source.in.(${filter.sources.join(",")})`)
     if (orConditions.length > 0) query = query.or(orConditions.join(","))
   }

@@ -28,3 +28,16 @@ describe('broadcast recipient history',()=>{
 })
 
 it.each([{}, {all:false}, {tags:[],sources:[]}, {contact_ids:[]}, {all:'true'}, null])('does not claim or send an empty or invalid audience %j',async filter=>{const d=db(false,filter);const result=await deliverBroadcast(d.client,ctx,'broadcast');expect(result.ok).toBe(false);expect(mocks.send).not.toHaveBeenCalled();expect(d.snapshots).toHaveLength(0);expect(d.updates).toHaveLength(0)})
+
+it.each(['any', 'all'] as const)('uses %s tag matching for both count and delivery queries', async mode => {
+ for (const countOnly of [true, false]) {
+  const d = db()
+  await getBroadcastRecipients(d.client, ctx, { tags: ['Touch Base', 'Buyer'], tag_match: mode }, 'email', countOnly)
+  expect(d.filters).toContainEqual(['contacts', 'or', `tags.${mode === 'all' ? 'cs' : 'ov'}.{"Touch Base","Buyer"}`])
+ }
+})
+it('preserves legacy OR matching and combines the tag group with source alternatives', async () => {
+ const d = db()
+ await getBroadcastRecipients(d.client, ctx, {tags:['Buyer','Seller'],sources:['Referral']}, 'email')
+ expect(d.filters).toContainEqual(['contacts','or','tags.ov.{"Buyer","Seller"},source.in.(Referral)'])
+})

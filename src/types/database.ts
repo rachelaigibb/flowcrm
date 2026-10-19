@@ -271,6 +271,7 @@ export type BroadcastStatus = "draft" | "scheduled" | "sending" | "sent" | "fail
 export interface BroadcastRecipientFilter {
   contact_ids?: string[]
   tags?: string[]
+  tag_match?: "any" | "all"
   sources?: string[]
   all?: boolean
 }

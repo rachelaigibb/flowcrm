@@ -236,3 +236,7 @@ Before every queued marketing email attempt, including a rate-limit retry, FlowC
 ## Website inquiry follow-up (v0.9.10, live)
 
 The Vancouver workflow creates a task for Rachel for each new contact/property inquiry, including inquiries from existing contacts. It is due by 5 p.m. Vancouver time on the next weekday excluding BC statutory holidays. Retries of the same submission reuse the task. This sends no automatic client reply, does not enroll the person in an automation, and does not create tasks for historical records, Dubai inquiries, Deal Sheet signups or valuation-report requests. It is enabled for Rachel’s verified owner account. An approved live contact-form test verified the assigned task and next-business-day deadline. Property inquiries were not separately live-tested; see WEBSITE-INQUIRY-FOLLOWUP.md.
+
+
+### Tag matching in Contacts and Broadcasts
+Choose **Any selected tag (OR)** to include contacts with at least one selected tag, or **All selected tags (AND)** to require every selected tag. In Contacts, open the Tags filter to choose the matching mode. In a broadcast draft, use Match tags under Filter by Tags; this choice is saved with the draft and applies to recipient counts and sending. Existing broadcasts default to OR. Selected sources remain alternatives to the tag group: a source match also includes the contact. Consent and do-not-contact exclusions still apply.

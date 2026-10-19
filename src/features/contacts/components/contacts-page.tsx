@@ -1,4 +1,6 @@
 "use client"
+
+import { matchesTags, type TagMatch } from "@/lib/utils/tag-filter"
 import { engagementFilters } from "@/features/broadcasts/engagement"
 
 import { useState, useMemo } from "react"
@@ -70,6 +72,7 @@ function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined
 export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilter="", broadcastStatus="all", broadcastEngagement="all", broadcastLink="", broadcastConsent="all", historyError }: ContactsPageProps) {
   const router = useRouter()
   const [search, setSearch] = useState("")
+  const [tagMatch, setTagMatch] = useState<TagMatch>("any")
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
@@ -107,12 +110,12 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
 
     if (selectedTags.size > 0) {
       result = result.filter((c) =>
-        c.tags?.some((t) => selectedTags.has(t))
+        matchesTags(c.tags, selectedTags, tagMatch)
       )
     }
 
     return result
-  }, [contacts, search, selectedTags])
+  }, [contacts, search, selectedTags, tagMatch])
 
   // Sort filtered contacts
   const sorted = useMemo(() => {
@@ -296,8 +299,7 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
         {allTags.length > 0 && (
           <div className="flex items-center gap-2">
             <Popover>
-              <PopoverTrigger>
-                <Button variant="outline" size="sm" type="button">
+              <PopoverTrigger render={<Button variant="outline" size="sm" type="button" />}>
                   <Filter className="size-3.5" data-icon="inline-start" />
                   Tags
                   {selectedTags.size > 0 && (
@@ -305,17 +307,21 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
                       {selectedTags.size}
                     </Badge>
                   )}
-                </Button>
               </PopoverTrigger>
               <PopoverContent align="start" className="w-56 p-2">
+                <label className="flex flex-col gap-1 mb-2 text-xs">
+                  Match tags
+                  <select aria-label="Contact tag matching" className="border rounded p-2 bg-background" value={tagMatch} onChange={e => setTagMatch(e.target.value as TagMatch)}>
+                    <option value="any">Any selected tag (OR)</option>
+                    <option value="all">All selected tags (AND)</option>
+                  </select>
+                </label>
                 <div className="flex flex-col gap-1">
                   {allTags.map((tag) => {
                     const color = getTagColor(tag, tagColors)
                     return (
-                      <button
+                      <label
                         key={tag}
-                        type="button"
-                        onClick={() => toggleTag(tag)}
                         className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors text-left"
                       >
                         <Checkbox
@@ -328,7 +334,7 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
                           <Tag className="size-3.5 text-muted-foreground" />
                         )}
                         <span className="truncate">{tag}</span>
-                      </button>
+                      </label>
                     )
                   })}
                 </div>

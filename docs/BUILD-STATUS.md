@@ -283,3 +283,7 @@ October6: pacing/retry fix deployed as5c26634,97tests/TypeScript/build passed, p
 
 
 October6 recovery completed: both approved rate-limit retries delivered and signed events persisted; campaign22accepted/0failed. Independent fingerprints prove the original20recipients and campaign content/audience/schedule unchanged. See RATE-LIMIT-RETRY.md.
+
+
+## October 19 — v0.9.13 tag matching
+Added Any (OR) / All (AND) tag matching to Contacts and broadcast drafts. Broadcast tag_match is persisted in existing recipient-filter JSON; count and delivery share the same query. Legacy audiences retain OR; source alternatives and consent exclusions are unchanged. No migration or live sends required. 136 tests passed (2 existing skips), TypeScript and production build passed. Component tests cover contact row filtering and broadcast restore/save/recount. Changed-file lint retains the existing five Contacts static-component errors and one unused import warning; no new lint findings. The first sandboxed build failed fetching Inter; network-enabled build passed. Deployment pending.

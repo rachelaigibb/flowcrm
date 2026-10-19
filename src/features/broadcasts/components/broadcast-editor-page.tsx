@@ -110,6 +110,7 @@ export function BroadcastEditorPage({
   // ── Recipient filter state ──
   const filter = normalizeAudience(broadcast.recipient_filter) ?? {}
   const [sendToAll, setSendToAll] = useState(filter.all ?? false)
+  const [tagMatch, setTagMatch] = useState<"any" | "all">(filter.tag_match ?? "any")
   const [selectedTags, setSelectedTags] = useState<Set<string>>(
     new Set(filter.tags ?? [])
   )
@@ -131,10 +132,13 @@ export function BroadcastEditorPage({
     if (filter.contact_ids) return { contact_ids: filter.contact_ids }
     if (sendToAll) return { all: true }
     const f: BroadcastRecipientFilter = {}
-    if (selectedTags.size > 0) f.tags = Array.from(selectedTags)
+    if (selectedTags.size > 0) {
+      f.tags = Array.from(selectedTags)
+      if (tagMatch === "all") f.tag_match = "all"
+    }
     if (selectedSources.size > 0) f.sources = Array.from(selectedSources)
     return f
-  }, [sendToAll, selectedTags, selectedSources, filter.contact_ids])
+  }, [sendToAll, selectedTags, selectedSources, filter.contact_ids, tagMatch])
 
   const audienceKey = JSON.stringify(buildFilter())
   const audienceSelected = hasAudience(buildFilter())
@@ -551,6 +555,14 @@ export function BroadcastEditorPage({
                     <Filter className="size-3" />
                     Filter by Tags
                   </Label>
+                  <label className="flex flex-col gap-1 text-xs">
+                    Match tags
+                    <select aria-label="Broadcast tag matching" className="border rounded p-2 bg-background" value={tagMatch} disabled={!isDraft} onChange={e => { setCountResult(null); setTagMatch(e.target.value as "any" | "all") }}>
+                      <option value="any">Any selected tag (OR)</option>
+                      <option value="all">All selected tags (AND)</option>
+                    </select>
+                  </label>
+                  <p className="text-xs text-muted-foreground">If sources are also selected, contacts matching those sources are included too.</p>
                   <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
                     {availableTags.map((tag) => (
                       <label
