@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import type {
   Broadcast,
-  BroadcastChannel,
   BroadcastRecipientFilter,
   BroadcastStats,
   EmailTemplate,
@@ -136,9 +135,10 @@ export function BroadcastEditorPage({
       f.tags = Array.from(selectedTags)
       if (tagMatch === "all") f.tag_match = "all"
     }
+    if (filter.additional_contact_ids?.length) f.additional_contact_ids = filter.additional_contact_ids
     if (selectedSources.size > 0) f.sources = Array.from(selectedSources)
     return f
-  }, [sendToAll, selectedTags, selectedSources, filter.contact_ids, tagMatch])
+  }, [sendToAll, selectedTags, selectedSources, filter.contact_ids, filter.additional_contact_ids, tagMatch])
 
   const audienceKey = JSON.stringify(buildFilter())
   const audienceSelected = hasAudience(buildFilter())
@@ -161,6 +161,7 @@ export function BroadcastEditorPage({
     setSaving(true)
     try {
       const result = await updateBroadcast(broadcast.id, {
+        expected_updated_at: broadcast.updated_at,
         name: name.trim() || broadcast.name,
         email_subject: emailSubject || undefined,
         email_body: emailBody || undefined,
@@ -197,6 +198,7 @@ export function BroadcastEditorPage({
     try {
       // Save first
       const saveResult = await updateBroadcast(broadcast.id, {
+        expected_updated_at: broadcast.updated_at,
         name: name.trim() || broadcast.name,
         email_subject: emailSubject || undefined,
         email_body: emailBody || undefined,
@@ -233,6 +235,7 @@ export function BroadcastEditorPage({
     try {
       // Save the editor content first, then lock it in as scheduled
       const saveResult = await updateBroadcast(broadcast.id, {
+        expected_updated_at: broadcast.updated_at,
         name: name.trim() || broadcast.name,
         email_subject: emailSubject || undefined,
         email_body: emailBody || undefined,
@@ -377,7 +380,7 @@ export function BroadcastEditorPage({
 
       {!isDraft && broadcast.status !== "scheduled" && <BroadcastRecipientList key={`${broadcast.id}:${initialRecipientStatus ?? "all"}`} timezone={timezone} initialStatus={initialRecipientStatus} id={broadcast.id} total={stats.total} channel={broadcast.channel} />}
       {!isDraft && <a href="#recipients" className="text-sm underline">View recipients · Sent {stats.sent} · Failed {stats.failed}</a>}
-      {filter.contact_ids && <p className="text-sm">This follow-up uses {filter.contact_ids.length} selected contacts from the original broadcast. Current consent is checked again before sending.</p>}
+      {filter.contact_ids && <p className="text-sm">This broadcast uses {filter.contact_ids.length} hand-picked contacts. Current consent and eligibility are checked again before sending.</p>}
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
         {/* Left column: Content */}
@@ -528,6 +531,7 @@ export function BroadcastEditorPage({
               )}
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              {!!filter.additional_contact_ids?.length && <p className="text-sm">Includes {filter.additional_contact_ids.length} hand-picked contact(s) in addition to the filters below. Eligibility is checked before sending.</p>}
               {!audienceSelected && <p className="text-sm text-muted-foreground">No recipients selected. Choose tags, sources, or explicitly select all contacts.</p>}
               {countLoading && <p className="text-sm">Counting eligible recipients…</p>}
               {audienceSelected && !countLoading && recipientCount === null && <p role="alert">Recipient count unavailable. Refresh before sending.</p>}

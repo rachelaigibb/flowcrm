@@ -80,3 +80,11 @@ it('recounts and saves AND matching, restores it, and can switch back to OR', as
  fireEvent.change(screen.getByLabelText('Broadcast tag matching'),{target:{value:'any'}})
  await waitFor(()=>expect(mocks.count).toHaveBeenLastCalledWith({tags:['Buyer','Touch Base']},'email'))
 })
+
+it('preserves hand-picked additions when saving a filter-based draft',async()=>{
+ const broadcast={...emptyDraft,updated_at:'version',recipient_filter:{tags:['Buyer'],tag_match:'all' as const,additional_contact_ids:['picked']}}
+ await act(async()=>{render(<BroadcastEditorPage broadcast={broadcast} emailTemplates={[]} smsTemplates={[]} availableTags={['Buyer']} availableSources={[]}/>)})
+ expect(screen.getByText(/Includes 1 hand-picked contact/)).toBeInTheDocument()
+ fireEvent.click(screen.getByRole('button',{name:'Save Draft'}))
+ await waitFor(()=>expect(mocks.save).toHaveBeenCalledWith('empty',expect.objectContaining({expected_updated_at:'version',recipient_filter:{tags:['Buyer'],tag_match:'all',additional_contact_ids:['picked']}})))
+})

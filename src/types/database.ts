@@ -269,6 +269,7 @@ export type BroadcastChannel = "email" | "sms"
 export type BroadcastStatus = "draft" | "scheduled" | "sending" | "sent" | "failed"
 
 export interface BroadcastRecipientFilter {
+  additional_contact_ids?: string[]
   contact_ids?: string[]
   tags?: string[]
   tag_match?: "any" | "all"

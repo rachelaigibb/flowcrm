@@ -82,6 +82,7 @@ export async function updateBroadcast(
     sms_template_id?: string | null
     recipient_filter?: BroadcastRecipientFilter
     scheduled_at?: string | null
+    expected_updated_at?: string
   }
 ) {
   const { orgId, subAccountId, supabase } = await getUserContext()
@@ -89,13 +90,15 @@ export async function updateBroadcast(
   // Only allow updating draft broadcasts
   const { data: existing, error: fetchError } = await supabase
     .from("broadcasts")
-    .select("status")
+    .select("status,updated_at")
     .eq("id", id)
     .eq("org_id", orgId)
     .eq("sub_account_id", subAccountId)
     .single()
 
   if (fetchError) return { error: fetchError.message }
+  if (existing.updated_at && !input.expected_updated_at) return { error: "Refresh this broadcast before editing to preserve its current audience." }
+  if (input.expected_updated_at && existing.updated_at !== input.expected_updated_at) return { error: "This broadcast changed. Refresh before saving so added contacts are preserved." }
   if (existing.status !== "draft") {
     return { error: "Only draft broadcasts can be edited" }
   }
@@ -122,6 +125,8 @@ export async function updateBroadcast(
     .eq("id", id)
     .eq("org_id", orgId)
     .eq("sub_account_id", subAccountId)
+    .eq("status", "draft")
+    .eq("updated_at", existing.updated_at)
     .select()
     .single()
 

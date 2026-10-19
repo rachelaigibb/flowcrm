@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url'
 const root=fileURLToPath(new URL('../../',import.meta.url))
 const fixture=fileURLToPath(new URL('./',import.meta.url))
 export default defineConfig({root:fixture,plugins:[{name:'isolated-contact-fixture',enforce:'pre',resolveId(id){
+ if(/contact-audience-actions$/.test(id))return fixture+'contact-broadcast-actions.ts'
  if(id==='../actions' || /features\/contacts\/actions$/.test(id))return '\0contacts-actions'
  if(/\/(?:create-contact-dialog|import-csv-dialog)$/.test(id))return '\0contacts-dialogs'
 },load(id){

@@ -30,7 +30,7 @@ export default async function ContactsRoute({searchParams}:{searchParams:Promise
       .order("created_at", { ascending: false }),
     supabase
       .from("sub_accounts")
-      .select("settings")
+      .select("settings,timezone")
       .eq("id", subAccountId)
       .single(),
   ])
@@ -66,5 +66,5 @@ export default async function ContactsRoute({searchParams}:{searchParams:Promise
     } catch { historyError="Could not load engagement"; filteredContacts=[] }
 
   }
-  return <ContactsPage broadcastConsent={filter.consent??"all"} broadcastEngagement={filter.engagement??"all"} broadcastLink={filter.link??""} broadcasts={broadcasts??[]} broadcastFilter={filter.broadcast??""} broadcastStatus={filter.status??"all"} historyError={historyError} contacts={filteredContacts as Contact[]} tagColors={tagColors} />
+  return <ContactsPage timezone={subAccount?.timezone ?? "UTC"} broadcastConsent={filter.consent??"all"} broadcastEngagement={filter.engagement??"all"} broadcastLink={filter.link??""} broadcasts={broadcasts??[]} broadcastFilter={filter.broadcast??""} broadcastStatus={filter.status??"all"} historyError={historyError} contacts={filteredContacts as Contact[]} tagColors={tagColors} />
 }

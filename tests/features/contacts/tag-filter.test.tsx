@@ -51,3 +51,20 @@ it('cycles sorting ascending, descending and off, preserving filtered entry orde
  fireEvent.click(screen.getByRole('button',{name:'Clear sort'}))
  expect(names()).toEqual(['Zulu Fixture','Alpha Fixture'])
 })
+
+it('selects individual contacts once and retains picks while selecting a different filtered list',async()=>{
+ const contacts=[['One',['Buyer']],['Two',[]]].map(([name,tags],i)=>({id:String(i),first_name:name,last_name:'Fixture',tags,created_at:'2026-10-19T12:00:00Z'})) as Contact[]
+ render(<ContactsPage contacts={contacts} tagColors={[]}/>)
+ fireEvent.click(screen.getByRole('checkbox',{name:'Select Two Fixture'}))
+ expect(screen.getByText('1 selected')).toBeInTheDocument()
+ fireEvent.click(screen.getByRole('button',{name:'Filter by tags'}))
+ await screen.findByLabelText('Contact tag matching')
+ fireEvent.click(screen.getByRole('checkbox',{name:'Buyer'}))
+ fireEvent.click(screen.getByRole('checkbox',{name:'Select all filtered contacts'}))
+ expect(screen.getByText('2 selected')).toBeInTheDocument()
+ fireEvent.click(screen.getByRole('checkbox',{name:'Select all filtered contacts'}))
+ expect(screen.getByText('1 selected')).toBeInTheDocument()
+ expect(screen.getByRole('button',{name:'Add to broadcast'})).toBeEnabled()
+ fireEvent.click(screen.getByRole('button',{name:'Clear selection'}))
+ expect(screen.queryByRole('button',{name:'Add to broadcast'})).not.toBeInTheDocument()
+})

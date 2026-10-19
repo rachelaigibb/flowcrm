@@ -25,6 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { AddToBroadcastDialog } from "./add-to-broadcast-dialog"
 import { CreateContactDialog } from "./create-contact-dialog"
 import { ImportCSVDialog } from "./import-csv-dialog"
 import { formatDateShort } from "@/lib/utils/dates"
@@ -54,6 +55,7 @@ interface TagColor {
 }
 
 interface ContactsPageProps {
+  timezone?: string
   contacts: Contact[]
   tagColors: TagColor[]
   broadcasts?: {id:string;name:string}[]
@@ -69,11 +71,12 @@ function getTagColor(tagName: string, tagColors: TagColor[]): string | undefined
   return tagColors.find((t) => t.name.toLowerCase() === tagName.toLowerCase())?.color
 }
 
-export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilter="", broadcastStatus="all", broadcastEngagement="all", broadcastLink="", broadcastConsent="all", historyError }: ContactsPageProps) {
+export function ContactsPage({ timezone = "UTC", contacts, tagColors, broadcasts=[], broadcastFilter="", broadcastStatus="all", broadcastEngagement="all", broadcastLink="", broadcastConsent="all", historyError }: ContactsPageProps) {
   const router = useRouter()
   const [search, setSearch] = useState("")
   const [tagMatch, setTagMatch] = useState<TagMatch>("any")
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
+  const [broadcastOpen, setBroadcastOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -193,11 +196,15 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
   }
 
   function toggleSelectAll() {
-    if (selectedIds.size === sorted.length) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(sorted.map((c) => c.id)))
-    }
+    const allSelected = sorted.every(contact => selectedIds.has(contact.id))
+    setSelectedIds(previous => {
+      const next = new Set(previous)
+      for (const contact of sorted) {
+        if (allSelected) next.delete(contact.id)
+        else next.add(contact.id)
+      }
+      return next
+    })
   }
 
   function toggleSelectOne(id: string) {
@@ -400,7 +407,8 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
               <TableRow>
                 <TableHead className="w-10">
                   <Checkbox
-                    checked={sorted.length > 0 && selectedIds.size === sorted.length}
+                    aria-label="Select all filtered contacts"
+                    checked={sorted.length > 0 && sorted.every(contact => selectedIds.has(contact.id))}
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
@@ -425,10 +433,10 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
                   <TableCell
                     onClick={(e) => {
                       e.stopPropagation()
-                      toggleSelectOne(contact.id)
                     }}
                   >
                     <Checkbox
+                      aria-label={`Select ${[contact.first_name, contact.last_name].filter(Boolean).join(" ") || "Unnamed contact"}`}
                       checked={selectedIds.has(contact.id)}
                       onCheckedChange={() => toggleSelectOne(contact.id)}
                     />
@@ -524,10 +532,12 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg border bg-background px-4 py-2.5 shadow-lg">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-3 rounded-lg border bg-background px-4 py-2.5 shadow-lg">
           <span className="text-sm font-medium">
             {selectedIds.size} selected
           </span>
+          <Button variant="outline" size="sm" onClick={() => setBroadcastOpen(true)}>Add to broadcast</Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>Clear selection</Button>
           <div className="h-4 w-px bg-border" />
           <Button variant="outline" size="sm" disabled>
             <Tag className="size-3.5" data-icon="inline-start" />
@@ -545,6 +555,7 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
       )}
 
       {/* Dialogs */}
+      {broadcastOpen && <AddToBroadcastDialog ids={Array.from(selectedIds)} timezone={timezone} onClose={() => setBroadcastOpen(false)} onAdded={() => setSelectedIds(new Set())} />}
       <CreateContactDialog open={createOpen} onOpenChange={setCreateOpen} tagColors={tagColors} />
       <ImportCSVDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>

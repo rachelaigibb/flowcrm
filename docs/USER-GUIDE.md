@@ -246,3 +246,14 @@ Choose **Any selected tag (OR)** to include contacts with at least one selected 
 Drag the right border of a column heading to change its width (100–800 pixels). You can also focus a border with Tab and use Left/Right arrows; Shift changes widths in larger steps. All columns remain available by horizontal scrolling on narrow screens. Widths are saved automatically in this browser and restored when you return to Contacts or refresh. They do not sync to other browsers or devices. If browser storage is unavailable, resizing still works for the current visit.
 
 Click any data-column heading to cycle ascending → descending → off. **Clear sort** also restores default entry order (newest first), retaining search and tag filters. The active sort is shown above the table and by an arrow on its heading. Tags sort alphabetically by their combined labels.
+
+
+### Add selected contacts to a broadcast
+1. In **Contacts**, search or filter your list, then tick the contacts you want. Picks remain selected while you change filters. Select-all applies to the current filtered list; **Clear selection** removes all picks.
+2. Click **Add to broadcast** in the selection bar. Choose **Create a new broadcast** (name and Email/SMS) or an existing **draft/scheduled** broadcast in this workspace. Up to 500 contacts can be reviewed at a time.
+3. Click **Preview audience**. Review additions, contacts already included, exclusions and the revised audience count before final send checks. Expand exclusions to see the reasons. Scheduled times appear in the workspace timezone.
+4. Confirm **Create draft with contacts** or **Add contacts**. The broadcast opens for review. This action does not send messages or alter the send time.
+
+Existing hand-picked audiences are merged without duplicate contact IDs. Tag/source rules (including AND/OR) stay intact, with hand-picked additions shown separately in the editor. An all-contact audience already includes matching eligible contacts. Consent, do-not-contact, missing contact details and recorded email suppression evidence are checked when adding; eligibility is checked again before sending. An excluded selected contact is not newly added; existing audience rules remain intact.
+
+If the broadcast or eligibility changes during review, preview again. If sending has begun, contacts cannot be added. An older open broadcast editor may ask you to refresh to protect additions made elsewhere. Refresh before reapplying unsaved content edits. Browser-local column preferences are unaffected.

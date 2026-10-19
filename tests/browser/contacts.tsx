@@ -8,4 +8,4 @@ const contacts = ['Zulu', 'Alpha', 'Middle'].map((name, i) => ({
  tags: i === 0 ? ['Buyer'] : i === 1 ? ['Buyer','Touch Base'] : [],
  created_at: `2026-10-${19-i}T12:00:00Z`,
 })) as Contact[]
-createRoot(document.getElementById('root')!).render(<main className="p-6 min-w-0"><p className="mb-4">Synthetic local contacts. No production records or writes.</p><ContactsPage contacts={contacts} tagColors={[]}/></main>)
+createRoot(document.getElementById('root')!).render(<main className="p-6 min-w-0"><p className="mb-4">Synthetic local contacts. No production records or writes.</p><p id="navigation"/><p id="fixture-confirmation"/><ContactsPage timezone="America/Vancouver" contacts={contacts} tagColors={[]}/></main>)

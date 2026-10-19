@@ -58,7 +58,8 @@ export async function getBroadcastRecipients(
   ctx: { orgId: string; subAccountId: string },
   filter: BroadcastRecipientFilter,
   channel: string,
-  countOnly = false
+  countOnly = false,
+  selectedIds?: string[]
 ) {
   const audience = normalizeAudience(filter)
   filter = audience ?? {}
@@ -77,6 +78,7 @@ export async function getBroadcastRecipients(
     const orConditions: string[] = []
     if (filter.tags && filter.tags.length > 0) orConditions.push(`tags.${filter.tag_match === "all" ? "cs" : "ov"}.{${filter.tags.map(tag => JSON.stringify(tag)).join(",")}}`)
     if (filter.sources && filter.sources.length > 0) orConditions.push(`source.in.(${filter.sources.join(",")})`)
+    if (filter.additional_contact_ids?.length) orConditions.push(`id.in.(${filter.additional_contact_ids.map(id => JSON.stringify(id)).join(",")})`)
     if (orConditions.length > 0) query = query.or(orConditions.join(","))
   }
 
@@ -85,6 +87,7 @@ export async function getBroadcastRecipients(
   } else {
     query = query.not("phone", "is", null).in("consent_status", MARKETING_CONSENT)
   }
+  if (selectedIds) query = query.in("id", selectedIds)
   return query
 }
 
@@ -139,11 +142,13 @@ export async function deliverBroadcast(
     })
     .eq("id", id)
     .eq("org_id", orgId)
-    .in("status", ["draft", "scheduled"])
+    .eq("sub_account_id", subAccountId)
+    .eq("status", broadcast.status)
+    .eq("updated_at", broadcast.updated_at)
     .select("id")
 
   if (claimError) return { ok: false, error: claimError.message }
-  if (!claimed?.length) return { ok: false, error: "This broadcast is already being sent" }
+  if (!claimed?.length) return { ok: false, error: "This broadcast changed or is already being sent. Refresh and try again." }
 
   const { error: snapshotError } = await supabase.from("broadcast_recipients").insert(
     (recipients ?? []).map((c) => ({ org_id: orgId, sub_account_id: subAccountId, broadcast_id: id,
