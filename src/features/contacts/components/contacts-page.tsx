@@ -1,6 +1,7 @@
 "use client"
 
 import { matchesTags, type TagMatch } from "@/lib/utils/tag-filter"
+import { CONTACT_COLUMNS, ContactColumnHeader, type ContactSortField } from "./contact-column-header"
 import { engagementFilters } from "@/features/broadcasts/engagement"
 
 import { useState, useMemo } from "react"
@@ -33,8 +34,6 @@ import {
   Download,
   Users,
   X,
-  ChevronUp,
-  ChevronDown,
   Filter,
   Tag,
   Trash2,
@@ -44,7 +43,7 @@ import { getSourceBadge } from "@/lib/constants/colors"
 import { toast } from "sonner"
 import { deleteContact } from "../actions"
 
-type SortField = "name" | "email" | "company" | "created_at" | "last_contact"
+type SortField = ContactSortField
 type SortOrder = "asc" | "desc"
 
 interface TagColor {
@@ -76,7 +75,8 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-  const [sortField, setSortField] = useState<SortField>("created_at")
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [columnWidths, setColumnWidths] = useState(() => Object.fromEntries(CONTACT_COLUMNS.map(c => [c.key, c.width])) as Record<SortField, number>)
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
@@ -119,6 +119,7 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
 
   // Sort filtered contacts
   const sorted = useMemo(() => {
+    if (!sortField) return filtered
     const arr = [...filtered]
     arr.sort((a, b) => {
       let aVal = ""
@@ -132,6 +133,15 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
         case "email":
           aVal = (a.email ?? "").toLowerCase()
           bVal = (b.email ?? "").toLowerCase()
+          break
+        case "phone":
+        case "source":
+          aVal = (a[sortField] ?? "").toLowerCase()
+          bVal = (b[sortField] ?? "").toLowerCase()
+          break
+        case "tags":
+          aVal = [...(a.tags ?? [])].sort().join(", ").toLowerCase()
+          bVal = [...(b.tags ?? [])].sort().join(", ").toLowerCase()
           break
         case "company":
           aVal = (a.company ?? "").toLowerCase()
@@ -157,7 +167,8 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
 
   function handleSort(field: SortField) {
     if (sortField === field) {
-      setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
+      if (sortOrder === "asc") setSortOrder("desc")
+      else setSortField(null)
     } else {
       setSortField(field)
       setSortOrder("asc")
@@ -217,15 +228,6 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
     setSelectedIds(new Set())
   }
 
-  function SortIndicator({ field }: { field: SortField }) {
-    if (sortField !== field) return null
-    return sortOrder === "asc" ? (
-      <ChevronUp className="size-3.5 inline-block ml-1" />
-    ) : (
-      <ChevronDown className="size-3.5 inline-block ml-1" />
-    )
-  }
-
   function exportToCsv(rows: Contact[]) {
     const headers = ["First Name", "Last Name", "Email", "Phone", "Company", "Source", "Tags", "Consent Status", "Created At"]
     const csvRows = rows.map((c) => [
@@ -252,9 +254,9 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 max-w-full flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Contacts</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -263,7 +265,7 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
               : `${contacts.length} contact${contacts.length !== 1 ? "s" : ""} total`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered)}>
             <Download className="size-3.5" data-icon="inline-start" />
             Export
@@ -280,8 +282,8 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-48 flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             placeholder="Search contacts..."
@@ -299,7 +301,7 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
         {allTags.length > 0 && (
           <div className="flex items-center gap-2">
             <Popover>
-              <PopoverTrigger render={<Button variant="outline" size="sm" type="button" />}>
+              <PopoverTrigger render={<Button aria-label="Filter by tags" variant="outline" size="sm" type="button" />}>
                   <Filter className="size-3.5" data-icon="inline-start" />
                   Tags
                   {selectedTags.size > 0 && (
@@ -353,6 +355,12 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
         )}
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <span role="status">{sortField ? `Sorted by ${CONTACT_COLUMNS.find(c => c.key === sortField)?.label}: ${sortOrder === "asc" ? "ascending" : "descending"}` : "Default entry order (newest first)"}</span>
+        {sortField && <Button variant="ghost" size="sm" onClick={() => setSortField(null)}>Clear sort</Button>}
+        <span>Click headings to sort; drag column borders to resize.</span>
+      </div>
+
       {/* Table or Empty State */}
       {contacts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -381,8 +389,12 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
           </p>
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <Table>
+        <div className="min-w-0 max-w-full rounded-lg border">
+          <Table className="table-fixed [&_td]:overflow-hidden [&_td]:text-ellipsis" style={{ width: 40 + Object.values(columnWidths).reduce((sum, width) => sum + width, 0) }}>
+            <colgroup>
+              <col style={{ width: 40 }} />
+              {CONTACT_COLUMNS.map(column => <col key={column.key} style={{ width: columnWidths[column.key] }} />)}
+            </colgroup>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
@@ -391,55 +403,13 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
-                <TableHead>
-                  <button
-                    type="button"
-                    className="flex items-center hover:text-foreground transition-colors"
-                    onClick={() => handleSort("name")}
-                  >
-                    Name
-                    <SortIndicator field="name" />
-                  </button>
-                </TableHead>
-                <TableHead>
-                  <button
-                    type="button"
-                    className="flex items-center hover:text-foreground transition-colors"
-                    onClick={() => handleSort("email")}
-                  >
-                    Email
-                    <SortIndicator field="email" />
-                  </button>
-                </TableHead>
-                <TableHead className="hidden md:table-cell">Phone</TableHead>
-                <TableHead className="hidden lg:table-cell">
-                  <button
-                    type="button"
-                    className="flex items-center hover:text-foreground transition-colors"
-                    onClick={() => handleSort("company")}
-                  >
-                    Company
-                    <SortIndicator field="company" />
-                  </button>
-                </TableHead>
-                <TableHead className="hidden lg:table-cell">Source</TableHead>
-                <TableHead className="hidden md:table-cell">Tags</TableHead>
-                <TableHead className="hidden lg:table-cell">
-                  <button type="button" className="flex items-center hover:text-foreground transition-colors" onClick={() => handleSort("last_contact")}>
-                    Last contact
-                    <SortIndicator field="last_contact" />
-                  </button>
-                </TableHead>
-                <TableHead className="hidden sm:table-cell">
-                  <button
-                    type="button"
-                    className="flex items-center hover:text-foreground transition-colors"
-                    onClick={() => handleSort("created_at")}
-                  >
-                    Created
-                    <SortIndicator field="created_at" />
-                  </button>
-                </TableHead>
+                {CONTACT_COLUMNS.map(column => (
+                  <ContactColumnHeader key={column.key} label={column.label} width={columnWidths[column.key]}
+                    sort={sortField === column.key ? sortOrder : null}
+                    onSort={() => handleSort(column.key)}
+                    onWidth={width => setColumnWidths(previous => ({ ...previous, [column.key]: width }))}
+                  />
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -477,19 +447,19 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
                     {contact.email ?? "-"}
                   </TableCell>
                   <TableCell
-                    className="hidden md:table-cell text-muted-foreground"
+                    className="text-muted-foreground"
                     onClick={() => router.push(`/contacts/${contact.id}`)}
                   >
                     {contact.phone ?? "-"}
                   </TableCell>
                   <TableCell
-                    className="hidden lg:table-cell text-muted-foreground"
+                    className="text-muted-foreground"
                     onClick={() => router.push(`/contacts/${contact.id}`)}
                   >
                     {contact.company ?? "-"}
                   </TableCell>
                   <TableCell
-                    className="hidden lg:table-cell"
+                    className=""
                     onClick={() => router.push(`/contacts/${contact.id}`)}
                   >
                     {contact.source ? (
@@ -506,7 +476,7 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
                     )}
                   </TableCell>
                   <TableCell
-                    className="hidden md:table-cell"
+                    className=""
                     onClick={() => router.push(`/contacts/${contact.id}`)}
                   >
                     <div className="flex items-center gap-1 flex-wrap">
@@ -535,11 +505,11 @@ export function ContactsPage({ contacts, tagColors, broadcasts=[], broadcastFilt
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                  <TableCell className="text-sm text-muted-foreground">
                     {contact.last_contact ? formatDateShort(contact.last_contact) : "—"}
                   </TableCell>
                   <TableCell
-                    className={cn("hidden sm:table-cell text-muted-foreground")}
+                    className={cn("text-muted-foreground")}
                     onClick={() => router.push(`/contacts/${contact.id}`)}
                   >
                     {formatDateShort(contact.created_at)}

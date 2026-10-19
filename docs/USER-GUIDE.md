@@ -240,3 +240,9 @@ The Vancouver workflow creates a task for Rachel for each new contact/property i
 
 ### Tag matching in Contacts and Broadcasts
 Choose **Any selected tag (OR)** to include contacts with at least one selected tag, or **All selected tags (AND)** to require every selected tag. In Contacts, open the Tags filter to choose the matching mode. In a broadcast draft, use Match tags under Filter by Tags; this choice is saved with the draft and applies to recipient counts and sending. Existing broadcasts default to OR. Selected sources remain alternatives to the tag group: a source match also includes the contact. Consent and do-not-contact exclusions still apply.
+
+
+### Contact column widths and sorting
+Drag the right border of a column heading to change its width (100–800 pixels). You can also focus a border with Tab and use Left/Right arrows; Shift changes widths in larger steps. All columns remain available by horizontal scrolling on narrow screens. Widths last while the Contacts page is open.
+
+Click any data-column heading to cycle ascending → descending → off. **Clear sort** also restores default entry order (newest first), retaining search and tag filters. The active sort is shown above the table and by an arrow on its heading. Tags sort alphabetically by their combined labels.
