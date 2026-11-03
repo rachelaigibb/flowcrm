@@ -1,6 +1,6 @@
 ## 2026-11-02 sub-account member invitation control
 
-The sub-account Settings → Members card now shows Invite Member to agency owners/admins, creates invitations scoped to that sub-account, and lists pending invitations with a Revoke action. Existing confirmed FlowCRM logins can reuse a new invitation; revoking a pending invitation does not delete the login. Release verification follows deployment.
+The sub-account Settings → Members card now shows Invite Member to agency owners/admins, creates invitations scoped to that sub-account, and lists pending invitations with a Revoke action. Existing confirmed FlowCRM logins can reuse a new invitation; revoking a pending invitation does not delete the login. Commit `1b9b1f1` pushed to `feature/resend-engagement` and deployed production Ready as `dpl_AeLphsqrATpMWC1g8Eg48mkSBMVk`. TypeScript, 165 tests, local build and Vercel build passed. Authenticated Members UI and a complete recipient acceptance remain untested in a live signed-in browser; the existing pending invitation was preserved.
 
 ## 2026-11-02 invitation onboarding repair
 
