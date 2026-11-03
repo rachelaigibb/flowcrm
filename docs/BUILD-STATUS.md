@@ -1,6 +1,6 @@
 ## 2026-11-02 everyday Settings invitation routing
 
-The primary `/settings` page now passes owner/admin invitation permission and pending invitations into its Members card, matching `/settings/sub-accounts/[id]`. The previous release updated only the named sub-account route, leaving the everyday Settings screen without Invite Member. Sub-account invitations create an organization `member` and one selected sub-account membership; RLS `get_user_sub_account_ids()` grants members only directly assigned sub-accounts.
+The primary `/settings` page now passes owner/admin invitation permission and pending invitations into its Members card, matching `/settings/sub-accounts/[id]`. The previous release updated only the named sub-account route, leaving the everyday Settings screen without Invite Member. Sub-account invitations create an organization `member` and one selected sub-account membership; RLS `get_user_sub_account_ids()` grants members only directly assigned sub-accounts. Commit `3cbd9f2` deployed production Ready as `dpl_Fbj4PRqLHRSEDEwuHnn8YE3fRVRx`. TypeScript, 165 tests, local and Vercel builds passed. Live database readback confirmed all-workspace access is restricted to org owner/admin while sub-account selection uses direct memberships. Signed-in UI click-through and invited-user acceptance remain unverified.
 
 ## 2026-11-02 sub-account member invitation control
 
