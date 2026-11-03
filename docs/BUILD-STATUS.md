@@ -1,3 +1,7 @@
+## 2026-11-02 everyday Settings invitation routing
+
+The primary `/settings` page now passes owner/admin invitation permission and pending invitations into its Members card, matching `/settings/sub-accounts/[id]`. The previous release updated only the named sub-account route, leaving the everyday Settings screen without Invite Member. Sub-account invitations create an organization `member` and one selected sub-account membership; RLS `get_user_sub_account_ids()` grants members only directly assigned sub-accounts.
+
 ## 2026-11-02 sub-account member invitation control
 
 The sub-account Settings → Members card now shows Invite Member to agency owners/admins, creates invitations scoped to that sub-account, and lists pending invitations with a Revoke action. Existing confirmed FlowCRM logins can reuse a new invitation; revoking a pending invitation does not delete the login. Commit `1b9b1f1` pushed to `feature/resend-engagement` and deployed production Ready as `dpl_AeLphsqrATpMWC1g8Eg48mkSBMVk`. TypeScript, 165 tests, local build and Vercel build passed. Authenticated Members UI and a complete recipient acceptance remain untested in a live signed-in browser; the existing pending invitation was preserved.
