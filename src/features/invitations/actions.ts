@@ -47,6 +47,15 @@ export async function sendInvitation(input: {
     return { error: "Invalid email address" }
   }
 
+  if (input.subAccountIds.length === 0 || new Set(input.subAccountIds).size !== input.subAccountIds.length) {
+    return { error: "Select at least one valid sub-account" }
+  }
+  const { data: assignedSubAccounts, error: subAccountError } = await supabase
+    .from("sub_accounts").select("id").eq("org_id", orgId).in("id", input.subAccountIds)
+  if (subAccountError || assignedSubAccounts?.length !== input.subAccountIds.length) {
+    return { error: "One or more selected sub-accounts are unavailable" }
+  }
+
   // Check if there's already a pending invitation for this email
   const { data: existing } = await supabase
     .from("invitations")

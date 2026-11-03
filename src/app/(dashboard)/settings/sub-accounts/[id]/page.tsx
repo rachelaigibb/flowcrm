@@ -36,6 +36,13 @@ export default async function SubAccountSettingsRoute({
 
   if (!subAccountResult.data) redirect("/settings")
 
+  const { data: ownMembership } = await supabase.from("memberships")
+    .select("role").eq("org_id", subAccountResult.data.org_id).eq("user_id", user.id).maybeSingle()
+  const canInvite = ownMembership?.role === "owner" || ownMembership?.role === "admin"
+  const { data: pendingInvitations } = canInvite ? await supabase.from("invitations")
+    .select("id,email,expires_at,sub_account_ids")
+    .eq("org_id", subAccountResult.data.org_id).eq("status", "pending") : { data: [] }
+
   // Enrich members with current user's email
   const enrichedMembers = (membersResult.data ?? []).map((m) => ({
     ...m,
@@ -52,6 +59,9 @@ export default async function SubAccountSettingsRoute({
       stages={(stagesResult.data ?? []) as PipelineStage[]}
       members={enrichedMembers}
       tags={tags}
+      canInvite={canInvite}
+      pendingInvitations={(pendingInvitations ?? []).filter((invite) => invite.sub_account_ids?.includes(id))}
+
     />
   )
 }

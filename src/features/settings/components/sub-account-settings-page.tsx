@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardAction,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,6 +46,7 @@ import {
   ChevronDownIcon,
   GripVerticalIcon,
   UsersIcon,
+  CopyIcon,
   TagIcon,
   CheckIcon,
   MailIcon,
@@ -77,6 +79,7 @@ import {
   updateSmsTemplate,
   deleteSmsTemplate,
 } from "@/features/sms/actions"
+import { sendInvitation, revokeInvitation } from "@/features/invitations/actions"
 import type { SubAccount, PipelineStage, EmailTemplate, SmsTemplate } from "@/types/database"
 
 interface Tag {
@@ -91,6 +94,8 @@ interface SubAccountSettingsPageProps {
   members: Array<{ id: string; user_id: string; role: string; email?: string }>
   tags: Tag[]
   intakeCard?: React.ReactNode
+  canInvite?: boolean
+  pendingInvitations?: Array<{ id: string; email: string; expires_at: string; sub_account_ids: string[] }>
 }
 
 export function SubAccountSettingsPage({
@@ -99,7 +104,41 @@ export function SubAccountSettingsPage({
   members,
   tags: initialTags,
   intakeCard,
+  canInvite = false,
+  pendingInvitations: initialInvitations = [],
 }: SubAccountSettingsPageProps) {
+  const [inviteOpen, setInviteOpen] = React.useState(false)
+  const [inviteEmail, setInviteEmail] = React.useState("")
+  const [inviteRole, setInviteRole] = React.useState<"admin" | "collaborator">("collaborator")
+  const [inviteLink, setInviteLink] = React.useState("")
+  const [inviting, setInviting] = React.useState(false)
+  const [pendingInvitations, setPendingInvitations] = React.useState(initialInvitations)
+  const [revokingId, setRevokingId] = React.useState<string | null>(null)
+
+  async function handleInvite() {
+    setInviting(true)
+    const result = await sendInvitation({
+      email: inviteEmail, role: "member", subAccountIds: [subAccount.id], subAccountRole: inviteRole,
+    })
+    setInviting(false)
+    if (result.error) { toast.error(result.error); return }
+    if (result.inviteUrl) setInviteLink(result.inviteUrl)
+    if (result.data) setPendingInvitations((current) => [...current, {
+      id: result.data.id, email: result.data.email, expires_at: result.data.expires_at,
+      sub_account_ids: [subAccount.id],
+    }])
+    toast.success("Invitation created")
+  }
+
+  async function handleRevokeInvitation(id: string) {
+    setRevokingId(id)
+    const result = await revokeInvitation(id)
+    setRevokingId(null)
+    if (result.error) { toast.error(result.error); return }
+    setPendingInvitations((current) => current.filter((invite) => invite.id !== id))
+    toast.success("Invitation revoked. You can invite this email again.")
+  }
+
   const [name, setName] = React.useState(subAccount.name)
   const [currency, setCurrency] = React.useState(subAccount.currency)
   const [timezone, setTimezone] = React.useState(subAccount.timezone)
@@ -1408,6 +1447,36 @@ export function SubAccountSettingsPage({
           <CardDescription>
             Users with access to this sub-account
           </CardDescription>
+          {canInvite && <CardAction>
+            <Dialog open={inviteOpen} onOpenChange={(open) => {
+              setInviteOpen(open)
+              if (!open) { setInviteEmail(""); setInviteRole("collaborator"); setInviteLink("") }
+            }}>
+              <DialogTrigger render={<Button size="sm" variant="outline"><PlusIcon className="size-4" />Invite Member</Button>} />
+              <DialogContent>
+                <DialogHeader><DialogTitle>Invite to {subAccount.name}</DialogTitle>
+                  <DialogDescription>The invitation grants access to this sub-account.</DialogDescription></DialogHeader>
+                {inviteLink ? <div className="space-y-3">
+                  <p className="text-sm">Invitation created. Share this link if the email does not arrive.</p>
+                  <div className="flex gap-2"><Input readOnly value={inviteLink} aria-label="Invitation link" />
+                    <Button variant="outline" size="icon" aria-label="Copy invitation link" onClick={async () => {
+                      await navigator.clipboard.writeText(inviteLink); toast.success("Link copied")
+                    }}><CopyIcon className="size-4" /></Button></div>
+                  <Button variant="outline" onClick={() => { setInviteLink(""); setInviteEmail("") }}>Invite another</Button>
+                </div> : <div className="space-y-4">
+                  <div className="space-y-2"><Label htmlFor="member-invite-email">Email</Label>
+                    <Input id="member-invite-email" type="email" value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} /></div>
+                  <div className="space-y-2"><Label>Sub-account role</Label>
+                    <Select value={inviteRole} onValueChange={(value) => { if (value) setInviteRole(value as "admin" | "collaborator") }}>
+                      <SelectTrigger><SelectValue>{inviteRole === "admin" ? "Admin" : "Collaborator"}</SelectValue></SelectTrigger>
+                      <SelectContent><SelectItem value="collaborator">Collaborator</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
+                    </Select></div>
+                  <Button onClick={handleInvite} disabled={!inviteEmail.trim() || inviting} className="w-full">
+                    {inviting && <Loader2Icon className="animate-spin" />}Send invitation</Button>
+                </div>}
+              </DialogContent>
+            </Dialog>
+          </CardAction>}
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3">
@@ -1434,7 +1503,11 @@ export function SubAccountSettingsPage({
                 <Badge variant="secondary">{member.role}</Badge>
               </div>
             ))}
-            {members.length === 0 && (
+            {canInvite && pendingInvitations.map((invite) => <div key={invite.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/50 p-3">
+              <div><p className="text-sm font-medium">{invite.email}</p><p className="text-xs text-muted-foreground">Invitation pending</p></div>
+              <Button size="sm" variant="outline" disabled={revokingId === invite.id} onClick={() => handleRevokeInvitation(invite.id)}>Revoke</Button>
+            </div>)}
+            {members.length === 0 && pendingInvitations.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No members assigned to this sub-account yet.
               </p>

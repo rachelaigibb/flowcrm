@@ -1,3 +1,7 @@
+## 2026-11-02 sub-account member invitation control
+
+The sub-account Settings → Members card now shows Invite Member to agency owners/admins, creates invitations scoped to that sub-account, and lists pending invitations with a Revoke action. Existing confirmed FlowCRM logins can reuse a new invitation; revoking a pending invitation does not delete the login. Release verification follows deployment.
+
 ## 2026-11-02 invitation onboarding repair
 
 Invite links now open for signed-out users, offer password creation and account switching, and preserve the invitation through login, confirmation and password reset. Database acceptance verifies the authenticated user and invited, confirmed email; public token lookup returns only the invited email and organization name. Commit `fd91914` pushed to `feature/resend-engagement` and deployed to production as `dpl_AhbDyy54UBzQgN16SdYqbQ4sY6me` (Ready). TypeScript, 165 tests, local and Vercel builds passed. Live signed-out pending invitation returned 200 with password-creation form; invalid token returned the unavailable state. No invitation was accepted or email sent during verification, so completed recipient onboarding remains unverified.
