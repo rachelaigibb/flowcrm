@@ -1,6 +1,6 @@
 ## 2026-11-02 invitation onboarding repair
 
-Invite links now open for signed-out users, offer password creation and account switching, and preserve the invitation through login, confirmation and password reset. Database acceptance verifies the authenticated user and invited, confirmed email; public token lookup returns only the invited email and organization name. Live release verification is recorded in this section after deployment.
+Invite links now open for signed-out users, offer password creation and account switching, and preserve the invitation through login, confirmation and password reset. Database acceptance verifies the authenticated user and invited, confirmed email; public token lookup returns only the invited email and organization name. Commit `fd91914` pushed to `feature/resend-engagement` and deployed to production as `dpl_AhbDyy54UBzQgN16SdYqbQ4sY6me` (Ready). TypeScript, 165 tests, local and Vercel builds passed. Live signed-out pending invitation returned 200 with password-creation form; invalid token returned the unavailable state. No invitation was accepted or email sent during verification, so completed recipient onboarding remains unverified.
 
 # FlowCRM — Build Status
 
