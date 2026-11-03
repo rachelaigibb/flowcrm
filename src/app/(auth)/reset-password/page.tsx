@@ -1,6 +1,7 @@
 "use client"
 
-import { useTransition } from "react"
+import { useTransition, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,6 +11,11 @@ import { updatePassword } from "@/features/auth/actions"
 import { Loader2Icon } from "lucide-react"
 
 export default function ResetPasswordPage() {
+  return <Suspense><ResetPasswordForm /></Suspense>
+}
+
+function ResetPasswordForm() {
+  const redirectTo = useSearchParams().get("redirect") ?? undefined
   const [isPending, startTransition] = useTransition()
 
   function handleSubmit(formData: FormData) {
@@ -20,7 +26,7 @@ export default function ResetPasswordPage() {
       return
     }
     startTransition(async () => {
-      const result = await updatePassword(formData)
+      const result = await updatePassword(formData, redirectTo)
       if (result?.error) {
         toast.error(result.error)
       }

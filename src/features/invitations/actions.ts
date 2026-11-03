@@ -1,5 +1,8 @@
 "use server"
 
+import { randomBytes } from "node:crypto"
+import { authSiteUrl } from "@/lib/auth/redirect"
+import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { getUserContext } from "@/lib/supabase/get-user-context"
 import { createClient } from "@/lib/supabase/server"
@@ -7,12 +10,7 @@ import { getResendClient } from "@/lib/resend/client"
 import type { OrgRole, SubAccountRole } from "@/types/database"
 
 function generateToken(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-  let token = ""
-  for (let i = 0; i < 48; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return token
+  return randomBytes(36).toString("hex")
 }
 
 // ── Get invitations for current org ──
@@ -63,14 +61,6 @@ export async function sendInvitation(input: {
   }
 
   // Check if user is already a member
-  const { data: members } = await supabase
-    .from("memberships")
-    .select("id, user_id")
-    .eq("org_id", orgId)
-
-  // Look up if any user with this email exists
-  // We can't query auth.users directly, but we can check if any existing member has this email
-  // For now, we just create the invitation
 
   const token = generateToken()
   const expiresAt = new Date()
@@ -119,9 +109,7 @@ export async function sendInvitation(input: {
   const fromName = emailSettings?.from_name || orgName
 
   // Build invite URL
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000"
+  const baseUrl = authSiteUrl()
   const inviteUrl = `${baseUrl}/invite/${token}`
 
   // Send invitation email via Resend (if configured)
@@ -187,6 +175,10 @@ export async function acceptInvitation(token: string) {
 
   if (result.error) return { error: result.error }
 
+  const cookieStore = await cookies()
+  cookieStore.delete("flowcrm_sub_account_id")
+  if (result.org_id) cookieStore.set("flowcrm_org_id", result.org_id, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" })
+  revalidatePath("/", "layout")
   return { success: true, orgId: result.org_id }
 }
 

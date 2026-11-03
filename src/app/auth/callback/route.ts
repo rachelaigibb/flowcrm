@@ -1,3 +1,4 @@
+import { safeRedirect } from "@/lib/auth/redirect"
 import { NextResponse, type NextRequest } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get("next") ?? "/"
 
   // Never allow an open redirect: only same-origin relative paths.
-  const safeNext = next.startsWith("/") ? next : "/"
+  const safeNext = safeRedirect(next)
 
   if (code) {
     const supabase = await createClient()

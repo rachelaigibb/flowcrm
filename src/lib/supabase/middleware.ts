@@ -35,6 +35,7 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/signup") &&
     !request.nextUrl.pathname.startsWith("/auth") &&
+    !request.nextUrl.pathname.startsWith("/invite/") &&
     !request.nextUrl.pathname.startsWith("/api") &&
     // Public pages: form submissions and unsubscribe links are opened logged out.
     !request.nextUrl.pathname.startsWith("/f/") &&
@@ -42,6 +43,7 @@ export async function updateSession(request: NextRequest) {
   ) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
+    url.searchParams.set("redirect", request.nextUrl.pathname + request.nextUrl.search)
     return NextResponse.redirect(url)
   }
 
@@ -49,7 +51,8 @@ export async function updateSession(request: NextRequest) {
   if (
     user &&
     (request.nextUrl.pathname.startsWith("/login") ||
-      request.nextUrl.pathname.startsWith("/signup"))
+      request.nextUrl.pathname.startsWith("/signup")) &&
+    !request.nextUrl.searchParams.get("redirect")?.startsWith("/invite/")
   ) {
     const url = request.nextUrl.clone()
     url.pathname = "/"

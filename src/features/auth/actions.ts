@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { safeRedirect, authSiteUrl } from "@/lib/auth/redirect"
+import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
 
 export async function login(formData: FormData, redirectTo?: string) {
@@ -24,10 +26,10 @@ export async function login(formData: FormData, redirectTo?: string) {
   }
 
   revalidatePath("/", "layout")
-  redirect(redirectTo || "/")
+  redirect(safeRedirect(redirectTo))
 }
 
-export async function signup(formData: FormData) {
+export async function signup(formData: FormData, redirectTo?: string) {
   const supabase = await createClient()
 
   const email = formData.get("email") as string
@@ -41,9 +43,19 @@ export async function signup(formData: FormData) {
     return { error: "Password must be at least 6 characters." }
   }
 
+  const next = safeRedirect(redirectTo)
+  const isInvite = /^\/invite\/[A-Za-z0-9]+$/.test(next)
+  if (isInvite) {
+    const { data: preview } = await supabase.rpc("get_invitation_preview", { p_token: next.split("/")[2] })
+    const invitation = preview as { email?: string } | null
+    if (!invitation?.email || invitation.email.toLowerCase() !== email.trim().toLowerCase()) {
+      return { error: "Use the invited email address and a valid, pending invitation." }
+    }
+  }
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: { emailRedirectTo: `${authSiteUrl()}/auth/callback?next=${encodeURIComponent(next)}` },
   })
 
   if (error) {
@@ -52,6 +64,14 @@ export async function signup(formData: FormData) {
 
   if (!data.user) {
     return { error: "Signup failed. Please try again." }
+  }
+
+  if (!data.session) {
+    return { success: "Check your email to confirm your account, then return to your invitation. If you already have an account, sign in or reset your password instead." }
+  }
+  if (isInvite) {
+    revalidatePath("/", "layout")
+    redirect(next)
   }
 
   // Create the org with defaults via RPC
@@ -68,7 +88,7 @@ export async function signup(formData: FormData) {
   redirect("/")
 }
 
-export async function signInWithMagicLink(formData: FormData) {
+export async function signInWithMagicLink(formData: FormData, redirectTo?: string) {
   const supabase = await createClient()
 
   const email = formData.get("email") as string
@@ -80,7 +100,8 @@ export async function signInWithMagicLink(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/confirm?next=/`,
+      shouldCreateUser: false,
+      emailRedirectTo: `${authSiteUrl()}/auth/callback?next=${encodeURIComponent(safeRedirect(redirectTo))}`,
     },
   })
 
@@ -91,7 +112,7 @@ export async function signInWithMagicLink(formData: FormData) {
   return { success: "Check your email for the magic link." }
 }
 
-export async function requestPasswordReset(formData: FormData) {
+export async function requestPasswordReset(formData: FormData, redirectTo?: string) {
   const supabase = await createClient()
 
   const email = formData.get("email") as string
@@ -100,9 +121,10 @@ export async function requestPasswordReset(formData: FormData) {
     return { error: "Email is required." }
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  const siteUrl = authSiteUrl()
+  const resetPath = `/reset-password?redirect=${encodeURIComponent(safeRedirect(redirectTo))}`
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/auth/confirm?next=/reset-password`,
+    redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(resetPath)}`,
   })
 
   if (error) {
@@ -112,7 +134,7 @@ export async function requestPasswordReset(formData: FormData) {
   return { success: "If that email exists, a password reset link is on its way." }
 }
 
-export async function updatePassword(formData: FormData) {
+export async function updatePassword(formData: FormData, redirectTo?: string) {
   const supabase = await createClient()
 
   const password = formData.get("password") as string
@@ -137,7 +159,7 @@ export async function updatePassword(formData: FormData) {
   }
 
   revalidatePath("/", "layout")
-  redirect("/")
+  redirect(safeRedirect(redirectTo))
 }
 
 export async function signOut() {
@@ -145,4 +167,14 @@ export async function signOut() {
   await supabase.auth.signOut()
   revalidatePath("/", "layout")
   redirect("/login")
+}
+
+export async function switchInvitationAccount(token: string) {
+  if (!/^[A-Za-z0-9]+$/.test(token)) return { error: "Invalid invitation" }
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signOut({ scope: "local" })
+  if (error) return { error: error.message }
+  ;(await cookies()).delete("flowcrm_sub_account_id")
+  revalidatePath("/", "layout")
+  redirect(`/invite/${token}`)
 }

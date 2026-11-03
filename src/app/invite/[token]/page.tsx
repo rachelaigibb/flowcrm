@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server"
 import { FlowCRMMark } from "@/components/shared/flowcrm-mark"
 import { InviteAcceptPage } from "@/features/invitations/components/invite-accept-page"
 
@@ -7,6 +8,11 @@ export default async function InvitePage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase.rpc("get_invitation_preview", { p_token: token })
+  const invitation = data as { email?: string; org_name?: string; error?: string } | null
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
@@ -22,7 +28,7 @@ export default async function InvitePage({
             AI-first CRM and business operating system
           </p>
         </div>
-        <InviteAcceptPage token={token} />
+        <InviteAcceptPage token={token} currentEmail={user?.email} invitation={invitation} />
       </div>
     </div>
   )

@@ -24,14 +24,15 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
+  const selectedOrgId = (await cookies()).get("flowcrm_org_id")?.value
   // Fetch user's org membership
   const { data: memberships } = await supabase
     .from("memberships")
     .select("*")
     .eq("user_id", user.id)
-    .limit(1)
+    .limit(100)
 
-  const membership = memberships?.[0] as Membership | undefined
+  const membership = memberships?.find((m) => m.org_id === selectedOrgId) ?? memberships?.[0] as Membership | undefined
 
   if (!membership) {
     await supabase.auth.signOut()

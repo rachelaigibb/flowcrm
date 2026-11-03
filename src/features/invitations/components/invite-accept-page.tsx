@@ -11,15 +11,42 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { signup, switchInvitationAccount } from "@/features/auth/actions"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { acceptInvitation } from "@/features/invitations/actions"
 import { Loader2Icon, CheckCircle2Icon, XCircleIcon } from "lucide-react"
 import Link from "next/link"
 
-export function InviteAcceptPage({ token }: { token: string }) {
+export function InviteAcceptPage({ token, currentEmail, invitation }: {
+  token: string
+  currentEmail?: string
+  invitation: { email?: string; org_name?: string; error?: string } | null
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
+
+  const [notice, setNotice] = useState("")
+  const invitePath = `/invite/${token}`
+  const loginPath = `/login?redirect=${encodeURIComponent(invitePath)}`
+  const matches = currentEmail?.toLowerCase() === invitation?.email?.toLowerCase()
+
+  function handleSignup(formData: FormData) {
+    startTransition(async () => {
+      const result = await signup(formData, invitePath)
+      if (result?.error) toast.error(result.error)
+      if (result?.success) setNotice(result.success)
+    })
+  }
+
+  function handleSwitch() {
+    startTransition(async () => {
+      const result = await switchInvitationAccount(token)
+      if (result?.error) toast.error(result.error)
+    })
+  }
 
   function handleAccept() {
     startTransition(async () => {
@@ -94,7 +121,7 @@ export function InviteAcceptPage({ token }: { token: string }) {
           <p className="text-center text-sm text-muted-foreground">
             Need help?{" "}
             <Link
-              href="/login"
+              href={loginPath}
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
               Sign in with a different account
@@ -105,33 +132,37 @@ export function InviteAcceptPage({ token }: { token: string }) {
     )
   }
 
+  if (!invitation?.email || invitation.error) {
+    return <Card><CardHeader><CardTitle>Invitation unavailable</CardTitle>
+      <CardDescription>This invitation is expired, revoked, already accepted, or invalid. Ask the sender for a new invitation.</CardDescription>
+    </CardHeader></Card>
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Accept Invitation</CardTitle>
-        <CardDescription>
-          You've been invited to join an organization on FlowCRM. Click below to
-          accept and get started.
-        </CardDescription>
+        <CardTitle>Join {invitation.org_name || "your team"}</CardTitle>
+        <CardDescription>Invited as {invitation.email}. Use this email to join the assigned workspaces.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button
-          className="w-full"
-          onClick={handleAccept}
-          disabled={isPending}
-        >
-          {isPending && <Loader2Icon className="animate-spin" />}
-          Accept Invitation
-        </Button>
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link
-            href={`/signup?redirect=/invite/${token}`}
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Sign up first
-          </Link>
-        </p>
+        {currentEmail ? <>
+          <p className="text-sm">Signed in as {currentEmail}.</p>
+          {matches ? <Button className="w-full" onClick={handleAccept} disabled={isPending}>
+            {isPending && <Loader2Icon className="animate-spin" />}Accept invitation
+          </Button> : <p className="text-sm text-destructive">This invitation is for a different email. Switch accounts to continue.</p>}
+          <Button variant="outline" className="w-full" onClick={handleSwitch} disabled={isPending}>Use a different account</Button>
+        </> : <>
+          <p className="text-sm">New to FlowCRM? Create your password below. You will join this team without creating a separate organization.</p>
+          <form action={handleSignup} className="space-y-4">
+            <div className="space-y-2"><Label htmlFor="invite-email">Invited email</Label>
+              <Input id="invite-email" name="email" type="email" value={invitation.email} readOnly autoComplete="username" /></div>
+            <div className="space-y-2"><Label htmlFor="invite-password">Create password</Label>
+              <Input id="invite-password" name="password" type="password" required minLength={6} autoComplete="new-password" /></div>
+            <Button className="w-full" type="submit" disabled={isPending}>{isPending && <Loader2Icon className="animate-spin" />}Create account and continue</Button>
+          </form>
+          {notice && <p role="status" className="text-sm">{notice}</p>}
+          <p className="text-sm">Already have an account, or previously used a magic link? <Link className="underline" href={loginPath}>Sign in or reset your password</Link>.</p>
+        </>}
       </CardContent>
     </Card>
   )

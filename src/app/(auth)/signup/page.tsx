@@ -1,6 +1,7 @@
 "use client"
 
-import { useTransition } from "react"
+import { useTransition, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -11,11 +12,17 @@ import { signup } from "@/features/auth/actions"
 import { Loader2Icon } from "lucide-react"
 
 export default function SignupPage() {
+  return <Suspense><SignupForm /></Suspense>
+}
+
+function SignupForm() {
+  const redirectTo = useSearchParams().get("redirect") ?? undefined
   const [isPending, startTransition] = useTransition()
 
   function handleSignup(formData: FormData) {
     startTransition(async () => {
-      const result = await signup(formData)
+      const result = await signup(formData, redirectTo)
+      if (result?.success) toast.success(result.success)
       if (result?.error) {
         toast.error(result.error)
       }
@@ -62,7 +69,7 @@ export default function SignupPage() {
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link
-            href="/login"
+            href={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"}
             className="font-medium text-foreground underline-offset-4 hover:underline"
           >
             Sign in

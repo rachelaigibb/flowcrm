@@ -43,7 +43,7 @@ function LoginForm() {
     formData.set("email", email)
 
     startResetTransition(async () => {
-      const result = await requestPasswordReset(formData)
+      const result = await requestPasswordReset(formData, redirectTo)
       if (result?.error) {
         toast.error(result.error)
       }
@@ -71,7 +71,7 @@ function LoginForm() {
     formData.set("email", email)
 
     startMagicLinkTransition(async () => {
-      const result = await signInWithMagicLink(formData)
+      const result = await signInWithMagicLink(formData, redirectTo)
       if (result?.error) {
         toast.error(result.error)
       }
@@ -155,7 +155,7 @@ function LoginForm() {
         <p className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link
-            href="/signup"
+            href={redirectTo ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup"}
             className="font-medium text-foreground underline-offset-4 hover:underline"
           >
             Sign up

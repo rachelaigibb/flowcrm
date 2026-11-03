@@ -16,14 +16,16 @@ export async function getUserContext() {
     throw new Error("Unauthorized")
   }
 
+  const selectedOrgId = cookieStore.get("flowcrm_org_id")?.value
+
   // Get org_id and role from membership
-  const { data: membership, error: membershipError } = await supabase
+  const { data: memberships, error: membershipError } = await supabase
     .from("memberships")
     .select("org_id, role")
     .eq("user_id", user.id)
-    .limit(1)
-    .single()
+    .limit(100)
 
+  const membership = memberships?.find((m) => m.org_id === selectedOrgId) ?? memberships?.[0]
   if (membershipError || !membership) {
     throw new Error("No organization found")
   }

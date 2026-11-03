@@ -38,6 +38,12 @@ Rachel AI (your agency)
 
 ---
 
+## Inviting a team member
+
+In Agency Settings, enter the person's email and choose the organization role and sub-accounts. Send the invitation or copy its link. It expires after seven days. The link is bound to that email address.
+
+The recipient opens the link. A new user creates a password with the invited email, confirms the email if prompted, returns to the invitation, and selects **Accept invitation**. An existing user signs in with that email; if they used a magic link and have no password, **Forgot password?** lets them set one. The login and password-reset links preserve the invitation. If another FlowCRM user is already signed in on that browser, select **Use a different account** first. A private browser window is also useful for testing a second account. After acceptance, the invited organization and workspaces open. For an expired, revoked, or used link, send a new invitation.
+
 ## 3. Quick start
 
 1. **Log in** at the live site (or localhost) with `rachelaigibb@gmail.com`.
