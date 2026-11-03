@@ -1,6 +1,6 @@
 ## 2026-11-02 existing-invite account recovery
 
-A confirmed `rachel@rachelgibbrealtor.ca` login exists without memberships; the latest invitation is pending. Signup for that address does not change its existing password. Invite preview now identifies existing logins to the token holder and offers sign-in/recovery instead of new-account creation. Magic and recovery links again target the configured `/auth/confirm` token-hash template, preserving the invitation route. Release verification follows deployment.
+A confirmed `rachel@rachelgibbrealtor.ca` login exists without memberships; the latest invitation is pending. Signup for that address does not change its existing password. Invite preview now identifies existing logins to the token holder and offers sign-in/recovery instead of new-account creation. Magic and recovery links again target the configured `/auth/confirm` token-hash template, preserving the invitation route. Commit `8f9d318` pushed to `feature/resend-engagement` and deployed production Ready as `dpl_4g8LzV5Ne7brefFZgfYUkkLwJpVG`. TypeScript, 165 tests, local and Vercel builds passed. Production invitation page returned 200 with existing-account recovery prompt and without the signup form; live preview returned `has_account=true`. No password reset email was sent or credential changed by Codex; recipient completion remains to be verified.
 
 ## 2026-11-02 everyday Settings invitation routing
 
