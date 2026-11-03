@@ -12,7 +12,7 @@ export default async function InvitePage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const { data } = await supabase.rpc("get_invitation_preview", { p_token: token })
-  const invitation = data as { email?: string; org_name?: string; error?: string } | null
+  const invitation = data as { email?: string; org_name?: string; has_account?: boolean; error?: string } | null
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">

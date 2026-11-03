@@ -21,7 +21,7 @@ import Link from "next/link"
 export function InviteAcceptPage({ token, currentEmail, invitation }: {
   token: string
   currentEmail?: string
-  invitation: { email?: string; org_name?: string; error?: string } | null
+  invitation: { email?: string; org_name?: string; has_account?: boolean; error?: string } | null
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -151,6 +151,9 @@ export function InviteAcceptPage({ token, currentEmail, invitation }: {
             {isPending && <Loader2Icon className="animate-spin" />}Accept invitation
           </Button> : <p className="text-sm text-destructive">This invitation is for a different email. Switch accounts to continue.</p>}
           <Button variant="outline" className="w-full" onClick={handleSwitch} disabled={isPending}>Use a different account</Button>
+        </> : invitation.has_account ? <>
+          <p className="text-sm">This email already has a FlowCRM login. Sign in with it to accept the invitation. If you do not know its password, use Forgot password on the sign-in page.</p>
+          <Button className="w-full" onClick={() => router.push(loginPath)}>Sign in or reset password</Button>
         </> : <>
           <p className="text-sm">New to FlowCRM? Create your password below. You will join this team without creating a separate organization.</p>
           <form action={handleSignup} className="space-y-4">

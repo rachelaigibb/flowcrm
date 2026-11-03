@@ -101,7 +101,7 @@ export async function signInWithMagicLink(formData: FormData, redirectTo?: strin
     email,
     options: {
       shouldCreateUser: false,
-      emailRedirectTo: `${authSiteUrl()}/auth/callback?next=${encodeURIComponent(safeRedirect(redirectTo))}`,
+      emailRedirectTo: `${authSiteUrl()}/auth/confirm?next=${encodeURIComponent(safeRedirect(redirectTo))}`,
     },
   })
 
@@ -124,7 +124,7 @@ export async function requestPasswordReset(formData: FormData, redirectTo?: stri
   const siteUrl = authSiteUrl()
   const resetPath = `/reset-password?redirect=${encodeURIComponent(safeRedirect(redirectTo))}`
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(resetPath)}`,
+    redirectTo: `${siteUrl}/auth/confirm?next=${encodeURIComponent(resetPath)}`,
   })
 
   if (error) {
